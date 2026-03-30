@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { ChatRoomHeader } from '../room/ChatRoomHeader';
 import { MessageInput, type MessageReplyDraft } from '../message/MessageInput';
-import { MessageList } from '../message/MessageList';
+import { ChatThreadMessageList } from '../message/ChatThreadMessageList';
 import { BlockConfirmDialog } from '../dialogs/BlockConfirmDialog';
 import { GroupActionsDialog } from '../dialogs/GroupActionsDialog';
 import { ForwardMessageDialog } from '../dialogs/ForwardMessageDialog';
@@ -17,12 +17,12 @@ import {
   useChatRooms,
   useReportMessage,
 } from '../../../hooks/useChat';
+import { useChatGroupDialogs } from '../../../hooks/useChatGroupDialogs';
 import { useChatPresence } from '../../../hooks/useChatPresence';
 import { supabase } from '../../../lib/auth/supabaseClient';
 import { useUatBannerOffset } from '../../../lib/utils/useUatBannerOffset';
 import { useAppToast } from '../../../context/AppToastContext';
 import { roomMembersToMentionable } from '../../../lib/chat/groupMentionMembers';
-import { truncateSnippet } from '../../../lib/chat/messageSnippet';
 import { getGlassCard } from '../../../theme/candyStyles';
 
 const POPOVER_WIDTH = 460;
@@ -47,10 +47,12 @@ export const ChatPopover = ({
   const [sessionState, setSessionState] = useState<Session | null>(null);
   const session = sessionProp ?? sessionState;
   const [blockDialogOpen, setBlockDialogOpen] = useState(false);
-  const [groupDialogOpen, setGroupDialogOpen] = useState(false);
-  const [groupDialogMode, setGroupDialogMode] = useState<
-    'invite' | 'details' | 'manage' | 'members'
-  >('invite');
+  const {
+    groupDialogOpen,
+    setGroupDialogOpen,
+    groupDialogMode,
+    groupMenuHandlers,
+  } = useChatGroupDialogs();
   const [reportOpen, setReportOpen] = useState(false);
   const [reportTarget, setReportTarget] = useState<{
     messageId?: string;
@@ -209,22 +211,7 @@ export const ChatPopover = ({
           isRoomAdmin={isRoomAdmin ?? false}
           onLeave={handleLeave}
           onBlock={() => setBlockDialogOpen(true)}
-          onInvite={() => {
-            setGroupDialogMode('invite');
-            setGroupDialogOpen(true);
-          }}
-          onEditDetails={() => {
-            setGroupDialogMode('details');
-            setGroupDialogOpen(true);
-          }}
-          onManageMembers={() => {
-            setGroupDialogMode('manage');
-            setGroupDialogOpen(true);
-          }}
-          onShowMembers={() => {
-            setGroupDialogMode('members');
-            setGroupDialogOpen(true);
-          }}
+          {...groupMenuHandlers}
           onBack={onClose}
           closeIcon
         />
@@ -280,29 +267,24 @@ export const ChatPopover = ({
               flexDirection: 'column',
             }}
           >
-            <MessageList
+            <ChatThreadMessageList
               messages={messages}
               currentUserId={uid}
               roomType={room?.room_type ?? 'dm'}
               otherUserId={otherMember?.user_id}
-              onLoadOlder={() => void loadOlderMessages()}
+              loadOlderMessages={loadOlderMessages}
               hasOlderMessages={hasOlderMessages}
               loadingOlder={loadingOlder}
-              onEdit={editMessage}
-              onDelete={deleteMessage}
-              onReaction={toggleReaction}
+              editMessage={editMessage}
+              deleteMessage={deleteMessage}
+              toggleReaction={toggleReaction}
+              markAsRead={markAsRead}
+              forwardAuthorLabel={forwardAuthorLabel}
               onReport={(msgId, senderUserId) =>
                 handleReport(msgId, senderUserId ?? undefined)
               }
-              onStartReply={(msg) =>
-                setReplyTarget({
-                  id: msg.id,
-                  authorLabel: forwardAuthorLabel(msg),
-                  contentSnippet: truncateSnippet(msg.content ?? ''),
-                })
-              }
-              onForward={(msg) => setForwardSource(msg)}
-              onMessagesViewed={markAsRead}
+              replyTargetSetter={setReplyTarget}
+              onForwardSource={setForwardSource}
               compact
               typingAvatarUrl={
                 room?.room_type === 'dm'
@@ -310,9 +292,11 @@ export const ChatPopover = ({
                   : undefined
               }
               showTyping={
-                room?.room_type === 'dm' &&
-                !!otherMember?.user_id &&
-                typingUsers.has(otherMember.user_id)
+                !!(
+                  room?.room_type === 'dm' &&
+                  otherMember?.user_id &&
+                  typingUsers.has(otherMember.user_id)
+                )
               }
             />
           </Box>

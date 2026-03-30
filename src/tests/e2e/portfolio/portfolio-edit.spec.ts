@@ -1,12 +1,14 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { expect, test } from '../fixtures';
-import { seedSignedInSession, USER_ID } from '../utils/auth';
-import { stubAppSurface } from '../utils/stubAppSurface';
 import {
-  E2E_PROJECT_SOURCE_FILE_PUBLIC_URL,
+  e2eLegacyPdfPortfolioItem,
+  e2eStoredFilePortfolioItem,
+  gotoDashboardExpectAppMain,
+  seedPortfolioEditMemberSession,
+} from './portfolioEditTestHelpers';
+import {
   PORTFOLIO_E2E_MEMBER_PROFILE,
-  type PortfolioE2eItem,
   stubPortfolioDashboardRestRoutes,
 } from './portfolioEditStubs';
 import { selectResearchCategoryInProjectDialog } from './selectResearchCategory';
@@ -58,31 +60,9 @@ test.describe('Portfolio artifact editing', () => {
       }
     });
 
-    const { stubAdminRpc } = await seedSignedInSession(context, {
-      handle: 'member',
-    });
-    await stubAdminRpc(page);
-    await stubAppSurface(page);
+    await seedPortfolioEditMemberSession(page, context);
 
-    const portfolioItems: PortfolioE2eItem[] = [
-      {
-        id: 'project-1',
-        owner_id: USER_ID,
-        title: 'Legacy Artifact',
-        description: 'Old dashboard description.',
-        image_url: null,
-        project_url: 'https://example.com/legacy-artifact.pdf',
-        tech_stack: ['Case Study'],
-        is_highlighted: false,
-        created_at: new Date('2026-01-02T00:00:00.000Z').toISOString(),
-        sort_order: 0,
-        normalized_url: 'https://example.com/legacy-artifact.pdf',
-        embed_url: null,
-        resolved_type: 'pdf',
-        thumbnail_url: null,
-        thumbnail_status: 'failed',
-      },
-    ];
+    const portfolioItems = [e2eLegacyPdfPortfolioItem()];
 
     await stubPortfolioDashboardRestRoutes(
       page,
@@ -102,10 +82,7 @@ test.describe('Portfolio artifact editing', () => {
       },
     );
 
-    await page.goto('/dashboard', { waitUntil: 'domcontentloaded' });
-    await expect(page.getByTestId('app-main')).toBeVisible({
-      timeout: 25_000,
-    });
+    await gotoDashboardExpectAppMain(page);
     const systemHalt = page.getByTestId('error-boundary-fallback');
     if (await systemHalt.isVisible().catch(() => false)) {
       throw new Error(
@@ -147,9 +124,7 @@ test.describe('Portfolio artifact editing', () => {
     // Ensure dashboard reflects persisted values after a full reload,
     // not just optimistic in-memory state.
     await page.reload({ waitUntil: 'domcontentloaded' });
-    await expect(page.getByTestId('app-main')).toBeVisible({
-      timeout: 25_000,
-    });
+    await gotoDashboardExpectAppMain(page);
     await expectUpdatedArtifactOnDashboard(page);
 
     await page.goto('/profile/member', { waitUntil: 'domcontentloaded' });
@@ -175,31 +150,9 @@ test.describe('Portfolio artifact editing', () => {
     page,
     context,
   }) => {
-    const { stubAdminRpc } = await seedSignedInSession(context, {
-      handle: 'member',
-    });
-    await stubAdminRpc(page);
-    await stubAppSurface(page);
+    await seedPortfolioEditMemberSession(page, context);
 
-    const portfolioItems: PortfolioE2eItem[] = [
-      {
-        id: 'project-1',
-        owner_id: USER_ID,
-        title: 'Stored Artifact',
-        description: 'Uploaded file backed project.',
-        image_url: null,
-        project_url: E2E_PROJECT_SOURCE_FILE_PUBLIC_URL,
-        tech_stack: ['Case Study'],
-        is_highlighted: false,
-        created_at: new Date('2026-01-02T00:00:00.000Z').toISOString(),
-        sort_order: 0,
-        normalized_url: E2E_PROJECT_SOURCE_FILE_PUBLIC_URL,
-        embed_url: null,
-        resolved_type: 'pdf',
-        thumbnail_url: null,
-        thumbnail_status: 'generated',
-      },
-    ];
+    const portfolioItems = [e2eStoredFilePortfolioItem()];
 
     const capturedPatch = { current: null as Record<string, unknown> | null };
     await stubPortfolioDashboardRestRoutes(
@@ -209,10 +162,7 @@ test.describe('Portfolio artifact editing', () => {
       PORTFOLIO_E2E_MEMBER_PROFILE,
     );
 
-    await page.goto('/dashboard', { waitUntil: 'domcontentloaded' });
-    await expect(page.getByTestId('app-main')).toBeVisible({
-      timeout: 25_000,
-    });
+    await gotoDashboardExpectAppMain(page);
     await expect(page.getByText('Stored Artifact')).toBeVisible({
       timeout: 15_000,
     });
@@ -249,31 +199,9 @@ test.describe('Portfolio artifact editing', () => {
     page,
     context,
   }) => {
-    const { stubAdminRpc } = await seedSignedInSession(context, {
-      handle: 'member',
-    });
-    await stubAdminRpc(page);
-    await stubAppSurface(page);
+    await seedPortfolioEditMemberSession(page, context);
 
-    const portfolioItems: PortfolioE2eItem[] = [
-      {
-        id: 'project-1',
-        owner_id: USER_ID,
-        title: 'Stored Artifact',
-        description: 'Uploaded file backed project.',
-        image_url: null,
-        project_url: E2E_PROJECT_SOURCE_FILE_PUBLIC_URL,
-        tech_stack: ['Case Study'],
-        is_highlighted: false,
-        created_at: new Date('2026-01-02T00:00:00.000Z').toISOString(),
-        sort_order: 0,
-        normalized_url: E2E_PROJECT_SOURCE_FILE_PUBLIC_URL,
-        embed_url: null,
-        resolved_type: 'pdf',
-        thumbnail_url: null,
-        thumbnail_status: 'generated',
-      },
-    ];
+    const portfolioItems = [e2eStoredFilePortfolioItem()];
 
     const patchCounter = { n: 0 };
     await stubPortfolioDashboardRestRoutes(
@@ -283,10 +211,7 @@ test.describe('Portfolio artifact editing', () => {
       PORTFOLIO_E2E_MEMBER_PROFILE,
     );
 
-    await page.goto('/dashboard', { waitUntil: 'domcontentloaded' });
-    await expect(page.getByTestId('app-main')).toBeVisible({
-      timeout: 25_000,
-    });
+    await gotoDashboardExpectAppMain(page);
     await expect(page.getByText('Stored Artifact')).toBeVisible({
       timeout: 15_000,
     });
@@ -308,31 +233,9 @@ test.describe('Portfolio artifact editing', () => {
     page,
     context,
   }) => {
-    const { stubAdminRpc } = await seedSignedInSession(context, {
-      handle: 'member',
-    });
-    await stubAdminRpc(page);
-    await stubAppSurface(page);
+    await seedPortfolioEditMemberSession(page, context);
 
-    const portfolioItems: PortfolioE2eItem[] = [
-      {
-        id: 'project-1',
-        owner_id: USER_ID,
-        title: 'Legacy Artifact',
-        description: 'Old dashboard description.',
-        image_url: null,
-        project_url: 'https://example.com/legacy-artifact.pdf',
-        tech_stack: ['Case Study'],
-        is_highlighted: false,
-        created_at: new Date('2026-01-02T00:00:00.000Z').toISOString(),
-        sort_order: 0,
-        normalized_url: 'https://example.com/legacy-artifact.pdf',
-        embed_url: null,
-        resolved_type: 'pdf',
-        thumbnail_url: null,
-        thumbnail_status: 'failed',
-      },
-    ];
+    const portfolioItems = [e2eLegacyPdfPortfolioItem()];
 
     const patchCounter = { n: 0 };
     await stubPortfolioDashboardRestRoutes(
@@ -342,10 +245,7 @@ test.describe('Portfolio artifact editing', () => {
       PORTFOLIO_E2E_MEMBER_PROFILE,
     );
 
-    await page.goto('/dashboard', { waitUntil: 'domcontentloaded' });
-    await expect(page.getByTestId('app-main')).toBeVisible({
-      timeout: 25_000,
-    });
+    await gotoDashboardExpectAppMain(page);
     await expect(page.getByText('Legacy Artifact')).toBeVisible({
       timeout: 15_000,
     });
@@ -374,31 +274,9 @@ test.describe('Portfolio artifact editing', () => {
     page,
     context,
   }) => {
-    const { stubAdminRpc } = await seedSignedInSession(context, {
-      handle: 'member',
-    });
-    await stubAdminRpc(page);
-    await stubAppSurface(page);
+    await seedPortfolioEditMemberSession(page, context);
 
-    const portfolioItems: PortfolioE2eItem[] = [
-      {
-        id: 'project-1',
-        owner_id: USER_ID,
-        title: 'Legacy Artifact',
-        description: 'Old dashboard description.',
-        image_url: null,
-        project_url: 'https://example.com/legacy-artifact.pdf',
-        tech_stack: ['Case Study'],
-        is_highlighted: false,
-        created_at: new Date('2026-01-02T00:00:00.000Z').toISOString(),
-        sort_order: 0,
-        normalized_url: 'https://example.com/legacy-artifact.pdf',
-        embed_url: null,
-        resolved_type: 'pdf',
-        thumbnail_url: null,
-        thumbnail_status: 'failed',
-      },
-    ];
+    const portfolioItems = [e2eLegacyPdfPortfolioItem()];
 
     await stubPortfolioDashboardRestRoutes(
       page,
@@ -407,10 +285,7 @@ test.describe('Portfolio artifact editing', () => {
       PORTFOLIO_E2E_MEMBER_PROFILE,
     );
 
-    await page.goto('/dashboard', { waitUntil: 'domcontentloaded' });
-    await expect(page.getByTestId('app-main')).toBeVisible({
-      timeout: 25_000,
-    });
+    await gotoDashboardExpectAppMain(page);
     await expect(page.getByText('Legacy Artifact')).toBeVisible({
       timeout: 15_000,
     });

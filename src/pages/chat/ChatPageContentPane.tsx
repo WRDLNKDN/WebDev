@@ -7,12 +7,11 @@ import {
   MessageInput,
   type MessageReplyDraft,
 } from '../../components/chat/message/MessageInput';
-import { MessageList } from '../../components/chat/message/MessageList';
+import { ChatThreadMessageList } from '../../components/chat/message/ChatThreadMessageList';
 import type { ChatRoomWithMembers } from '../../hooks/useChat';
 import type { MessageWithExtras } from '../../hooks/chatTypes';
 import { formatForwardedChatText } from '../../lib/chat/formatForwardedChatText';
 import { roomMembersToMentionable } from '../../lib/chat/groupMentionMembers';
-import { truncateSnippet } from '../../lib/chat/messageSnippet';
 
 type ChatPageContentPaneProps = {
   roomId?: string;
@@ -29,7 +28,7 @@ type ChatPageContentPaneProps = {
         profile?: { avatar?: string | null } | null;
       }
     | undefined;
-  messages: Parameters<typeof MessageList>[0]['messages'];
+  messages: MessageWithExtras[];
   chatLoading: boolean;
   error: string | null;
   sending: boolean;
@@ -185,29 +184,24 @@ export const ChatPageContentPane = ({
               <CircularProgress />
             </Box>
           ) : (
-            <MessageList
+            <ChatThreadMessageList
               messages={messages}
               currentUserId={uid}
               roomType={room?.room_type ?? 'dm'}
               otherUserId={otherMember?.user_id}
-              onLoadOlder={onLoadOlder}
+              loadOlderMessages={onLoadOlder}
               hasOlderMessages={hasOlderMessages}
               loadingOlder={loadingOlder}
-              onEdit={onEditMessage}
-              onDelete={onDeleteMessage}
-              onReaction={onToggleReaction}
+              editMessage={onEditMessage}
+              deleteMessage={onDeleteMessage}
+              toggleReaction={onToggleReaction}
+              markAsRead={onMessagesViewed}
+              forwardAuthorLabel={forwardAuthorLabel}
               onReport={(msgId, senderUserId) =>
                 onReport(msgId, senderUserId ?? undefined)
               }
-              onStartReply={(msg) =>
-                setReplyTarget({
-                  id: msg.id,
-                  authorLabel: forwardAuthorLabel(msg),
-                  contentSnippet: truncateSnippet(msg.content ?? ''),
-                })
-              }
-              onForward={(msg) => setForwardSource(msg)}
-              onMessagesViewed={onMessagesViewed}
+              replyTargetSetter={setReplyTarget}
+              onForwardSource={setForwardSource}
               typingAvatarUrl={
                 room?.room_type === 'dm'
                   ? (otherMember?.profile?.avatar ?? null)

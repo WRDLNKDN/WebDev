@@ -7,7 +7,7 @@ import {
   MessageInput,
   type MessageReplyDraft,
 } from '../../components/chat/message/MessageInput';
-import { MessageList } from '../../components/chat/message/MessageList';
+import { ChatThreadMessageList } from '../../components/chat/message/ChatThreadMessageList';
 import { ForwardMessageDialog } from '../../components/chat/dialogs/ForwardMessageDialog';
 import { BlockConfirmDialog } from '../../components/chat/dialogs/BlockConfirmDialog';
 import { GroupActionsDialog } from '../../components/chat/dialogs/GroupActionsDialog';
@@ -15,6 +15,7 @@ import { ReportDialog } from '../../components/chat/dialogs/ReportDialog';
 import type { MessageWithExtras } from '../../hooks/chatTypes';
 import { useChatForwardToRoomFlow } from '../../hooks/useChatForwardToRoomFlow';
 import { useChat, useChatRooms, useReportMessage } from '../../hooks/useChat';
+import { useChatGroupDialogs } from '../../hooks/useChatGroupDialogs';
 import { useChatPresence } from '../../hooks/useChatPresence';
 import { supabase } from '../../lib/auth/supabaseClient';
 import {
@@ -23,7 +24,6 @@ import {
 } from '../../lib/chat/documentTitle';
 import { useAppToast } from '../../context/AppToastContext';
 import { roomMembersToMentionable } from '../../lib/chat/groupMentionMembers';
-import { truncateSnippet } from '../../lib/chat/messageSnippet';
 
 /**
  * Standalone popout chat window (LinkedIn-style).
@@ -34,10 +34,12 @@ export const ChatPopupPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [session, setSession] = useState<Session | null>(null);
   const [blockDialogOpen, setBlockDialogOpen] = useState(false);
-  const [groupDialogOpen, setGroupDialogOpen] = useState(false);
-  const [groupDialogMode, setGroupDialogMode] = useState<
-    'invite' | 'details' | 'manage' | 'members'
-  >('invite');
+  const {
+    groupDialogOpen,
+    setGroupDialogOpen,
+    groupDialogMode,
+    groupMenuHandlers,
+  } = useChatGroupDialogs();
   const [reportOpen, setReportOpen] = useState(false);
   const [reportTarget, setReportTarget] = useState<{
     messageId?: string;
@@ -206,22 +208,7 @@ export const ChatPopupPage = () => {
           isRoomAdmin={isRoomAdmin ?? false}
           onLeave={handleLeave}
           onBlock={() => setBlockDialogOpen(true)}
-          onInvite={() => {
-            setGroupDialogMode('invite');
-            setGroupDialogOpen(true);
-          }}
-          onEditDetails={() => {
-            setGroupDialogMode('details');
-            setGroupDialogOpen(true);
-          }}
-          onManageMembers={() => {
-            setGroupDialogMode('manage');
-            setGroupDialogOpen(true);
-          }}
-          onShowMembers={() => {
-            setGroupDialogMode('members');
-            setGroupDialogOpen(true);
-          }}
+          {...groupMenuHandlers}
           isFavorite={resolvedThreadFavorite}
           onToggleFavorite={
             roomId
@@ -267,29 +254,24 @@ export const ChatPopupPage = () => {
             <CircularProgress />
           </Box>
         ) : error ? null : (
-          <MessageList
+          <ChatThreadMessageList
             messages={messages}
             currentUserId={uid}
             roomType={room?.room_type ?? 'dm'}
             otherUserId={otherMember?.user_id}
-            onLoadOlder={() => void loadOlderMessages()}
+            loadOlderMessages={loadOlderMessages}
             hasOlderMessages={hasOlderMessages}
             loadingOlder={loadingOlder}
-            onEdit={editMessage}
-            onDelete={deleteMessage}
-            onReaction={toggleReaction}
+            editMessage={editMessage}
+            deleteMessage={deleteMessage}
+            toggleReaction={toggleReaction}
+            markAsRead={markAsRead}
+            forwardAuthorLabel={forwardAuthorLabel}
             onReport={(msgId, senderUserId) =>
               handleReport(msgId, senderUserId ?? undefined)
             }
-            onStartReply={(msg) =>
-              setReplyTarget({
-                id: msg.id,
-                authorLabel: forwardAuthorLabel(msg),
-                contentSnippet: truncateSnippet(msg.content ?? ''),
-              })
-            }
-            onForward={(msg) => setForwardSource(msg)}
-            onMessagesViewed={markAsRead}
+            replyTargetSetter={setReplyTarget}
+            onForwardSource={setForwardSource}
             compact
             scrollToMessageId={searchParams.get('message')}
           />

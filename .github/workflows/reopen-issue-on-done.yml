@@ -9,6 +9,7 @@ on:
         description: Project owner (org or user)
         required: true
         type: choice
+        default: org
         options:
           - org
           - user
@@ -16,10 +17,12 @@ on:
         description: Organization login or GitHub username
         required: true
         type: string
+        default: WRDLNKDN
       project_number:
         description: Project number from the URL
         required: true
         type: number
+        default: 1
 
 permissions:
   contents: read

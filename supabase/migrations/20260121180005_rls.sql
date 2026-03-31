@@ -75,7 +75,7 @@ begin
         (p_upload, op_insert, role_authenticated, clause_with_check),
         (p_read, op_select, role_public, clause_using_read),
         (p_delete, op_delete, role_authenticated, clause_using_delete)
-    ) as t(policy_name text, for_op text, to_role text, clause_sql text)
+    ) as t(policy_name, for_op, to_role, clause_sql)
   loop
     execute format(
       policy_ddl_template,

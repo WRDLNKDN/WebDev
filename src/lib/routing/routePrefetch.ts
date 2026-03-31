@@ -13,155 +13,99 @@ function once(key: string, load: () => Promise<unknown>): void {
   });
 }
 
-type PrefetchRule = {
-  match: (p: string) => boolean;
-  key: string;
-  load: () => Promise<unknown>;
-};
+// ---------------------------------------------------------------------------
+// Route prefetch table
+// Each entry: [key, pathPredicate, loader]
+// `pathPredicate` is either a string prefix (startsWith) or a custom function.
+// Order matters: more-specific prefixes must come before general ones.
+// ---------------------------------------------------------------------------
 
-/** Order matters: first match wins (more specific prefixes before general ones). */
-const PREFETCH_RULES: PrefetchRule[] = [
-  {
-    match: (p) => p.startsWith('/admin'),
-    key: 'admin-app',
-    load: () => import('../../pages/admin/core/AdminApp'),
-  },
-  {
-    match: (p) => p.startsWith('/dashboard/games'),
-    key: 'games',
-    load: () => import('../../pages/dashboard/GamesPage'),
-  },
-  {
-    match: (p) => p.startsWith('/dashboard/settings'),
-    key: 'settings',
-    load: () => import('../../pages/dashboard/SettingsLayout'),
-  },
-  {
-    match: (p) => p.startsWith('/dashboard/notifications'),
-    key: 'notifications',
-    load: () => import('../../pages/dashboard/NotificationsPage'),
-  },
-  {
-    match: (p) => p.startsWith('/dashboard'),
-    key: 'dashboard',
-    load: () => import('../../pages/dashboard/Dashboard'),
-  },
-  {
-    match: (p) => p.startsWith('/chat-full'),
-    key: 'chat-page',
-    load: () => import('../../pages/chat/ChatPage'),
-  },
-  {
-    match: (p) => p.startsWith('/chat'),
-    key: 'chat-redirect',
-    load: () => import('../../pages/chat/ChatRedirect'),
-  },
-  {
-    match: (p) => p.startsWith('/feed'),
-    key: 'feed',
-    load: () => import('../../pages/feed/Feed'),
-  },
-  {
-    match: (p) => p.startsWith('/directory'),
-    key: 'directory',
-    load: () => import('../../pages/community/Directory'),
-  },
-  {
-    match: (p) => p.startsWith('/groups') || p.startsWith('/forums'),
-    key: 'groups',
-    load: () => import('../../pages/community/GroupsPage'),
-  },
-  {
-    match: (p) => p.startsWith('/saved'),
-    key: 'saved',
-    load: () => import('../../pages/community/SavedPage'),
-  },
-  {
-    match: (p) => p.startsWith('/events/'),
-    key: 'event-detail',
-    load: () => import('../../pages/community/EventDetailPage'),
-  },
-  {
-    match: (p) => p.startsWith('/events'),
-    key: 'events',
-    load: () => import('../../pages/community/EventsPage'),
-  },
-  {
-    match: (p) => p.startsWith('/projects/'),
-    key: 'project',
-    load: () => import('../../pages/profile/ProjectPage'),
-  },
-  {
-    match: (p) => p.startsWith('/p/'),
-    key: 'public-profile',
-    load: () => import('../../pages/profile/PublicProfilePage'),
-  },
-  {
-    match: (p) => p.startsWith('/profile/') || p.startsWith('/u/'),
-    key: 'landing',
-    load: () => import('../../pages/profile/LandingPage'),
-  },
-  {
-    match: (p) => p === '/' || p === '/home',
-    key: 'home',
-    load: () => import('../../pages/home/Home'),
-  },
-  {
-    match: (p) => p.startsWith('/join'),
-    key: 'join',
-    load: () => import('../../pages/auth/Join'),
-  },
-  {
-    match: (p) => p.startsWith('/signin'),
-    key: 'signin',
-    load: () => import('../../pages/auth/SignIn'),
-  },
-  {
-    match: (p) => p.startsWith('/advertise'),
-    key: 'advertise',
-    load: () => import('../../pages/marketing/AdvertisePage'),
-  },
-  {
-    match: (p) => p.startsWith('/help'),
-    key: 'help',
-    load: () => import('../../pages/misc/HelpPage'),
-  },
-  {
-    match: (p) => p.startsWith('/guidelines'),
-    key: 'guidelines',
-    load: () => import('../../pages/legal/Guidelines'),
-  },
-  {
-    match: (p) => p.startsWith('/privacy'),
-    key: 'privacy',
-    load: () => import('../../pages/legal/Privacy'),
-  },
-  {
-    match: (p) => p.startsWith('/terms'),
-    key: 'terms',
-    load: () => import('../../pages/legal/Terms'),
-  },
-  {
-    match: (p) => p.startsWith('/about'),
-    key: 'about',
-    load: () => import('../../pages/marketing/About'),
-  },
-  {
-    match: (p) => p.startsWith('/community'),
-    key: 'community',
-    load: () => import('../../pages/community/Community'),
-  },
-  {
-    match: (p) => p.startsWith('/platform'),
-    key: 'platform',
-    load: () => import('../../pages/marketing/Platform'),
-  },
-  {
-    match: (p) => p.startsWith('/store'),
-    key: 'store',
-    load: () => import('../../pages/marketing/Store'),
-  },
+type Loader = () => Promise<unknown>;
+type Predicate = string | ((p: string) => boolean);
+
+type RouteEntry = [key: string, predicate: Predicate, load: Loader];
+
+const ROUTE_TABLE: RouteEntry[] = [
+  ['admin-app', '/admin', () => import('../../pages/admin/core/AdminApp')],
+  [
+    'games',
+    '/dashboard/games',
+    () => import('../../pages/dashboard/GamesPage'),
+  ],
+  [
+    'settings',
+    '/dashboard/settings',
+    () => import('../../pages/dashboard/SettingsLayout'),
+  ],
+  [
+    'notifications',
+    '/dashboard/notifications',
+    () => import('../../pages/dashboard/NotificationsPage'),
+  ],
+  ['dashboard', '/dashboard', () => import('../../pages/dashboard/Dashboard')],
+  ['chat-page', '/chat-full', () => import('../../pages/chat/ChatPage')],
+  ['chat-redirect', '/chat', () => import('../../pages/chat/ChatRedirect')],
+  ['feed', '/feed', () => import('../../pages/feed/Feed')],
+  ['directory', '/directory', () => import('../../pages/community/Directory')],
+  [
+    'groups',
+    (p) => p.startsWith('/groups') || p.startsWith('/forums'),
+    () => import('../../pages/community/GroupsPage'),
+  ],
+  ['saved', '/saved', () => import('../../pages/community/SavedPage')],
+  [
+    'event-detail',
+    '/events/',
+    () => import('../../pages/community/EventDetailPage'),
+  ],
+  ['events', '/events', () => import('../../pages/community/EventsPage')],
+  ['project', '/projects/', () => import('../../pages/profile/ProjectPage')],
+  [
+    'public-profile',
+    '/p/',
+    () => import('../../pages/profile/PublicProfilePage'),
+  ],
+  [
+    'landing',
+    (p) => p.startsWith('/profile/') || p.startsWith('/u/'),
+    () => import('../../pages/profile/LandingPage'),
+  ],
+  [
+    'home',
+    (p) => p === '/' || p === '/home',
+    () => import('../../pages/home/Home'),
+  ],
+  ['join', '/join', () => import('../../pages/auth/Join')],
+  ['signin', '/signin', () => import('../../pages/auth/SignIn')],
+  [
+    'advertise',
+    '/advertise',
+    () => import('../../pages/marketing/AdvertisePage'),
+  ],
+  ['help', '/help', () => import('../../pages/misc/HelpPage')],
+  ['guidelines', '/guidelines', () => import('../../pages/legal/Guidelines')],
+  ['privacy', '/privacy', () => import('../../pages/legal/Privacy')],
+  ['terms', '/terms', () => import('../../pages/legal/Terms')],
+  ['about', '/about', () => import('../../pages/marketing/About')],
+  ['community', '/community', () => import('../../pages/community/Community')],
+  ['platform', '/platform', () => import('../../pages/marketing/Platform')],
+  ['store', '/store', () => import('../../pages/marketing/Store')],
 ];
+
+function matches(predicate: Predicate, path: string): boolean {
+  return typeof predicate === 'string'
+    ? path.startsWith(predicate)
+    : predicate(path);
+}
+
+/** Strip trailing `/` without regex (avoids ReDoS false positives from `+` quantifiers). */
+function stripTrailingSlashes(segment: string): string {
+  let end = segment.length;
+  while (end > 0 && segment.charCodeAt(end - 1) === 47) {
+    end -= 1;
+  }
+  return segment.slice(0, end);
+}
 
 /**
  * Resolve pathname for prefetch matching (strip query, hash, trailing slashes).
@@ -170,7 +114,9 @@ const PREFETCH_RULES: PrefetchRule[] = [
 export function normalizePathForPrefetch(path: string): string {
   const base = path.split('#')[0] ?? path;
   const q = base.indexOf('?');
-  return (q >= 0 ? base.slice(0, q) : base).replace(/\/+$/, '') || '/';
+  const withoutQuery = q >= 0 ? base.slice(0, q) : base;
+  const trimmed = stripTrailingSlashes(withoutQuery);
+  return trimmed.length === 0 ? '/' : trimmed;
 }
 
 /**
@@ -179,9 +125,9 @@ export function normalizePathForPrefetch(path: string): string {
  */
 export function prefetchChunksForPath(rawPath: string): void {
   const p = normalizePathForPrefetch(rawPath);
-  for (const rule of PREFETCH_RULES) {
-    if (rule.match(p)) {
-      once(rule.key, rule.load);
+  for (const [key, predicate, load] of ROUTE_TABLE) {
+    if (matches(predicate, p)) {
+      once(key, load);
       return;
     }
   }

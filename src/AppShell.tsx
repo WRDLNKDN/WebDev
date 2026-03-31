@@ -8,6 +8,7 @@ import {
 } from 'react-router-dom';
 
 import { AppOverlayRoutes, AppRouteTree } from './app/routing/AppRouteTree';
+import { useAuthedAppIdlePrefetch } from './hooks/useAuthedAppIdlePrefetch';
 import { AvatarProvider } from './context/AvatarContext';
 import { AppThemeProvider } from './context/AppThemeContext';
 import { AppToastProvider } from './context/AppToastContext';
@@ -71,6 +72,7 @@ const RedirectUToProfile = () => {
 
 const AppShell = () => {
   const location = useLocation();
+  useAuthedAppIdlePrefetch();
 
   const backgroundLocation = (
     location.state as { backgroundLocation?: RouterLocation } | null

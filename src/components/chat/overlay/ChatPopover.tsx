@@ -1,4 +1,4 @@
-import { Box, Button, CircularProgress, Typography } from '@mui/material';
+import { Box } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import { createPortal } from 'react-dom';
 import { useEffect, useMemo, useState } from 'react';
@@ -7,9 +7,7 @@ import { ChatRoomHeader } from '../room/ChatRoomHeader';
 import { MessageInput, type MessageReplyDraft } from '../message/MessageInput';
 import { ChatThreadMessageList } from '../message/ChatThreadMessageList';
 import { BlockConfirmDialog } from '../dialogs/BlockConfirmDialog';
-import { GroupActionsDialog } from '../dialogs/GroupActionsDialog';
-import { ForwardMessageDialog } from '../dialogs/ForwardMessageDialog';
-import { ReportDialog } from '../dialogs/ReportDialog';
+import { ChatGroupForwardReportDialogs } from '../dialogs/ChatGroupForwardReportDialogs';
 import type { MessageWithExtras } from '../../../hooks/chatTypes';
 import { useChatForwardToRoomFlow } from '../../../hooks/useChatForwardToRoomFlow';
 import {
@@ -19,11 +17,17 @@ import {
 } from '../../../hooks/useChat';
 import { useChatGroupDialogs } from '../../../hooks/useChatGroupDialogs';
 import { useChatPresence } from '../../../hooks/useChatPresence';
-import { supabase } from '../../../lib/auth/supabaseClient';
+import { useSupabaseAuthSessionSync } from '../../../hooks/useSupabaseAuthSessionSync';
+import { dmTypingThreadProps } from '../../../lib/chat/dmTypingThreadProps';
+import { chatOtherMemberDisplayName } from '../../../lib/chat/otherMemberDisplayName';
 import { useUatBannerOffset } from '../../../lib/utils/useUatBannerOffset';
 import { useAppToast } from '../../../context/AppToastContext';
 import { roomMembersToMentionable } from '../../../lib/chat/groupMentionMembers';
 import { getGlassCard } from '../../../theme/candyStyles';
+import {
+  ChatThreadErrorBanner,
+  ChatThreadLoadingArea,
+} from '../room/ChatThreadShellStatus';
 
 const POPOVER_WIDTH = 460;
 const POPOVER_HEIGHT = 740;
@@ -120,22 +124,7 @@ export const ChatPopover = ({
     setForwardSource(null);
   }, [roomId]);
 
-  useEffect(() => {
-    if (sessionProp != null) return;
-    let cancelled = false;
-    const init = async () => {
-      const { data } = await supabase.auth.getSession();
-      if (!cancelled) setSessionState(data.session ?? null);
-    };
-    init().catch(() => {});
-    const { data: sub } = supabase.auth.onAuthStateChange((_evt, s) => {
-      if (!cancelled) setSessionState(s ?? null);
-    });
-    return () => {
-      cancelled = true;
-      sub.subscription.unsubscribe();
-    };
-  }, [sessionProp]);
+  useSupabaseAuthSessionSync(sessionProp == null, setSessionState);
 
   const { forwardAuthorLabel, handleForwardToRoom } = useChatForwardToRoomFlow(
     forwardMessage,
@@ -216,49 +205,17 @@ export const ChatPopover = ({
           closeIcon
         />
 
-        {error && !loading && (
-          <Box
-            sx={{
-              flex: 1,
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              p: 2,
-              textAlign: 'center',
-              gap: 1.5,
-            }}
-          >
-            <Typography color="error" variant="body2" fontWeight={500}>
-              {error}
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              This conversation may have been removed.
-            </Typography>
-            <Button
-              size="small"
-              variant="outlined"
-              onClick={() => {
-                refresh();
-              }}
-              sx={{ mt: 0.5 }}
-            >
-              Try again
-            </Button>
-          </Box>
-        )}
+        <ChatThreadErrorBanner
+          error={error}
+          loading={loading}
+          variant="popover"
+          onRetry={() => {
+            refresh();
+          }}
+        />
 
         {loading ? (
-          <Box
-            sx={{
-              flex: 1,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <CircularProgress />
-          </Box>
+          <ChatThreadLoadingArea />
         ) : error ? null : (
           <Box
             sx={{
@@ -288,18 +245,7 @@ export const ChatPopover = ({
               replyTargetSetter={setReplyTarget}
               onForwardSource={setForwardSource}
               compact
-              typingAvatarUrl={
-                room?.room_type === 'dm'
-                  ? (otherMember?.profile?.avatar ?? null)
-                  : undefined
-              }
-              showTyping={
-                !!(
-                  room?.room_type === 'dm' &&
-                  otherMember?.user_id &&
-                  typingUsers.has(otherMember.user_id)
-                )
-              }
+              {...dmTypingThreadProps(room, otherMember, typingUsers)}
             />
           </Box>
         )}
@@ -332,45 +278,29 @@ export const ChatPopover = ({
           setBlockDialogOpen(false);
           onClose();
         }}
-        displayName={
-          otherMember?.profile?.display_name ||
-          otherMember?.profile?.handle ||
-          'this user'
-        }
+        displayName={chatOtherMemberDisplayName(otherMember)}
       />
-      {room && (
-        <GroupActionsDialog
-          open={groupDialogOpen}
-          mode={groupDialogMode}
-          onClose={() => setGroupDialogOpen(false)}
-          roomId={roomId}
-          roomName={room.name ?? ''}
-          roomDescription={room.description}
-          roomImageUrl={room.image_url}
-          currentMembers={room.members ?? []}
-          currentUserId={uid}
-          onSaveDetails={updateGroupDetails}
-          onInvite={inviteMembers}
-          onRemove={removeMember}
-          onTransferAdmin={transferAdmin}
-        />
-      )}
-      <ForwardMessageDialog
-        open={Boolean(forwardSource)}
-        onClose={() => setForwardSource(null)}
-        rooms={rooms}
-        excludeRoomId={roomId}
+      <ChatGroupForwardReportDialogs
+        room={room}
+        roomId={roomId}
         currentUserId={uid}
-        onSelectRoom={handleForwardToRoom}
-        busy={sending}
-      />
-      <ReportDialog
-        open={reportOpen}
-        onClose={() => {
-          setReportOpen(false);
-          setReportTarget(null);
-        }}
-        onSubmit={async (
+        groupDialogOpen={groupDialogOpen}
+        setGroupDialogOpen={setGroupDialogOpen}
+        groupDialogMode={groupDialogMode}
+        onSaveDetails={updateGroupDetails}
+        onInvite={inviteMembers}
+        onRemove={removeMember}
+        onTransferAdmin={transferAdmin}
+        forwardSource={forwardSource}
+        setForwardSource={setForwardSource}
+        rooms={rooms}
+        handleForwardToRoom={handleForwardToRoom}
+        sending={sending}
+        reportOpen={reportOpen}
+        setReportOpen={setReportOpen}
+        setReportTarget={setReportTarget}
+        reportTarget={reportTarget}
+        onReportSubmit={async (
           reportedMessageId,
           reportedUserId,
           category,
@@ -383,8 +313,6 @@ export const ChatPopover = ({
             freeText,
           );
         }}
-        reportedMessageId={reportTarget?.messageId ?? null}
-        reportedUserId={reportTarget?.userId ?? null}
       />
     </>
   );

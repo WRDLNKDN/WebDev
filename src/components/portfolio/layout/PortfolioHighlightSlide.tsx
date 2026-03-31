@@ -64,13 +64,12 @@ export const PortfolioHighlightSlide = ({
     theme,
   );
   const fallbackCompact = inCarousel;
-  let fallbackDisplayLabel: string;
-  if (inCarousel) {
-    const titleTrim = project.title?.trim();
-    fallbackDisplayLabel = titleTrim ? titleTrim : fallbackLabel;
-  } else {
-    fallbackDisplayLabel = fallbackLabel;
-  }
+  const trimmedHighlightTitle = project.title?.trim();
+  const fallbackDisplayLabel = inCarousel
+    ? trimmedHighlightTitle || fallbackLabel
+    : fallbackLabel;
+  const projectOpensExternally =
+    Boolean(projectUrl) && isExternalHttpUrl(projectUrl);
 
   return (
     <Box
@@ -223,12 +222,8 @@ export const PortfolioHighlightSlide = ({
               <Button
                 variant="contained"
                 href={projectUrl}
-                target={isExternalHttpUrl(projectUrl) ? '_blank' : undefined}
-                rel={
-                  isExternalHttpUrl(projectUrl)
-                    ? 'noopener noreferrer'
-                    : undefined
-                }
+                target={projectOpensExternally ? '_blank' : undefined}
+                rel={projectOpensExternally ? 'noopener noreferrer' : undefined}
                 endIcon={<OpenInNewIcon />}
                 sx={{
                   textTransform: 'none',

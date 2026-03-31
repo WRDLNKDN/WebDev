@@ -33,8 +33,8 @@ import {
 import { useLocation, useNavigate } from 'react-router-dom';
 
 // MODULAR COMPONENTS
-import { IdentityHeader } from '../../components/profile/identity/IdentityHeader';
 import { InterestsDropdown } from '../../components/profile/identity/InterestsDropdown';
+import { ProfileThreeColumnIdentityHeader } from '../profile/components/profileIdentityShared';
 
 // Lazy load heavy dialogs for mobile performance
 const AddProjectDialog = lazy(
@@ -78,10 +78,13 @@ import { GameRewardsPanel } from './GameRewardsPanel';
 // LOGIC & TYPES
 import { useCurrentUserAvatar } from '../../context/AvatarContext';
 import { useAppToast } from '../../context/AppToastContext';
-import { IndustryGroupBlock } from '../../components/profile/identity/IndustryGroupBlock';
 import { SkillsInterestsPills } from '../../components/profile/identity/SkillsInterestsPills';
 import { useProfile } from '../../hooks/useProfile';
 import { normalizeIndustryGroups } from '../../lib/profile/industryGroups';
+import {
+  selectedInterestsFromCredsInput,
+  selectedSkillsFromCredsInput,
+} from '../../lib/profile/nerdCredsDisplay';
 import { buildShareProfileUrl } from '../../lib/profile/shareProfileUrl';
 import { signOut } from '../../lib/auth/signOut';
 import { toMessage } from '../../lib/utils/errors';
@@ -234,10 +237,12 @@ export const Dashboard = () => {
   }, [savedLinksOverride, profile?.socials]);
 
   // Derived from profile only (must be before useMemos that depend on them)
-  const safeNerdCreds: NerdCreds =
-    profile?.nerd_creds && typeof profile.nerd_creds === 'object'
-      ? (profile.nerd_creds as unknown as NerdCreds)
-      : ({} as NerdCreds);
+  const safeNerdCreds: NerdCreds = useMemo(() => {
+    if (profile?.nerd_creds && typeof profile.nerd_creds === 'object') {
+      return profile.nerd_creds as unknown as NerdCreds;
+    }
+    return {} as NerdCreds;
+  }, [profile?.nerd_creds]);
 
   const resumeThumbnailUrl: string | null =
     typeof safeNerdCreds.resume_thumbnail_url === 'string'
@@ -267,41 +272,15 @@ export const Dashboard = () => {
   )?.niche_field?.trim();
 
   // Memoize expensive computations for mobile performance (must be before early return)
-  const selectedSkills = useMemo(() => {
-    if (
-      Array.isArray(safeNerdCreds.skills) &&
-      safeNerdCreds.skills.every((skill) => typeof skill === 'string')
-    ) {
-      return (safeNerdCreds.skills as string[])
-        .map((skill) => skill.trim())
-        .filter(Boolean);
-    }
-    if (typeof safeNerdCreds.skills === 'string') {
-      return safeNerdCreds.skills
-        .split(',')
-        .map((skill) => skill.trim())
-        .filter(Boolean);
-    }
-    return [];
-  }, [safeNerdCreds.skills]);
+  const selectedSkills = useMemo(
+    () => selectedSkillsFromCredsInput(safeNerdCreds),
+    [safeNerdCreds],
+  );
 
-  const selectedInterests = useMemo(() => {
-    if (
-      Array.isArray(safeNerdCreds.interests) &&
-      safeNerdCreds.interests.every((i) => typeof i === 'string')
-    ) {
-      return (safeNerdCreds.interests as string[])
-        .map((i) => String(i).trim())
-        .filter(Boolean);
-    }
-    if (typeof safeNerdCreds.interests === 'string') {
-      return (safeNerdCreds.interests as string)
-        .split(',')
-        .map((i) => i.trim())
-        .filter(Boolean);
-    }
-    return [];
-  }, [safeNerdCreds.interests]);
+  const selectedInterests = useMemo(
+    () => selectedInterestsFromCredsInput(safeNerdCreds),
+    [safeNerdCreds],
+  );
 
   const industryGroups = useMemo(
     () => normalizeIndustryGroups(profile),
@@ -495,14 +474,15 @@ export const Dashboard = () => {
         }}
       >
         {/* Identity: avatar + summary; interests & profile menu live with skills row. */}
-        <IdentityHeader
-          layoutVariant="three-column"
+        <ProfileThreeColumnIdentityHeader
           displayName={displayName}
           memberHandle={profile?.handle?.trim() || undefined}
           tagline={profile?.tagline ?? undefined}
           bio={bio}
           bioIsPlaceholder={bioIsPlaceholder}
           avatarUrl={avatarUrl}
+          industryGroups={industryGroups}
+          nicheField={nicheField ?? null}
           badges={
             <Stack spacing={1.5} sx={{ width: '100%' }}>
               <SkillsInterestsPills
@@ -609,15 +589,6 @@ export const Dashboard = () => {
               </Box>
             </Stack>
           }
-          rightColumn={
-            industryGroups.length > 0 || nicheField ? (
-              <IndustryGroupBlock
-                groups={industryGroups}
-                nicheField={nicheField}
-              />
-            ) : undefined
-          }
-          actions={undefined}
         />
 
         <Menu

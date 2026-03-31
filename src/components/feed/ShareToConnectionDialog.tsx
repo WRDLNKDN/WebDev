@@ -20,6 +20,11 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { supabase } from '../../lib/auth/supabaseClient';
 import {
+  buildSharedPostChatContent,
+  insertSharedPostChatMessage,
+} from '../../lib/feed/sharePostToChat';
+import { SharePostOptionalMessageField } from './SharePostOptionalMessageField';
+import {
   loadEligibleChatConnections,
   type EligibleChatConnection,
 } from '../../lib/chat/loadEligibleChatConnections';
@@ -135,18 +140,18 @@ export const ShareToConnectionDialog = ({
     setSending(true);
     setError(null);
     try {
-      const parts = [optionalMessage.trim(), postUrl].filter(Boolean);
-      const content = parts.join('\n\n');
+      const content = buildSharedPostChatContent(
+        optionalMessage.trim(),
+        postUrl,
+      );
 
       for (const userId of ids) {
         const roomId = await createDm(userId);
         if (!roomId) continue;
-        await supabase.from('chat_messages').insert({
-          room_id: roomId,
-          sender_id: session.user.id,
-          content: content || postUrl,
-          is_system_message: false,
-          is_deleted: false,
+        await insertSharedPostChatMessage({
+          roomId,
+          senderId: session.user.id,
+          content,
         });
       }
       onSent();
@@ -242,17 +247,9 @@ export const ShareToConnectionDialog = ({
                 </ListItemButton>
               ))}
             </List>
-            <TextField
-              fullWidth
-              size="small"
-              placeholder="Add a message (optional)"
+            <SharePostOptionalMessageField
               value={optionalMessage}
-              onChange={(e) => setOptionalMessage(e.target.value)}
-              multiline
-              minRows={2}
-              maxRows={4}
-              sx={{ mt: 1 }}
-              inputProps={{ 'aria-label': 'Optional message' }}
+              onChange={setOptionalMessage}
             />
           </>
         )}

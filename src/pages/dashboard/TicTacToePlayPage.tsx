@@ -6,7 +6,10 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { Box, Button, Paper, Stack, Typography } from '@mui/material';
 import { useCallback, useEffect, useState } from 'react';
 import { Link as RouterLink, useParams } from 'react-router-dom';
-import { fetchSessionById, makeTicTacToeMove } from '../../lib/api/gamesApi';
+import {
+  fetchSessionForGameType,
+  makeTicTacToeMove,
+} from '../../lib/api/gamesApi';
 import { useAppToast } from '../../context/AppToastContext';
 import { toMessage } from '../../lib/utils/errors';
 import { supabase } from '../../lib/auth/supabaseClient';
@@ -74,14 +77,8 @@ export const TicTacToePlayPage = () => {
   const [makingMove, setMakingMove] = useState(false);
 
   const loadSession = useCallback(async (id: string) => {
-    const s = await fetchSessionById(id);
+    const s = await fetchSessionForGameType(id, 'tic_tac_toe');
     if (!s) {
-      setNotFound(true);
-      setSession(null);
-      return;
-    }
-    const def = s.game_definition as { game_type?: string } | undefined;
-    if (def?.game_type !== 'tic_tac_toe') {
       setNotFound(true);
       setSession(null);
       return;

@@ -8,7 +8,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import {
   completeSession,
   createMazeChaseSession,
-  fetchSessionById,
+  fetchSessionForGameType,
   updateSessionState,
 } from '../../lib/api/gamesApi';
 import { useAppToast } from '../../context/AppToastContext';
@@ -203,14 +203,8 @@ export const MazeChasePlayPage = () => {
   );
 
   const loadSession = useCallback(async (id: string) => {
-    const s = await fetchSessionById(id);
+    const s = await fetchSessionForGameType(id, 'maze_chase');
     if (!s) {
-      setNotFound(true);
-      setSession(null);
-      return;
-    }
-    const def = s.game_definition as { game_type?: string } | undefined;
-    if (def?.game_type !== 'maze_chase') {
       setNotFound(true);
       setSession(null);
       return;

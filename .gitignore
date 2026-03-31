@@ -33,6 +33,10 @@ build/
 lighthouse-reports/
 scripts/lighthouse-reports/
 
+# --- jscpd (clone reports; vendor HTML/JS — do not commit) ---
+jscpd-report/
+jscpd-full/
+
 # --- Environment Secrets (Integrity Layer) ---
 # We block all .env variants to prevent leaking credentials
 .env

@@ -7,7 +7,7 @@ import { Box, Button, Paper, Stack, Typography } from '@mui/material';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
-  fetchSessionById,
+  fetchSessionForGameType,
   getOrCreateDailyWordSession,
   submitDailyWordGuess,
   type DailyWordStatePayload,
@@ -69,14 +69,8 @@ export const DailyWordPlayPage = () => {
   const [submitting, setSubmitting] = useState(false);
 
   const loadSession = useCallback(async (id: string) => {
-    const s = await fetchSessionById(id);
+    const s = await fetchSessionForGameType(id, 'daily_word');
     if (!s) {
-      setNotFound(true);
-      setSession(null);
-      return;
-    }
-    const def = s.game_definition as { game_type?: string } | undefined;
-    if (def?.game_type !== 'daily_word') {
       setNotFound(true);
       setSession(null);
       return;

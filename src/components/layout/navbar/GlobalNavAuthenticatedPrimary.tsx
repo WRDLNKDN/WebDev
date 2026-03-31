@@ -1,7 +1,7 @@
 import { Button } from '@mui/material';
 import type { SxProps, Theme } from '@mui/material/styles';
 import type { ReactNode } from 'react';
-import { Link as RouterLink } from 'react-router-dom';
+import { RouterLinkPrefetch } from '../../routing/RouterLinkPrefetch';
 import { isGlobalNavChatActive } from '../../../lib/navigation/globalNav';
 import { getStoreExternalUrl } from '../../../lib/marketing/storefront';
 import { chatUiForMember } from '../../../lib/utils/chatUiForMember';
@@ -122,7 +122,7 @@ export const GlobalNavAuthenticatedPrimary = ({
       {showChat ? (
         <Button
           key="global-nav-chat"
-          component={RouterLink}
+          component={RouterLinkPrefetch}
           to="/chat-full"
           onClick={variant === 'drawer' ? onDrawerNavigate : undefined}
           sx={{
@@ -147,7 +147,7 @@ export const GlobalNavAuthenticatedPrimary = ({
       {directoryEnabled ? (
         <Button
           key="global-nav-directory"
-          component={RouterLink}
+          component={RouterLinkPrefetch}
           to="/directory"
           onClick={variant === 'drawer' ? onDrawerNavigate : undefined}
           sx={{
@@ -172,7 +172,7 @@ export const GlobalNavAuthenticatedPrimary = ({
       {eventsEnabled ? (
         <Button
           key="global-nav-events"
-          component={RouterLink}
+          component={RouterLinkPrefetch}
           to="/events"
           onClick={variant === 'drawer' ? onDrawerNavigate : undefined}
           sx={{
@@ -197,7 +197,7 @@ export const GlobalNavAuthenticatedPrimary = ({
       {feedEnabled ? (
         <Button
           key="global-nav-feed"
-          component={RouterLink}
+          component={RouterLinkPrefetch}
           to="/feed"
           onClick={variant === 'drawer' ? onDrawerNavigate : undefined}
           sx={{
@@ -222,7 +222,7 @@ export const GlobalNavAuthenticatedPrimary = ({
       {dashboardEnabled ? (
         <Button
           key="global-nav-profile"
-          component={RouterLink}
+          component={RouterLinkPrefetch}
           to="/dashboard"
           onClick={variant === 'drawer' ? onDrawerNavigate : undefined}
           sx={{

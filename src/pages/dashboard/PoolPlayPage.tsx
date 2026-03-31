@@ -9,7 +9,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import {
   completeSession,
   createPoolSession,
-  fetchSessionById,
+  fetchSessionForGameType,
   updateSessionState,
   type PoolBallState,
   type PoolStatePayload,
@@ -269,13 +269,8 @@ export const PoolPlayPage = () => {
 
   const loadSession = useCallback(
     async (id: string) => {
-      const loaded = await fetchSessionById(id);
+      const loaded = await fetchSessionForGameType(id, 'pool');
       if (!loaded) {
-        setNotFound(true);
-        return;
-      }
-      const def = loaded.game_definition as { game_type?: string } | undefined;
-      if (def?.game_type !== 'pool') {
         setNotFound(true);
         return;
       }

@@ -8,10 +8,15 @@ import {
   ListItemButton,
   ListItemIcon,
   ListItemText,
-  ListSubheader,
 } from '@mui/material';
 import type { SxProps, Theme } from '@mui/material/styles';
-import { Link as RouterLink, type Location } from 'react-router-dom';
+import { type Location } from 'react-router-dom';
+import { RouterLinkPrefetch } from '../../routing/RouterLinkPrefetch';
+import {
+  DrawerNavSubheader,
+  drawerNavListSx,
+  drawerNavRowButtonSx,
+} from './navbarDrawerPrimitives';
 
 type NavbarMobileDrawerExploreProps = {
   showAuthedHeader: boolean;
@@ -29,6 +34,16 @@ const groupsActiveFallbackSx = {
   '&:hover': { bgcolor: 'rgba(141,188,229,0.34)' },
 } as const;
 
+const GAME_QUICK_LINKS = [
+  { to: '/dashboard/games', label: 'Checkers' },
+  { to: '/dashboard/games', label: 'Connect 4' },
+  { to: '/dashboard/games/hangman', label: 'Hangman' },
+  { to: '/dashboard/games', label: 'Phuzzle' },
+  { to: '/dashboard/games/snake', label: 'Snake' },
+  { to: '/dashboard/games/slots', label: 'Slots' },
+  { to: '/dashboard/games', label: 'Tic-Tac-Toe' },
+] as const;
+
 export const NavbarMobileDrawerExplore = ({
   showAuthedHeader,
   groupsEnabled,
@@ -41,43 +56,16 @@ export const NavbarMobileDrawerExplore = ({
   if (!showAuthedHeader) return null;
 
   return (
-    <List dense disablePadding sx={{ py: 0 }}>
-      <ListSubheader
-        component="div"
-        sx={{
-          bgcolor: 'transparent',
-          color: 'text.secondary',
-          fontWeight: 700,
-          fontSize: '0.75rem',
-          letterSpacing: 1,
-          pt: 2,
-          pb: 0.5,
-          px: 2,
-        }}
-      >
-        Explore
-      </ListSubheader>
-      <ListSubheader
-        component="div"
-        sx={{
-          bgcolor: 'transparent',
-          color: 'text.secondary',
-          fontWeight: 600,
-          fontSize: '0.7rem',
-          py: 0.5,
-          px: 2,
-        }}
-      >
-        Community
-      </ListSubheader>
+    <List dense disablePadding sx={drawerNavListSx}>
+      <DrawerNavSubheader variant="explore">Explore</DrawerNavSubheader>
+      <DrawerNavSubheader>Community</DrawerNavSubheader>
       {groupsEnabled && (
         <ListItemButton
-          component={RouterLink}
+          component={RouterLinkPrefetch}
           to="/groups"
           onClick={onNavigate}
           sx={{
-            minHeight: 44,
-            py: 0.5,
+            ...drawerNavRowButtonSx,
             ...(isGroupsActive
               ? (drawerActiveNavSx ?? groupsActiveFallbackSx)
               : {}),
@@ -92,25 +80,12 @@ export const NavbarMobileDrawerExplore = ({
           />
         </ListItemButton>
       )}
-      <ListSubheader
-        component="div"
-        sx={{
-          bgcolor: 'transparent',
-          color: 'text.secondary',
-          fontWeight: 600,
-          fontSize: '0.7rem',
-          py: 0.5,
-          px: 2,
-          pt: 1.5,
-        }}
-      >
-        Your stuff
-      </ListSubheader>
+      <DrawerNavSubheader sectionTopSpacing>Your stuff</DrawerNavSubheader>
       <ListItemButton
-        component={RouterLink}
+        component={RouterLinkPrefetch}
         to="/saved"
         onClick={onNavigate}
-        sx={{ minHeight: 44, py: 0.5 }}
+        sx={drawerNavRowButtonSx}
       >
         <ListItemIcon sx={{ minWidth: 36 }}>
           <BookmarkBorderIcon fontSize="small" />
@@ -122,25 +97,12 @@ export const NavbarMobileDrawerExplore = ({
       </ListItemButton>
       {gamesEnabled && (
         <>
-          <ListSubheader
-            component="div"
-            sx={{
-              bgcolor: 'transparent',
-              color: 'text.secondary',
-              fontWeight: 600,
-              fontSize: '0.7rem',
-              py: 0.5,
-              px: 2,
-              pt: 1.5,
-            }}
-          >
-            Games
-          </ListSubheader>
+          <DrawerNavSubheader sectionTopSpacing>Games</DrawerNavSubheader>
           <ListItemButton
-            component={RouterLink}
+            component={RouterLinkPrefetch}
             to="/dashboard/games"
             onClick={onNavigate}
-            sx={{ minHeight: 44, py: 0.5 }}
+            sx={drawerNavRowButtonSx}
           >
             <ListItemIcon sx={{ minWidth: 36 }}>
               <SportsEsportsIcon fontSize="small" />
@@ -150,18 +112,10 @@ export const NavbarMobileDrawerExplore = ({
               primaryTypographyProps={{ variant: 'body2' }}
             />
           </ListItemButton>
-          {[
-            { to: '/dashboard/games', label: 'Checkers' },
-            { to: '/dashboard/games', label: 'Connect 4' },
-            { to: '/dashboard/games/hangman', label: 'Hangman' },
-            { to: '/dashboard/games', label: 'Phuzzle' },
-            { to: '/dashboard/games/snake', label: 'Snake' },
-            { to: '/dashboard/games/slots', label: 'Slots' },
-            { to: '/dashboard/games', label: 'Tic-Tac-Toe' },
-          ].map(({ to, label }) => (
+          {GAME_QUICK_LINKS.map(({ to, label }) => (
             <ListItemButton
               key={label}
-              component={RouterLink}
+              component={RouterLinkPrefetch}
               to={to}
               onClick={onNavigate}
               sx={{ minHeight: 36, py: 0.5, pl: 4 }}
@@ -174,26 +128,13 @@ export const NavbarMobileDrawerExplore = ({
           ))}
         </>
       )}
-      <ListSubheader
-        component="div"
-        sx={{
-          bgcolor: 'transparent',
-          color: 'text.secondary',
-          fontWeight: 600,
-          fontSize: '0.7rem',
-          py: 0.5,
-          px: 2,
-          pt: 1.5,
-        }}
-      >
-        Platform
-      </ListSubheader>
+      <DrawerNavSubheader sectionTopSpacing>Platform</DrawerNavSubheader>
       <ListItemButton
-        component={RouterLink}
+        component={RouterLinkPrefetch}
         to="/advertise"
         state={{ backgroundLocation: location }}
         onClick={onNavigate}
-        sx={{ minHeight: 44, py: 0.5 }}
+        sx={drawerNavRowButtonSx}
       >
         <ListItemIcon sx={{ minWidth: 36 }}>
           <CampaignIcon fontSize="small" />
@@ -203,25 +144,12 @@ export const NavbarMobileDrawerExplore = ({
           primaryTypographyProps={{ variant: 'body2' }}
         />
       </ListItemButton>
-      <ListSubheader
-        component="div"
-        sx={{
-          bgcolor: 'transparent',
-          color: 'text.secondary',
-          fontWeight: 600,
-          fontSize: '0.7rem',
-          py: 0.5,
-          px: 2,
-          pt: 1.5,
-        }}
-      >
-        Support
-      </ListSubheader>
+      <DrawerNavSubheader sectionTopSpacing>Support</DrawerNavSubheader>
       <ListItemButton
-        component={RouterLink}
+        component={RouterLinkPrefetch}
         to="/help"
         onClick={onNavigate}
-        sx={{ minHeight: 44, py: 0.5 }}
+        sx={drawerNavRowButtonSx}
       >
         <ListItemIcon sx={{ minWidth: 36 }}>
           <HelpOutlineIcon fontSize="small" />

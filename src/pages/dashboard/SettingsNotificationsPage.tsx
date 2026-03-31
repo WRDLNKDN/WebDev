@@ -1,16 +1,14 @@
-import {
-  Alert,
-  FormControlLabel,
-  LinearProgress,
-  Paper,
-  Stack,
-  Switch,
-  Typography,
-} from '@mui/material';
+import { Typography } from '@mui/material';
 import { useCallback, useEffect, useState } from 'react';
 import { useAppToast } from '../../context/AppToastContext';
 import { supabase } from '../../lib/auth/supabaseClient';
 import { toMessage } from '../../lib/utils/errors';
+import {
+  SettingsLoadingLine,
+  SettingsSavingProgress,
+  SettingsSectionStack,
+  SettingsSwitchCard,
+} from './settings/settingsFormPrimitives';
 
 export const SettingsNotificationsPage = () => {
   const { showToast } = useAppToast();
@@ -127,16 +125,17 @@ export const SettingsNotificationsPage = () => {
   );
 
   if (loading) {
-    return (
-      <Typography variant="body2" color="text.secondary">
-        Loading…
-      </Typography>
-    );
+    return <SettingsLoadingLine />;
   }
 
   return (
-    <Stack spacing={3}>
-      <Typography variant="h6" sx={{ fontWeight: 700 }}>
+    <SettingsSectionStack>
+      <Typography
+        variant="h6"
+        component="h1"
+        sx={{ fontWeight: 700 }}
+        data-testid="settings-notifications-heading"
+      >
         Delivery Channels
       </Typography>
       <Typography variant="body2" color="text.secondary">
@@ -145,88 +144,30 @@ export const SettingsNotificationsPage = () => {
         disabled.
       </Typography>
       {saving ? (
-        <LinearProgress aria-label="Saving notification settings" />
+        <SettingsSavingProgress label="Saving notification settings" />
       ) : null}
 
-      <Paper
-        variant="outlined"
-        sx={{
-          p: { xs: 2, md: 2.5 },
-          borderColor: 'rgba(255,255,255,0.08)',
-          bgcolor: 'rgba(255,255,255,0.02)',
-        }}
-      >
-        <FormControlLabel
-          control={
-            <Switch
-              checked={pushEnabled}
-              disabled={saving}
-              onChange={(_, checked) => void handlePushChange(checked)}
-              color="primary"
-              inputProps={{ 'aria-label': 'Enable push notifications' }}
-            />
-          }
-          label="Push notifications"
-        />
-        <Typography
-          variant="caption"
-          display="block"
-          color="text.secondary"
-          sx={{ mt: 0.5, ml: 7 }}
-        >
-          Receive in-browser push alerts for comments, reactions, and connection
-          requests.
-        </Typography>
-        {pushError && (
-          <Alert
-            severity="error"
-            sx={{ mt: 1 }}
-            onClose={() => setPushError(null)}
-          >
-            {pushError}
-          </Alert>
-        )}
-      </Paper>
+      <SettingsSwitchCard
+        label="Push notifications"
+        checked={pushEnabled}
+        disabled={saving}
+        onChange={(v) => void handlePushChange(v)}
+        switchAriaLabel="Enable push notifications"
+        caption="Receive in-browser push alerts for comments, reactions, and connection requests."
+        error={pushError}
+        onClearError={() => setPushError(null)}
+      />
 
-      <Paper
-        variant="outlined"
-        sx={{
-          p: { xs: 2, md: 2.5 },
-          borderColor: 'rgba(255,255,255,0.08)',
-          bgcolor: 'rgba(255,255,255,0.02)',
-        }}
-      >
-        <FormControlLabel
-          control={
-            <Switch
-              checked={emailEnabled}
-              disabled={saving}
-              onChange={(_, checked) => void handleEmailChange(checked)}
-              color="primary"
-              inputProps={{ 'aria-label': 'Enable email notifications' }}
-            />
-          }
-          label="Email notifications"
-        />
-        <Typography
-          variant="caption"
-          display="block"
-          color="text.secondary"
-          sx={{ mt: 0.5, ml: 7 }}
-        >
-          Receive emails for comments, reactions, mentions, and connection
-          requests. Critical account and security emails are always sent.
-        </Typography>
-        {emailError && (
-          <Alert
-            severity="error"
-            sx={{ mt: 1 }}
-            onClose={() => setEmailError(null)}
-          >
-            {emailError}
-          </Alert>
-        )}
-      </Paper>
-    </Stack>
+      <SettingsSwitchCard
+        label="Email notifications"
+        checked={emailEnabled}
+        disabled={saving}
+        onChange={(v) => void handleEmailChange(v)}
+        switchAriaLabel="Enable email notifications"
+        caption="Receive emails for comments, reactions, mentions, and connection requests. Critical account and security emails are always sent."
+        error={emailError}
+        onClearError={() => setEmailError(null)}
+      />
+    </SettingsSectionStack>
   );
 };

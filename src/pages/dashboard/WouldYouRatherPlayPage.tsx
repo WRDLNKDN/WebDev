@@ -16,7 +16,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link as RouterLink, useParams } from 'react-router-dom';
 import {
   advancePromptWouldYouRather,
-  fetchSessionById,
+  fetchSessionForGameType,
   revealWouldYouRather,
   submitWouldYouRatherVote,
   type WouldYouRatherPrompt,
@@ -60,15 +60,8 @@ export const WouldYouRatherPlayPage = () => {
   }, []);
 
   const loadSession = useCallback(async (id: string) => {
-    const s = await fetchSessionById(id);
+    const s = await fetchSessionForGameType(id, 'would_you_rather');
     if (!s) {
-      setNotFound(true);
-      setSession(null);
-      setPrompts([]);
-      return;
-    }
-    const def = s.game_definition as { game_type?: string } | undefined;
-    if (def?.game_type !== 'would_you_rather') {
       setNotFound(true);
       setSession(null);
       setPrompts([]);

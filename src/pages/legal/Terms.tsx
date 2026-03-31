@@ -1,4 +1,9 @@
 import { Box, Link, Typography } from '@mui/material';
+import {
+  LegalCanonicalWikiLink,
+  LegalChangesSection,
+  LegalGoverningLawSection,
+} from './blocks/LegalNoticeClosingBlocks';
 import { LegalDocumentShell } from './LegalDocumentShell';
 
 const CONTACT_EMAIL = 'info@wrdlnkdn.com';
@@ -223,26 +228,11 @@ export const Terms = () => (
       Upon termination, access rights cease immediately.
     </Typography>
 
-    <Typography variant="h6" sx={{ fontWeight: 600, mt: 3, mb: 2 }}>
-      15. Changes to This Notice
-    </Typography>
-    <Typography variant="body2" paragraph>
-      This notice may be updated periodically to reflect operational, legal, or
-      community changes.
-    </Typography>
-    <Typography variant="body2" paragraph>
-      Material updates will be reflected by updating the Last Updated date.
-      Continued use of the Service after publication indicates acknowledgment of
-      the revised notice.
-    </Typography>
-
-    <Typography variant="h6" sx={{ fontWeight: 600, mt: 3, mb: 2 }}>
-      16. Governing Law
-    </Typography>
-    <Typography variant="body2" paragraph>
-      This notice is governed by the laws of the State of Washington, without
-      regard to conflict of law principles.
-    </Typography>
+    <LegalChangesSection
+      title="15. Changes to This Notice"
+      lead="This notice may be updated"
+    />
+    <LegalGoverningLawSection title="16. Governing Law" />
 
     <Typography variant="h6" sx={{ fontWeight: 600, mt: 3, mb: 2 }}>
       17. Contact Information
@@ -259,16 +249,7 @@ export const Terms = () => (
       </Link>
     </Typography>
 
-    <Typography variant="body2" color="text.secondary" sx={{ mt: 4 }}>
-      Canonical version:{' '}
-      <Link
-        href="https://github.com/WRDLNKDN/Agreements/wiki/Terms-of-Service-(Public-Notice)"
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        GitHub wiki
-      </Link>
-    </Typography>
+    <LegalCanonicalWikiLink href="https://github.com/WRDLNKDN/Agreements/wiki/Terms-of-Service-(Public-Notice)" />
   </LegalDocumentShell>
 );
 

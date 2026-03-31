@@ -1,28 +1,13 @@
 import type { Session } from '@supabase/supabase-js';
 import { useEffect, useState } from 'react';
 import { supabase } from '../../lib/auth/supabaseClient';
+import { useSupabaseAuthSessionSync } from '../../hooks/useSupabaseAuthSessionSync';
 import { updateLastActive } from '../../lib/utils/updateLastActive';
 
 /** Session synced from Supabase for layout chrome (navbar, messenger, chat popover). */
 export function useLayoutSupabaseSession(): Session | null {
   const [session, setSession] = useState<Session | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    const init = async () => {
-      const { data } = await supabase.auth.getSession();
-      if (!cancelled) setSession(data.session ?? null);
-    };
-    void init();
-    const { data: sub } = supabase.auth.onAuthStateChange((_evt, s) => {
-      if (!cancelled) setSession(s ?? null);
-    });
-    return () => {
-      cancelled = true;
-      sub.subscription.unsubscribe();
-    };
-  }, []);
-
+  useSupabaseAuthSessionSync(true, setSession);
   return session;
 }
 

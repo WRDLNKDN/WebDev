@@ -16,7 +16,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link as RouterLink, useParams } from 'react-router-dom';
 import {
   advanceCaptionGameRound,
-  fetchSessionById,
+  fetchSessionForGameType,
   revealCaptionGameRound,
   startCaptionGameVoting,
   submitCaptionGameCaption,
@@ -69,15 +69,8 @@ export const CaptionGamePlayPage = () => {
   }, []);
 
   const loadSession = useCallback(async (id: string) => {
-    const s = await fetchSessionById(id);
+    const s = await fetchSessionForGameType(id, 'caption_game');
     if (!s) {
-      setNotFound(true);
-      setSession(null);
-      setCurrentImage(null);
-      return;
-    }
-    const def = s.game_definition as { game_type?: string } | undefined;
-    if (def?.game_type !== 'caption_game') {
       setNotFound(true);
       setSession(null);
       setCurrentImage(null);

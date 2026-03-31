@@ -86,6 +86,8 @@ export default defineConfig({
     minify: 'esbuild', // Faster than terser, good compression
     chunkSizeWarningLimit: 600,
     cssCodeSplit: true,
+    /** Inject modulepreload for dynamic imports where Rollup can resolve deps. */
+    modulePreload: { polyfill: true },
     reportCompressedSize: false, // Faster builds
     rollupOptions: {
       output: {

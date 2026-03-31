@@ -7,7 +7,7 @@ import { Box, Button, Paper, Stack, Typography } from '@mui/material';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link as RouterLink, useParams } from 'react-router-dom';
 import {
-  fetchSessionById,
+  fetchSessionForGameType,
   makeReversiMove,
   type ReversiStatePayload,
 } from '../../lib/api/gamesApi';
@@ -149,14 +149,8 @@ export const ReversiPlayPage = () => {
   const [makingMove, setMakingMove] = useState(false);
 
   const loadSession = useCallback(async (id: string) => {
-    const s = await fetchSessionById(id);
+    const s = await fetchSessionForGameType(id, 'reversi');
     if (!s) {
-      setNotFound(true);
-      setSession(null);
-      return;
-    }
-    const def = s.game_definition as { game_type?: string } | undefined;
-    if (def?.game_type !== 'reversi') {
       setNotFound(true);
       setSession(null);
       return;

@@ -9,7 +9,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import {
   completeSession,
   createTetrisSession,
-  fetchSessionById,
+  fetchSessionForGameType,
 } from '../../lib/api/gamesApi';
 import { useAppToast } from '../../context/AppToastContext';
 import { toMessage } from '../../lib/utils/errors';
@@ -305,14 +305,8 @@ export const TetrisPlayPage = () => {
   linesClearedRef.current = linesCleared;
 
   const loadSession = useCallback(async (id: string) => {
-    const s = await fetchSessionById(id);
+    const s = await fetchSessionForGameType(id, 'tetris');
     if (!s) {
-      setNotFound(true);
-      setSession(null);
-      return;
-    }
-    const def = s.game_definition as { game_type?: string } | undefined;
-    if (def?.game_type !== 'tetris') {
       setNotFound(true);
       setSession(null);
       return;

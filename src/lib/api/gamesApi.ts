@@ -103,6 +103,18 @@ export async function fetchSessionById(
   return data as GameSession | null;
 }
 
+/** Fetch by id and ensure `game_definition.game_type` matches (solo play pages). */
+export async function fetchSessionForGameType(
+  sessionId: string,
+  expectedGameType: string,
+): Promise<GameSession | null> {
+  const s = await fetchSessionById(sessionId);
+  if (!s) return null;
+  const def = s.game_definition as { game_type?: string } | undefined;
+  if (def?.game_type !== expectedGameType) return null;
+  return s;
+}
+
 export async function createSoloSession(
   gameDefinitionId: string,
   initialState: Record<string, unknown> = {},

@@ -1,0 +1,47 @@
+name: 🎭 E2E — Preview (all browsers)
+
+# Weekly + manual: full Playwright matrix against production build (vite preview).
+# PR CI runs Chromium-only via ci-quality-gate.yml for speed.
+
+on:
+  schedule:
+    - cron: '0 6 * * 0'
+  workflow_dispatch:
+
+concurrency:
+  group: WebDev-e2e-preview-full-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  e2e:
+    name: 🎭 Playwright preview (Chromium + Firefox + Edge)
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+      VITE_SUPABASE_URL: 'https://example.supabase.co'
+      VITE_SUPABASE_ANON_KEY: 'dummy-anon-key-for-ci'
+      E2E_PORT: '5173'
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SRV_SERVICE_ROLE_KEY }}
+      NPM_CONFIG_LEGACY_PEER_DEPS: 'true'
+
+    steps:
+      - name: ⬇️ Checkout
+        uses: actions/checkout@v6
+
+      - name: 🧰 Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: 📦 Install dependencies
+        run: npm ci
+
+      - name: 🎭 Install Playwright browsers
+        run: npx playwright install --with-deps chromium firefox msedge
+
+      - name: 🎭 Run full E2E (vite preview)
+        run: npm run test:e2e:preview

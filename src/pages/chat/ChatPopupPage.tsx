@@ -1,4 +1,4 @@
-import { Box, CircularProgress, Typography } from '@mui/material';
+import { Box, Typography } from '@mui/material';
 import { useCallback, useEffect, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { useParams, useSearchParams } from 'react-router-dom';
@@ -8,16 +8,19 @@ import {
   type MessageReplyDraft,
 } from '../../components/chat/message/MessageInput';
 import { ChatThreadMessageList } from '../../components/chat/message/ChatThreadMessageList';
-import { ForwardMessageDialog } from '../../components/chat/dialogs/ForwardMessageDialog';
 import { BlockConfirmDialog } from '../../components/chat/dialogs/BlockConfirmDialog';
-import { GroupActionsDialog } from '../../components/chat/dialogs/GroupActionsDialog';
-import { ReportDialog } from '../../components/chat/dialogs/ReportDialog';
+import { ChatGroupForwardReportDialogs } from '../../components/chat/dialogs/ChatGroupForwardReportDialogs';
+import {
+  ChatThreadErrorBanner,
+  ChatThreadLoadingArea,
+} from '../../components/chat/room/ChatThreadShellStatus';
 import type { MessageWithExtras } from '../../hooks/chatTypes';
 import { useChatForwardToRoomFlow } from '../../hooks/useChatForwardToRoomFlow';
 import { useChat, useChatRooms, useReportMessage } from '../../hooks/useChat';
 import { useChatGroupDialogs } from '../../hooks/useChatGroupDialogs';
 import { useChatPresence } from '../../hooks/useChatPresence';
-import { supabase } from '../../lib/auth/supabaseClient';
+import { useSupabaseAuthSessionSync } from '../../hooks/useSupabaseAuthSessionSync';
+import { chatOtherMemberDisplayName } from '../../lib/chat/otherMemberDisplayName';
 import {
   getDefaultChatDocumentTitle,
   resolveChatDocumentTitle,
@@ -115,21 +118,7 @@ export const ChatPopupPage = () => {
     }
   }, [messages, searchParams, setSearchParams]);
 
-  useEffect(() => {
-    let cancelled = false;
-    const init = async () => {
-      const { data } = await supabase.auth.getSession();
-      if (!cancelled) setSession(data.session ?? null);
-    };
-    init().catch(() => {});
-    const { data: sub } = supabase.auth.onAuthStateChange((_evt, s) => {
-      if (!cancelled) setSession(s ?? null);
-    });
-    return () => {
-      cancelled = true;
-      sub.subscription.unsubscribe();
-    };
-  }, []);
+  useSupabaseAuthSessionSync(true, setSession);
 
   useEffect(() => {
     setReplyTarget(null);
@@ -225,39 +214,14 @@ export const ChatPopupPage = () => {
           }
         />
 
-        {error && !loading && (
-          <Box
-            sx={{
-              flex: 1,
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              p: 3,
-              textAlign: 'center',
-            }}
-          >
-            <Typography color="error" variant="body1" fontWeight={500}>
-              {error}
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-              You may not have access to this conversation, or it may have been
-              deleted.
-            </Typography>
-          </Box>
-        )}
+        <ChatThreadErrorBanner
+          error={error}
+          loading={loading}
+          variant="popup"
+        />
 
         {loading ? (
-          <Box
-            sx={{
-              flex: 1,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <CircularProgress />
-          </Box>
+          <ChatThreadLoadingArea />
         ) : error ? null : (
           <ChatThreadMessageList
             messages={messages}
@@ -308,47 +272,29 @@ export const ChatPopupPage = () => {
           setBlockDialogOpen(false);
           if (window.opener) window.close();
         }}
-        displayName={
-          otherMember?.profile?.display_name ||
-          otherMember?.profile?.handle ||
-          'this user'
-        }
+        displayName={chatOtherMemberDisplayName(otherMember)}
       />
-      {room && (
-        <GroupActionsDialog
-          open={groupDialogOpen}
-          mode={groupDialogMode}
-          onClose={() => setGroupDialogOpen(false)}
-          roomId={roomId}
-          roomName={room.name ?? ''}
-          roomDescription={room.description}
-          roomImageUrl={room.image_url}
-          currentMembers={room.members ?? []}
-          currentUserId={uid}
-          onSaveDetails={updateGroupDetails}
-          onInvite={inviteMembers}
-          onRemove={removeMember}
-          onTransferAdmin={transferAdmin}
-        />
-      )}
-      {roomId && uid ? (
-        <ForwardMessageDialog
-          open={Boolean(forwardSource)}
-          onClose={() => setForwardSource(null)}
-          rooms={rooms}
-          excludeRoomId={roomId}
-          currentUserId={uid}
-          onSelectRoom={handleForwardToRoom}
-          busy={sending}
-        />
-      ) : null}
-      <ReportDialog
-        open={reportOpen}
-        onClose={() => {
-          setReportOpen(false);
-          setReportTarget(null);
-        }}
-        onSubmit={async (
+      <ChatGroupForwardReportDialogs
+        room={room}
+        roomId={roomId}
+        currentUserId={uid}
+        groupDialogOpen={groupDialogOpen}
+        setGroupDialogOpen={setGroupDialogOpen}
+        groupDialogMode={groupDialogMode}
+        onSaveDetails={updateGroupDetails}
+        onInvite={inviteMembers}
+        onRemove={removeMember}
+        onTransferAdmin={transferAdmin}
+        forwardSource={forwardSource}
+        setForwardSource={setForwardSource}
+        rooms={rooms}
+        handleForwardToRoom={handleForwardToRoom}
+        sending={sending}
+        reportOpen={reportOpen}
+        setReportOpen={setReportOpen}
+        setReportTarget={setReportTarget}
+        reportTarget={reportTarget}
+        onReportSubmit={async (
           reportedMessageId,
           reportedUserId,
           category,
@@ -361,8 +307,6 @@ export const ChatPopupPage = () => {
             freeText,
           );
         }}
-        reportedMessageId={reportTarget?.messageId ?? null}
-        reportedUserId={reportTarget?.userId ?? null}
       />
     </>
   );

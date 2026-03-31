@@ -9,7 +9,10 @@ import {
 import { useKonamiCode } from './hooks/useKonamiCode';
 import { registerAnalyticsSinks } from './lib/analytics/registerAnalyticsSinks';
 
-const AppShell = lazy(async () => import('./AppShell'));
+/** Start AppShell chunk as soon as this module loads (parallel with React boot). */
+const loadAppShell = () => import('./AppShell');
+void loadAppShell();
+const AppShell = lazy(loadAppShell);
 
 const Loading = () => (
   <main

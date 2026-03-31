@@ -19,11 +19,13 @@ import {
   Table,
   TableBody,
   TableCell,
+  TableContainer,
   TableHead,
   TableRow,
   TextField,
   Typography,
 } from '@mui/material';
+import type { SxProps, Theme } from '@mui/material/styles';
 import { shouldCloseDialogFromReason } from '../../../lib/ui/dialogFormUtils';
 import type { ProfileRow, ProfileStatus } from '../../../types/types';
 import {
@@ -208,6 +210,9 @@ type BulkActionsProps = {
   onReject: () => void;
   onDisable: () => void;
   onDelete: () => void;
+  /** When false, omits the “N selected” caption (matches legacy moderation page). */
+  showSelectedCaption?: boolean;
+  stackSx?: SxProps<Theme>;
 };
 
 export const ModerationBulkActions = ({
@@ -217,8 +222,18 @@ export const ModerationBulkActions = ({
   onReject,
   onDisable,
   onDelete,
+  showSelectedCaption = true,
+  stackSx,
 }: BulkActionsProps) => (
-  <Stack direction={{ xs: 'column', md: 'row' }} spacing={1} sx={{ mb: 2 }}>
+  <Stack
+    direction={{ xs: 'column', md: 'row' }}
+    spacing={1}
+    sx={{
+      mb: 2,
+      '& > *': { width: { xs: '100%', md: 'auto' } },
+      ...stackSx,
+    }}
+  >
     <Button variant="contained" disabled={bulkDisabled} onClick={onApprove}>
       Bulk approve
     </Button>
@@ -236,9 +251,11 @@ export const ModerationBulkActions = ({
     >
       Delete
     </Button>
-    <Typography variant="caption" sx={{ alignSelf: 'center', opacity: 0.75 }}>
-      {selectedCount} selected
-    </Typography>
+    {showSelectedCaption ? (
+      <Typography variant="caption" sx={{ alignSelf: 'center', opacity: 0.75 }}>
+        {selectedCount} selected
+      </Typography>
+    ) : null}
   </Stack>
 );
 
@@ -253,6 +270,8 @@ type TableProps = {
   onView: (row: ProfileRow) => void;
   onApprove: (row: ProfileRow) => void;
   onReject: (row: ProfileRow) => void;
+  /** When set, wraps the table in `TableContainer` (e.g. bordered shell on profile moderation page). */
+  tableContainerSx?: SxProps<Theme>;
 };
 
 export const ModerationTable = ({
@@ -266,25 +285,10 @@ export const ModerationTable = ({
   onView,
   onApprove,
   onReject,
-}: TableProps) => (
-  <Box sx={{ position: 'relative' }}>
-    {loading && (
-      <Box
-        sx={{
-          position: 'absolute',
-          inset: 0,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          bgcolor: 'rgba(255,255,255,0.5)',
-          zIndex: 2,
-        }}
-      >
-        <CircularProgress aria-label="Loading..." />
-      </Box>
-    )}
-
-    <Table size="small">
+  tableContainerSx,
+}: TableProps) => {
+  const table = (
+    <Table size="small" sx={tableContainerSx ? { minWidth: 760 } : undefined}>
       <TableHead>
         <TableRow>
           <TableCell padding="checkbox">
@@ -352,8 +356,33 @@ export const ModerationTable = ({
         )}
       </TableBody>
     </Table>
-  </Box>
-);
+  );
+
+  return (
+    <Box sx={{ position: 'relative' }}>
+      {loading && (
+        <Box
+          sx={{
+            position: 'absolute',
+            inset: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            bgcolor: 'rgba(255,255,255,0.5)',
+            zIndex: 2,
+          }}
+        >
+          <CircularProgress aria-label="Loading..." />
+        </Box>
+      )}
+      {tableContainerSx ? (
+        <TableContainer sx={tableContainerSx}>{table}</TableContainer>
+      ) : (
+        table
+      )}
+    </Box>
+  );
+};
 
 type PagerProps = {
   page: number;
@@ -377,9 +406,10 @@ export const ModerationPager = ({
   onNext,
 }: PagerProps) => (
   <Stack
-    direction="row"
-    alignItems="center"
+    direction={{ xs: 'column', sm: 'row' }}
+    alignItems={{ xs: 'flex-start', sm: 'center' }}
     justifyContent="space-between"
+    spacing={1}
     sx={{ mt: 2 }}
   >
     <Typography variant="caption" sx={{ opacity: 0.8 }}>
@@ -409,7 +439,7 @@ type ConfirmDialogProps = {
   hardDeleteAuthUsers: boolean;
   setHardDeleteAuthUsers: (value: boolean) => void;
   onCancel: () => void;
-  onConfirm: () => void;
+  onConfirm: () => void | Promise<void>;
 };
 
 export const ModerationConfirmDialog = ({
@@ -433,7 +463,7 @@ export const ModerationConfirmDialog = ({
       component="form"
       onSubmit={(event) => {
         event.preventDefault();
-        onConfirm();
+        void Promise.resolve(onConfirm());
       }}
     >
       <DialogTitle>{title}</DialogTitle>

@@ -24,6 +24,7 @@ jobs:
   webdev:
     name: ✅ WebDev CI (Quality + Unit + E2E)
     runs-on: ubuntu-latest
+    timeout-minutes: 90
 
     env:
       # Opt into Node.js 24 for JavaScript actions (actions/checkout, actions/setup-node)
@@ -83,15 +84,15 @@ jobs:
       # -------------
       # E2E (Playwright)
       # -------------
-      - name: 🎭 Install Playwright Browsers
+      - name: 🎭 Install Playwright (Chromium only)
         id: pwinstall
         continue-on-error: true
-        run: npx playwright install --with-deps chromium firefox msedge
+        run: npx playwright install --with-deps chromium
 
-      - name: 🎭 Run Playwright tests (E2E)
+      - name: 🎭 Run Playwright tests (E2E, vite preview, Chromium)
         id: e2e
         continue-on-error: true
-        run: npm run test:e2e
+        run: npm run test:e2e:preview:chromium
 
       # Optional: UI mode (manual only, run locally — no display in CI)
       - name: 🎭 Playwright UI mode (manual only, local use)

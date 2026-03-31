@@ -16,7 +16,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link as RouterLink, useNavigate, useParams } from 'react-router-dom';
 import {
   createHangmanSession,
-  fetchSessionById,
+  fetchSessionForGameType,
   makeHangmanGuess,
 } from '../../lib/api/gamesApi';
 import type { HangmanStatePayload } from '../../lib/api/gamesApi';
@@ -58,14 +58,8 @@ export const HangmanPlayPage = () => {
   const [startingNew, setStartingNew] = useState(false);
 
   const loadSession = useCallback(async (id: string) => {
-    const s = await fetchSessionById(id);
+    const s = await fetchSessionForGameType(id, 'hangman');
     if (!s) {
-      setNotFound(true);
-      setSession(null);
-      return;
-    }
-    const def = s.game_definition as { game_type?: string } | undefined;
-    if (def?.game_type !== 'hangman') {
       setNotFound(true);
       setSession(null);
       return;

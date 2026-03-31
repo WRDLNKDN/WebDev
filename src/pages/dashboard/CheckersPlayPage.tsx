@@ -6,7 +6,10 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { Box, Button, Paper, Typography } from '@mui/material';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link as RouterLink, useParams } from 'react-router-dom';
-import { fetchSessionById, makeCheckersMove } from '../../lib/api/gamesApi';
+import {
+  fetchSessionForGameType,
+  makeCheckersMove,
+} from '../../lib/api/gamesApi';
 import { useAppToast } from '../../context/AppToastContext';
 import { toMessage } from '../../lib/utils/errors';
 import { supabase } from '../../lib/auth/supabaseClient';
@@ -231,14 +234,8 @@ export const CheckersPlayPage = () => {
   const [selected, setSelected] = useState<[number, number] | null>(null);
 
   const loadSession = useCallback(async (id: string) => {
-    const s = await fetchSessionById(id);
+    const s = await fetchSessionForGameType(id, 'checkers');
     if (!s) {
-      setNotFound(true);
-      setSession(null);
-      return;
-    }
-    const def = s.game_definition as { game_type?: string } | undefined;
-    if (def?.game_type !== 'checkers') {
       setNotFound(true);
       setSession(null);
       return;

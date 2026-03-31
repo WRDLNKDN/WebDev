@@ -6,6 +6,22 @@ import type { ProfileRow, ProfileStatus } from '../../../types/types';
 // Re-export types so other components importing from adminApi don't explode
 export type { ProfileRow, ProfileStatus };
 
+async function readJsonBody(res: Response): Promise<Record<string, unknown>> {
+  try {
+    return (await res.json()) as Record<string, unknown>;
+  } catch {
+    return {};
+  }
+}
+
+/** Shared REST error shape for PATCH/POST admin calls (not fetchProfiles, which logs more). */
+function throwIfAdminRestNotOk(res: Response, data: Record<string, unknown>) {
+  const msg = typeof data.error === 'string' ? data.error : undefined;
+  const bodyMsg =
+    typeof data.message === 'string' ? (data.message as string) : undefined;
+  throw new Error(messageFromApiResponse(res.status, msg, bodyMsg));
+}
+
 type FetchProfilesOpts = {
   status?: ProfileStatus | 'all';
   q?: string;
@@ -127,18 +143,8 @@ const updateStatus = async (
   });
 
   if (!res.ok) {
-    let data: { error?: string };
-    try {
-      data = (await res.json()) as { error?: string };
-    } catch {
-      data = {};
-    }
-    const msg = typeof data.error === 'string' ? data.error : undefined;
-    const bodyMsg =
-      typeof (data as { message?: string }).message === 'string'
-        ? (data as { message: string }).message
-        : undefined;
-    throw new Error(messageFromApiResponse(res.status, msg, bodyMsg));
+    const data = await readJsonBody(res);
+    throwIfAdminRestNotOk(res, data);
   }
 };
 
@@ -184,17 +190,7 @@ export const deleteProfiles = async (
   });
 
   if (!res.ok) {
-    let data: { error?: string };
-    try {
-      data = (await res.json()) as { error?: string };
-    } catch {
-      data = {};
-    }
-    const msg = typeof data.error === 'string' ? data.error : undefined;
-    const bodyMsg =
-      typeof (data as { message?: string }).message === 'string'
-        ? (data as { message: string }).message
-        : undefined;
-    throw new Error(messageFromApiResponse(res.status, msg, bodyMsg));
+    const data = await readJsonBody(res);
+    throwIfAdminRestNotOk(res, data);
   }
 };

@@ -1,6 +1,6 @@
 import { Box, Stack, Typography } from '@mui/material';
 import { useEffect, useRef, useState } from 'react';
-import { GameEndScreen } from './GameEndScreen';
+import { formatGameElapsedClock, GameEndScreen } from './GameEndScreen';
 
 // --- ASSET SECTOR ---
 // Imports the base64 string from the separate assets file to keep logic clean
@@ -492,14 +492,23 @@ export const WeirdlingRunner = () => {
       {gameOver && (
         <GameEndScreen
           title="[SYSTEM_CRASH]"
-          subtitle="Buried under legacy paperwork."
-          stats={[
-            { label: 'Time', value: elapsedSeconds },
-            { label: 'Score', value: score },
-            { label: 'Best', value: highScore },
-          ]}
+          celebrationLine="Stack overflowed."
+          compactSummary={`${formatGameElapsedClock(elapsedSeconds)} · ${score} · ${highScore}`}
           replayButtonLabel="Play again"
           onReplayClick={handlePlayAgain}
+          details={
+            <Stack spacing={0.75} component="div">
+              <Typography variant="body2" component="div">
+                Time · {formatGameElapsedClock(elapsedSeconds)}
+              </Typography>
+              <Typography variant="body2" component="div">
+                Score · {score}
+              </Typography>
+              <Typography variant="body2" component="div">
+                Peak · {highScore}
+              </Typography>
+            </Stack>
+          }
         />
       )}
     </Box>

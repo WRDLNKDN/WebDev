@@ -2,10 +2,9 @@
  * Checkers: two-player turn-based. Invite a connection; standard rules:
  * diagonal move/capture, king promotion, mandatory capture, multi-capture continuation.
  */
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { Box, Button, Paper, Typography } from '@mui/material';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link as RouterLink, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import {
   fetchSessionForGameType,
   makeCheckersMove,
@@ -16,9 +15,11 @@ import { supabase } from '../../lib/auth/supabaseClient';
 import { useGameSessionRealtime } from '../../hooks/useGameSessionRealtime';
 import type { GameSession, GameSessionParticipant } from '../../types/games';
 import {
+  getMiniGameSessionUnavailableMessage,
   MiniGameLoadingNotFound,
   MiniGamePlayHeaderRow,
   MiniGamePlayPageRoot,
+  MiniGameSessionUnavailableScreen,
 } from './games/MiniGamePlayChrome';
 
 const SIZE = 8;
@@ -359,45 +360,18 @@ export const CheckersPlayPage = () => {
         : 'You lost.'
       : null;
 
-  if (
-    session.status === 'pending_invitation' ||
-    session.status === 'declined' ||
-    session.status === 'canceled'
-  ) {
-    const isInvitee = ordered[1]?.user_id === myUserId;
-    const message =
-      session.status === 'pending_invitation'
-        ? isInvitee
-          ? "You've been invited. Accept or decline from the Games page."
-          : 'Waiting for your connection to accept.'
-        : session.status === 'declined'
-          ? 'This game was declined.'
-          : 'This game was canceled.';
-    return (
-      <Box sx={{ py: 2, px: { xs: 2, sm: 3 } }}>
-        <Button
-          component={RouterLink}
-          to="/dashboard/games"
-          startIcon={<ArrowBackIcon />}
-          variant="outlined"
-          size="small"
-          sx={{ mb: 2 }}
-        >
-          Back to Games
-        </Button>
-        <Paper variant="outlined" sx={{ p: 3, maxWidth: 360 }}>
-          <Typography sx={{ mb: 2 }}>{message}</Typography>
-          <Button
-            component={RouterLink}
-            to="/dashboard/games"
-            variant="contained"
-            fullWidth
-          >
-            Go to Games
-          </Button>
-        </Paper>
-      </Box>
-    );
+  const isInvitee = ordered[1]?.user_id === myUserId;
+  const unavailableMsg = getMiniGameSessionUnavailableMessage(
+    session,
+    isInvitee,
+    {
+      inviteePending:
+        "You've been invited. Accept or decline from the Games page.",
+      hostPending: 'Waiting for your connection to accept.',
+    },
+  );
+  if (unavailableMsg != null) {
+    return <MiniGameSessionUnavailableScreen message={unavailableMsg} />;
   }
 
   return (

@@ -1,33 +1,6 @@
-// src/pages/admin/AdminModerationPage.tsx
+// src/pages/admin/moderation/AdminModerationPage.tsx
 
-import {
-  Alert,
-  Box,
-  Button,
-  Checkbox,
-  Chip,
-  CircularProgress,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogContentText,
-  DialogTitle,
-  Divider,
-  FormControl,
-  FormControlLabel,
-  InputLabel,
-  MenuItem,
-  Select,
-  Stack,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableRow,
-  TableContainer,
-  TextField,
-  Typography,
-} from '@mui/material';
+import { Box, Divider, Typography } from '@mui/material';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import type { ProfileRow, ProfileStatus } from '../../../types/types';
@@ -39,26 +12,16 @@ import {
   rejectProfiles,
 } from '../core/adminApi';
 import { toMessage } from '../../../lib/utils/errors';
-import {
-  FILTER_CONTROL_MIN_HEIGHT,
-  filterSelectInputSx,
-} from '../../../theme/filterControls';
 import { ProfileDetailDialog } from './ProfileDetailDialog';
 import { useAdminSession } from '../core/AdminSessionContext';
-import { shouldCloseDialogFromReason } from '../../../lib/ui/dialogFormUtils';
-
-const formatStatus = (status: string) => {
-  switch (status) {
-    case 'approved':
-      return { label: 'Approved', color: 'success' as const };
-    case 'rejected':
-      return { label: 'Rejected', color: 'error' as const };
-    case 'disabled':
-      return { label: 'Disabled', color: 'warning' as const };
-    default:
-      return { label: 'Pending', color: 'default' as const };
-  }
-};
+import {
+  ModerationBulkActions,
+  ModerationConfirmDialog,
+  ModerationError,
+  ModerationFilters,
+  ModerationPager,
+  ModerationTable,
+} from './adminModerationUi';
 
 type Props = {
   initialStatus?: ProfileStatus | 'all';
@@ -179,369 +142,105 @@ export const AdminModerationPage = ({ initialStatus }: Props) => {
 
       <Divider sx={{ my: 2 }} />
 
-      <Stack
-        direction={{ xs: 'column', md: 'row' }}
-        spacing={2}
-        alignItems={{ md: 'center' }}
-        flexWrap="wrap"
-        sx={{
-          mb: 2,
-          '& .MuiFormControl-root': filterSelectInputSx,
-          '& .MuiTextField-root .MuiInputBase-root': {
-            minHeight: FILTER_CONTROL_MIN_HEIGHT,
-          },
+      <ModerationFilters
+        status={status}
+        setStatus={setStatus}
+        q={q}
+        setQ={setQ}
+        sort={sort}
+        setSort={setSort}
+        order={order}
+        setOrder={setOrder}
+        limit={limit}
+        setLimit={setLimit}
+        onRefresh={() => void load()}
+        loading={loading}
+        resetOffset={() => setOffset(0)}
+      />
+
+      <ModerationBulkActions
+        bulkDisabled={bulkDisabled}
+        selectedCount={selectedIds.length}
+        showSelectedCaption={false}
+        onApprove={() =>
+          setConfirm({
+            title: 'Approve selected profiles?',
+            body: `This will approve ${selectedIds.length} profile(s).`,
+            action: async () => run(() => approveProfiles(token, selectedIds)),
+          })
+        }
+        onReject={() =>
+          setConfirm({
+            title: 'Reject selected profiles?',
+            body: `This will reject ${selectedIds.length} profile(s).`,
+            action: async () => run(() => rejectProfiles(token, selectedIds)),
+          })
+        }
+        onDisable={() =>
+          setConfirm({
+            title: 'Deactivate selected profiles?',
+            body: `This will deactivate ${selectedIds.length} profile(s).`,
+            action: async () => run(() => disableProfiles(token, selectedIds)),
+          })
+        }
+        onDelete={() => {
+          setHardDeleteAuthUsers(false);
+          setConfirm({
+            title: 'Delete selected profiles?',
+            body: `This will delete ${selectedIds.length} profile row(s).`,
+            destructive: true,
+            showHardDelete: true,
+            action: async (opts) =>
+              run(() =>
+                deleteProfiles(token, selectedIds, opts.hardDeleteAuthUsers),
+              ),
+          });
         }}
-      >
-        <FormControl size="small" sx={{ minWidth: 180 }}>
-          <InputLabel id="admin-mod-status">Status</InputLabel>
-          <Select
-            labelId="admin-mod-status"
-            label="Status"
-            value={status}
-            displayEmpty
-            renderValue={(v: ProfileStatus | 'all' | '') =>
-              v === ''
-                ? ''
-                : v === 'all'
-                  ? 'All'
-                  : formatStatus(v as ProfileStatus).label
-            }
-            onChange={(e) => {
-              setOffset(0);
-              setStatus(e.target.value as ProfileStatus | 'all' | '');
-            }}
-          >
-            <MenuItem value="">
-              <em>None</em>
-            </MenuItem>
-            <MenuItem value="all">All</MenuItem>
-            <MenuItem value="pending">Pending</MenuItem>
-            <MenuItem value="approved">Approved</MenuItem>
-            <MenuItem value="rejected">Rejected</MenuItem>
-            <MenuItem value="disabled">Disabled</MenuItem>
-          </Select>
-        </FormControl>
+      />
 
-        <TextField
-          size="small"
-          label="Search"
-          placeholder="handle or id"
-          value={q}
-          onChange={(e) => {
-            setOffset(0);
-            setQ(e.target.value);
-          }}
-          sx={{ flexGrow: 1, minWidth: 160 }}
-        />
+      <ModerationError error={error} />
 
-        <FormControl size="small" sx={{ minWidth: 160 }}>
-          <InputLabel id="admin-mod-sort">Sort</InputLabel>
-          <Select
-            labelId="admin-mod-sort"
-            label="Sort"
-            value={sort}
-            displayEmpty
-            renderValue={(v: 'created_at' | 'updated_at' | '') =>
-              v === '' ? '' : v === 'created_at' ? 'Created' : 'Updated'
-            }
-            onChange={(e) =>
-              setSort(e.target.value as 'created_at' | 'updated_at' | '')
-            }
-          >
-            <MenuItem value="">
-              <em>None</em>
-            </MenuItem>
-            <MenuItem value="created_at">Created</MenuItem>
-            <MenuItem value="updated_at">Updated</MenuItem>
-          </Select>
-        </FormControl>
+      <ModerationTable
+        loading={loading}
+        rows={rows}
+        selected={selected}
+        allChecked={allChecked}
+        someChecked={someChecked}
+        toggleAll={toggleAll}
+        toggle={toggle}
+        onView={setDetails}
+        onApprove={(r) =>
+          setConfirm({
+            title: `Approve ${r.handle}?`,
+            body: 'This will make the profile public.',
+            action: async () => run(() => approveProfiles(token, [r.id])),
+          })
+        }
+        onReject={(r) =>
+          setConfirm({
+            title: `Reject ${r.handle}?`,
+            body: 'This will keep the profile hidden from public.',
+            action: async () => run(() => rejectProfiles(token, [r.id])),
+          })
+        }
+        tableContainerSx={{
+          overflowX: 'auto',
+          borderRadius: 2,
+          border: '1px solid rgba(255,255,255,0.08)',
+          bgcolor: 'rgba(255,255,255,0.02)',
+        }}
+      />
 
-        <FormControl size="small" sx={{ minWidth: 140 }}>
-          <InputLabel id="admin-mod-order">Order</InputLabel>
-          <Select
-            labelId="admin-mod-order"
-            label="Order"
-            value={order}
-            displayEmpty
-            renderValue={(v: 'asc' | 'desc' | '') =>
-              v === '' ? '' : v === 'asc' ? 'Oldest' : 'Newest'
-            }
-            onChange={(e) => setOrder(e.target.value as 'asc' | 'desc' | '')}
-          >
-            <MenuItem value="">
-              <em>None</em>
-            </MenuItem>
-            <MenuItem value="asc">Oldest</MenuItem>
-            <MenuItem value="desc">Newest</MenuItem>
-          </Select>
-        </FormControl>
-
-        <FormControl size="small" sx={{ minWidth: 120 }}>
-          <InputLabel id="admin-mod-pagesize">Page size</InputLabel>
-          <Select
-            labelId="admin-mod-pagesize"
-            label="Page size"
-            value={limit}
-            onChange={(e) => {
-              setOffset(0);
-              setLimit(Number(e.target.value));
-            }}
-          >
-            <MenuItem value={10}>10</MenuItem>
-            <MenuItem value={25}>25</MenuItem>
-            <MenuItem value={50}>50</MenuItem>
-          </Select>
-        </FormControl>
-
-        <Button
-          size="small"
-          variant="outlined"
-          onClick={() => void load()}
-          disabled={loading}
-          sx={{ minHeight: FILTER_CONTROL_MIN_HEIGHT }}
-        >
-          Refresh
-        </Button>
-      </Stack>
-
-      <Stack
-        direction={{ xs: 'column', md: 'row' }}
-        spacing={1}
-        sx={{ mb: 2, '& > *': { width: { xs: '100%', md: 'auto' } } }}
-      >
-        <Button
-          variant="contained"
-          disabled={bulkDisabled}
-          onClick={() =>
-            setConfirm({
-              title: 'Approve selected profiles?',
-              body: `This will approve ${selectedIds.length} profile(s).`,
-              action: async () =>
-                run(() => approveProfiles(token, selectedIds)),
-            })
-          }
-        >
-          Bulk approve
-        </Button>
-
-        <Button
-          variant="outlined"
-          disabled={bulkDisabled}
-          onClick={() =>
-            setConfirm({
-              title: 'Reject selected profiles?',
-              body: `This will reject ${selectedIds.length} profile(s).`,
-              action: async () => run(() => rejectProfiles(token, selectedIds)),
-            })
-          }
-        >
-          Bulk reject
-        </Button>
-
-        <Button
-          variant="outlined"
-          disabled={bulkDisabled}
-          onClick={() =>
-            setConfirm({
-              title: 'Deactivate selected profiles?',
-              body: `This will deactivate ${selectedIds.length} profile(s).`,
-              action: async () =>
-                run(() => disableProfiles(token, selectedIds)),
-            })
-          }
-        >
-          Deactivate
-        </Button>
-
-        <Button
-          color="error"
-          variant="outlined"
-          disabled={bulkDisabled}
-          onClick={() => {
-            setHardDeleteAuthUsers(false);
-            setConfirm({
-              title: 'Delete selected profiles?',
-              body: `This will delete ${selectedIds.length} profile row(s).`,
-              destructive: true,
-              showHardDelete: true,
-              action: async (opts) =>
-                run(() =>
-                  deleteProfiles(token, selectedIds, opts.hardDeleteAuthUsers),
-                ),
-            });
-          }}
-        >
-          Delete
-        </Button>
-      </Stack>
-
-      {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
-          {error}
-        </Alert>
-      )}
-
-      <Box sx={{ position: 'relative' }}>
-        {loading && (
-          <Box
-            sx={{
-              position: 'absolute',
-              inset: 0,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              bgcolor: 'rgba(255,255,255,0.5)',
-              zIndex: 2,
-            }}
-          >
-            <CircularProgress aria-label="Loading..." />
-          </Box>
-        )}
-
-        <TableContainer
-          sx={{
-            overflowX: 'auto',
-            borderRadius: 2,
-            border: '1px solid rgba(255,255,255,0.08)',
-            bgcolor: 'rgba(255,255,255,0.02)',
-          }}
-        >
-          <Table size="small" sx={{ minWidth: 760 }}>
-            <TableHead>
-              <TableRow>
-                <TableCell padding="checkbox">
-                  <Checkbox
-                    checked={allChecked}
-                    indeterminate={!allChecked && someChecked}
-                    onChange={toggleAll}
-                    inputProps={{ 'aria-label': 'select all' }}
-                  />
-                </TableCell>
-                <TableCell>Handle</TableCell>
-                <TableCell>Status</TableCell>
-                <TableCell>Created</TableCell>
-                <TableCell>Updated</TableCell>
-                <TableCell align="right">Actions</TableCell>
-              </TableRow>
-            </TableHead>
-
-            <TableBody>
-              {rows.map((r) => {
-                const s = formatStatus(r.status);
-                return (
-                  <TableRow key={r.id} hover>
-                    <TableCell padding="checkbox">
-                      <Checkbox
-                        checked={selected.has(r.id)}
-                        onChange={() => toggle(r.id)}
-                        inputProps={{ 'aria-label': `select ${r.handle}` }}
-                      />
-                    </TableCell>
-
-                    <TableCell>{r.handle}</TableCell>
-
-                    <TableCell>
-                      <Chip size="small" label={s.label} color={s.color} />
-                    </TableCell>
-
-                    <TableCell sx={{ whiteSpace: 'nowrap' }}>
-                      {r.created_at
-                        ? new Date(r.created_at).toLocaleString()
-                        : '—'}
-                    </TableCell>
-
-                    <TableCell sx={{ whiteSpace: 'nowrap' }}>
-                      {r.updated_at
-                        ? new Date(r.updated_at).toLocaleString()
-                        : '—'}
-                    </TableCell>
-
-                    <TableCell align="right" sx={{ whiteSpace: 'nowrap' }}>
-                      <Button size="small" onClick={() => setDetails(r)}>
-                        View
-                      </Button>
-
-                      {r.status !== 'approved' && (
-                        <Button
-                          size="small"
-                          onClick={() =>
-                            setConfirm({
-                              title: `Approve ${r.handle}?`,
-                              body: 'This will make the profile public.',
-                              action: async () =>
-                                run(() => approveProfiles(token, [r.id])),
-                            })
-                          }
-                        >
-                          Approve
-                        </Button>
-                      )}
-
-                      {r.status !== 'rejected' && (
-                        <Button
-                          size="small"
-                          onClick={() =>
-                            setConfirm({
-                              title: `Reject ${r.handle}?`,
-                              body: 'This will keep the profile hidden from public.',
-                              action: async () =>
-                                run(() => rejectProfiles(token, [r.id])),
-                            })
-                          }
-                        >
-                          Reject
-                        </Button>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-
-              {rows.length === 0 && !loading && (
-                <TableRow>
-                  <TableCell colSpan={6}>
-                    <Typography sx={{ py: 2, opacity: 0.8 }}>
-                      No results.
-                    </Typography>
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      </Box>
-
-      <Stack
-        direction={{ xs: 'column', sm: 'row' }}
-        alignItems={{ xs: 'flex-start', sm: 'center' }}
-        justifyContent="space-between"
-        spacing={1}
-        sx={{ mt: 2 }}
-      >
-        <Typography variant="caption" sx={{ opacity: 0.8 }}>
-          Page {page} of {pageCount} • {count} total
-        </Typography>
-
-        <Stack direction="row" spacing={1}>
-          <Button
-            size="small"
-            onClick={() => setOffset((o) => Math.max(0, o - limit))}
-            disabled={loading || offset === 0}
-          >
-            Previous
-          </Button>
-
-          <Button
-            size="small"
-            onClick={() =>
-              setOffset((o) => (o + limit < count ? o + limit : o))
-            }
-            disabled={loading || offset + limit >= count}
-          >
-            Next
-          </Button>
-        </Stack>
-      </Stack>
+      <ModerationPager
+        page={page}
+        pageCount={pageCount}
+        count={count}
+        loading={loading}
+        offset={offset}
+        limit={limit}
+        onPrev={() => setOffset((o) => Math.max(0, o - limit))}
+        onNext={() => setOffset((o) => (o + limit < count ? o + limit : o))}
+      />
 
       <ProfileDetailDialog
         open={!!details}
@@ -549,56 +248,26 @@ export const AdminModerationPage = ({ initialStatus }: Props) => {
         onClose={() => setDetails(null)}
       />
 
-      <Dialog
+      <ModerationConfirmDialog
         open={!!confirm}
-        onClose={(_event, reason) => {
-          if (!shouldCloseDialogFromReason(reason)) return;
+        title={confirm?.title}
+        body={confirm?.body}
+        destructive={confirm?.destructive}
+        showHardDelete={confirm?.showHardDelete}
+        hardDeleteAuthUsers={hardDeleteAuthUsers}
+        setHardDeleteAuthUsers={setHardDeleteAuthUsers}
+        onCancel={() => {
           setConfirm(null);
           setHardDeleteAuthUsers(false);
         }}
-      >
-        <DialogTitle>{confirm?.title}</DialogTitle>
-        <DialogContent>
-          <DialogContentText sx={{ mb: confirm?.showHardDelete ? 1 : 0 }}>
-            {confirm?.body}
-          </DialogContentText>
-
-          {confirm?.showHardDelete && (
-            <FormControlLabel
-              control={
-                <Checkbox
-                  checked={hardDeleteAuthUsers}
-                  onChange={(e) => setHardDeleteAuthUsers(e.target.checked)}
-                />
-              }
-              label="Also delete auth users (dangerous)"
-            />
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button
-            onClick={() => {
-              setConfirm(null);
-              setHardDeleteAuthUsers(false);
-            }}
-          >
-            Cancel
-          </Button>
-          <Button
-            color={confirm?.destructive ? 'error' : 'primary'}
-            variant="contained"
-            onClick={async () => {
-              const action = confirm?.action;
-              const hard = hardDeleteAuthUsers;
-              setConfirm(null);
-              setHardDeleteAuthUsers(false);
-              if (action) await action({ hardDeleteAuthUsers: hard });
-            }}
-          >
-            Confirm
-          </Button>
-        </DialogActions>
-      </Dialog>
+        onConfirm={async () => {
+          const action = confirm?.action;
+          const hard = hardDeleteAuthUsers;
+          setConfirm(null);
+          setHardDeleteAuthUsers(false);
+          if (action) await action({ hardDeleteAuthUsers: hard });
+        }}
+      />
     </Box>
   );
 };

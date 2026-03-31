@@ -20,7 +20,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link as RouterLink, useNavigate, useParams } from 'react-router-dom';
 import {
   createDartsSoloSession,
-  fetchSessionById,
+  fetchSessionForGameType,
   submitDartsThrow,
   type DartsStatePayload,
 } from '../../lib/api/gamesApi';
@@ -82,14 +82,8 @@ export const DartsPlayPage = () => {
   }, []);
 
   const loadSession = useCallback(async (id: string) => {
-    const s = await fetchSessionById(id);
+    const s = await fetchSessionForGameType(id, 'darts');
     if (!s) {
-      setNotFound(true);
-      setSession(null);
-      return;
-    }
-    const def = s.game_definition as { game_type?: string } | undefined;
-    if (def?.game_type !== 'darts') {
       setNotFound(true);
       setSession(null);
       return;

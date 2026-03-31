@@ -4,6 +4,11 @@ import { useParams } from 'react-router-dom';
 import { NotFoundPage } from '../misc/NotFoundPage';
 import { supabase } from '../../lib/auth/supabaseClient';
 import { normalizeIndustryGroups } from '../../lib/profile/industryGroups';
+import {
+  resumeFieldsFromCreds,
+  selectedInterestsFromCredsInput,
+  selectedSkillsFromCredsInput,
+} from '../../lib/profile/nerdCredsDisplay';
 import { hasVisibleSocialLinks } from '../../lib/profile/visibleSocialLinks';
 import { buildPortfolioCategorySections } from '../../lib/portfolio/portfolioSections';
 import type { PortfolioItem } from '../../types/portfolio';
@@ -109,38 +114,10 @@ export const PublicProfilePage = () => {
   const hasLinks = socials.length > 0 || hasVisibleSocialLinks(profile.socials);
   const industryGroups = normalizeIndustryGroups(profile);
   const nicheField = profile.niche_field ?? null;
-  const resumeThumbnailUrl =
-    typeof creds.resume_thumbnail_url === 'string'
-      ? creds.resume_thumbnail_url
-      : null;
-  const resumeFileName =
-    typeof creds.resume_file_name === 'string' ? creds.resume_file_name : null;
-  const resumeThumbnailStatus =
-    creds.resume_thumbnail_status === 'pending' ||
-    creds.resume_thumbnail_status === 'complete' ||
-    creds.resume_thumbnail_status === 'failed'
-      ? creds.resume_thumbnail_status
-      : null;
-  const selectedSkills = Array.isArray(creds.skills)
-    ? creds.skills.map((skill) => String(skill).trim()).filter(Boolean)
-    : typeof creds.skills === 'string'
-      ? creds.skills
-          .split(',')
-          .map((skill) => skill.trim())
-          .filter(Boolean)
-      : [];
-  const selectedInterests =
-    Array.isArray(creds.interests) &&
-    creds.interests.every((i) => typeof i === 'string')
-      ? (creds.interests as string[])
-          .map((i) => String(i).trim())
-          .filter(Boolean)
-      : typeof creds.interests === 'string'
-        ? (creds.interests as string)
-            .split(',')
-            .map((i) => i.trim())
-            .filter(Boolean)
-        : [];
+  const { resumeThumbnailUrl, resumeFileName, resumeThumbnailStatus } =
+    resumeFieldsFromCreds(creds);
+  const selectedSkills = selectedSkillsFromCredsInput(creds);
+  const selectedInterests = selectedInterestsFromCredsInput(creds);
 
   const projects: PortfolioItem[] = (portfolio ?? []).map((item) => ({
     id: item.id,

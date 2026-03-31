@@ -6,21 +6,33 @@ Overview of automated tests and how they align with documentation.
 
 ## Commands
 
-| Command              | What it runs                                          |
-| -------------------- | ----------------------------------------------------- |
-| `npm run test`       | Vitest (watch mode)                                   |
-| `npm run test:run`   | Vitest single run (used in `npm run check`)           |
-| `npm run test:unit`  | Same as `test:run`                                    |
-| `npm run test:rls`   | Vitest with RLS config (`vitest.rls.config.ts`)       |
-| `npm run test:e2e`   | Playwright e2e (all specs)                            |
-| `npm run check:full` | `check` + `test:e2e`                                  |
-| `npm run check`      | typecheck + eslint + markdownlint + prettier + Vitest |
+| Command                             | What it runs                                                                 |
+| ----------------------------------- | ---------------------------------------------------------------------------- |
+| `npm run test`                      | Vitest (watch mode)                                                          |
+| `npm run test:run`                  | Vitest single run (used in `npm run check`)                                  |
+| `npm run test:unit`                 | Same as `test:run`                                                           |
+| `npm run test:rls`                  | Vitest with RLS config (`vitest.rls.config.ts`)                              |
+| `npm run test:e2e`                  | Playwright e2e (dev server, all projects)                                    |
+| `npm run test:e2e:preview`          | `npm run build` + Playwright against **vite preview** (all browser projects) |
+| `npm run test:e2e:preview:chromium` | Same as preview, **Chromium only** (matches PR CI; used in `check:full`)     |
+| `npm run check:full`                | `check` + `test:e2e:preview:chromium`                                        |
+| `npm run check`                     | typecheck + eslint + markdownlint + prettier + Vitest                        |
 
-See [PR testing steps](./pr-testing-steps.md) for pre-merge checklist; preferred
-e2e command there is `npm run test:e2e`.
+See [PR testing steps](./pr-testing-steps.md) for pre-merge checklist. For
+parity with GitHub Actions, prefer **`npm run test:e2e:preview:chromium`** (or
+`npm run check:full`). Use **`npm run test:e2e`** for fast iteration on the dev
+server. **Firefox + Edge** against preview run weekly via
+`.github/workflows/e2e-preview-full-browsers.yml` (and
+`npm run test:e2e:preview`).
 
 For manual UAT sign-off of Dashboard modal and Resume card fixes, see
 [UAT checklist](./UAT_CHECKLIST.md).
+
+### Real device smoke (not automated)
+
+Before release, spot-check on a **phone** (390–430px width): home, feed,
+directory, dashboard, settings, and chat/popover if enabled. Automation does not
+replace touch, safe areas, or mobile Safari quirks.
 
 ## E2E (Playwright)
 
@@ -94,7 +106,7 @@ Additional portfolio unit coverage:
 
 - **Run e2e before merge:**
   [pr-testing-steps.md §10](./pr-testing-steps.md#10-smoke--build) —
-  `npm run test:e2e`
+  `npm run test:e2e:preview:chromium` or `npm run check:full`
 - **Run a11y for UI/a11y changes:**
   [AGENTICPROTOCOL.md](../../AGENTICPROTOCOL.md),
   [POST_UNIFICATION_PLAN.md](../architecture/POST_UNIFICATION_PLAN.md) —

@@ -10,8 +10,64 @@ import {
 } from '@mui/material';
 import type { ReactNode } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
+import type { GameSession } from '../../../types/games';
 
 export const DASHBOARD_GAMES_HUB = '/dashboard/games';
+
+/** Pending invite / declined / canceled — shared copy + layout for multiplayer mini-games. */
+export function getMiniGameSessionUnavailableMessage(
+  session: GameSession,
+  isInvitee: boolean,
+  copy: { inviteePending: string; hostPending: string },
+): string | null {
+  const { status } = session;
+  if (
+    status !== 'pending_invitation' &&
+    status !== 'declined' &&
+    status !== 'canceled'
+  ) {
+    return null;
+  }
+  if (status === 'pending_invitation') {
+    return isInvitee ? copy.inviteePending : copy.hostPending;
+  }
+  if (status === 'declined') return 'This game was declined.';
+  return 'This game was canceled.';
+}
+
+export const MiniGameSessionUnavailableScreen = ({
+  message,
+}: {
+  message: string;
+}) => {
+  return (
+    <Box sx={{ py: 2, px: { xs: 2, sm: 3 } }}>
+      <Button
+        component={RouterLink}
+        to={DASHBOARD_GAMES_HUB}
+        startIcon={<ArrowBackIcon />}
+        variant="outlined"
+        size="small"
+        sx={{ mb: 2 }}
+      >
+        Back to Games
+      </Button>
+      <Paper variant="outlined" sx={{ p: 3, maxWidth: 360 }}>
+        <Typography variant="body1" sx={{ mb: 2 }}>
+          {message}
+        </Typography>
+        <Button
+          component={RouterLink}
+          to={DASHBOARD_GAMES_HUB}
+          variant="contained"
+          fullWidth
+        >
+          Go to Games
+        </Button>
+      </Paper>
+    </Box>
+  );
+};
 
 export const MiniGameLoadingNotFound = ({
   loading,

@@ -9,6 +9,7 @@ on:
         description: Project owner (org or user)
         required: true
         type: choice
+        default: org
         options:
           - org
           - user
@@ -16,10 +17,12 @@ on:
         description: Organization login or GitHub username
         required: true
         type: string
+        default: WRDLNKDN
       project_number:
         description: Project number from the URL
         required: true
         type: number
+        default: 1
 
 permissions:
   contents: read
@@ -38,9 +41,8 @@ jobs:
       - name: Require Projects API token
         env:
           GITHUBACTION: ${{ secrets.GITHUBACTION }}
-          GH_PROJECTS_TOKEN: ${{ secrets.GH_PROJECTS_TOKEN }}
         run: |
-          if [ -z "$GITHUBACTION" ] && [ -z "$GH_PROJECTS_TOKEN" ]; then
+          if [ -z "$GITHUBACTION" ] then
             echo "::error::Add secret GITHUBACTION or GH_PROJECTS_TOKEN (PAT or GitHub App token with Projects + repo access). GITHUB_TOKEN cannot access GitHub Projects v2 — https://docs.github.com/en/issues/planning-and-tracking-with-projects/automating-your-project/automating-projects-using-actions"
             exit 1
           fi

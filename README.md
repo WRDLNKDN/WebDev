@@ -141,11 +141,15 @@ Run the standard verification stack from the project root:
 npm run check
 ```
 
-Run the full verification stack, including Playwright:
+Run the full verification stack, including Playwright (production build + **vite
+preview**, Chromium only — same as PR CI):
 
 ```bash
 npm run check:full
 ```
+
+For **all browsers** against preview (slower), use `npm run test:e2e:preview`.
+Weekly CI runs that matrix on `main`.
 
 Key commands:
 
@@ -153,7 +157,8 @@ Key commands:
 - `npm run lint:md`
 - `npm run typecheck`
 - `npm run test:run`
-- `npm run test:e2e`
+- `npm run test:e2e` — dev server, all browsers
+- `npm run test:e2e:preview:chromium` — preview, Chromium only
 
 ---
 

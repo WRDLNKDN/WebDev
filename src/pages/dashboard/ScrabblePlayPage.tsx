@@ -7,7 +7,7 @@ import { Box, Button, Paper, Stack, Typography } from '@mui/material';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link as RouterLink, useParams } from 'react-router-dom';
 import {
-  fetchSessionById,
+  fetchSessionForGameType,
   passScrabbleTurn,
   playScrabbleWord,
   startScrabbleGame,
@@ -20,9 +20,11 @@ import { supabase } from '../../lib/auth/supabaseClient';
 import { useGameSessionRealtime } from '../../hooks/useGameSessionRealtime';
 import type { GameSession, GameSessionParticipant } from '../../types/games';
 import {
+  getMiniGameSessionUnavailableMessage,
   MiniGameLoadingNotFound,
   MiniGamePlayHeaderRow,
   MiniGamePlayPageRoot,
+  MiniGameSessionUnavailableScreen,
 } from './games/MiniGamePlayChrome';
 
 const BOARD_SIZE = 15;
@@ -79,14 +81,8 @@ export const ScrabblePlayPage = () => {
   );
 
   const loadSession = useCallback(async (id: string) => {
-    const s = await fetchSessionById(id);
+    const s = await fetchSessionForGameType(id, 'scrabble');
     if (!s) {
-      setNotFound(true);
-      setSession(null);
-      return;
-    }
-    const def = s.game_definition as { game_type?: string } | undefined;
-    if (def?.game_type !== 'scrabble') {
       setNotFound(true);
       setSession(null);
       return;
@@ -250,49 +246,20 @@ export const ScrabblePlayPage = () => {
 
   if (!session) return null;
 
-  if (
-    session.status === 'pending_invitation' ||
-    session.status === 'declined' ||
-    session.status === 'canceled'
-  ) {
-    const isInvitee = ordered.some(
-      (p) => p.user_id === myUserId && p.role === 'invitee',
-    );
-    const message =
-      session.status === 'pending_invitation'
-        ? isInvitee
-          ? "You've been invited. Accept or decline from the Games page."
-          : 'Waiting for connections to accept.'
-        : session.status === 'declined'
-          ? 'This game was declined.'
-          : 'This game was canceled.';
-    return (
-      <Box sx={{ py: 2, px: { xs: 2, sm: 3 } }}>
-        <Button
-          component={RouterLink}
-          to="/dashboard/games"
-          startIcon={<ArrowBackIcon />}
-          variant="outlined"
-          size="small"
-          sx={{ mb: 2 }}
-        >
-          Back to Games
-        </Button>
-        <Paper variant="outlined" sx={{ p: 3, maxWidth: 360 }}>
-          <Typography variant="body1" sx={{ mb: 2 }}>
-            {message}
-          </Typography>
-          <Button
-            component={RouterLink}
-            to="/dashboard/games"
-            variant="contained"
-            fullWidth
-          >
-            Go to Games
-          </Button>
-        </Paper>
-      </Box>
-    );
+  const isInvitee = ordered.some(
+    (p) => p.user_id === myUserId && p.role === 'invitee',
+  );
+  const unavailableMsg = getMiniGameSessionUnavailableMessage(
+    session,
+    isInvitee,
+    {
+      inviteePending:
+        "You've been invited. Accept or decline from the Games page.",
+      hostPending: 'Waiting for connections to accept.',
+    },
+  );
+  if (unavailableMsg != null) {
+    return <MiniGameSessionUnavailableScreen message={unavailableMsg} />;
   }
 
   const board = state?.board ?? [];

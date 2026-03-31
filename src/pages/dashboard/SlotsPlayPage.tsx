@@ -7,7 +7,10 @@ import ReplayIcon from '@mui/icons-material/Replay';
 import { Box, Button, Paper, Stack, Typography } from '@mui/material';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { createSlotsSession, fetchSessionById } from '../../lib/api/gamesApi';
+import {
+  createSlotsSession,
+  fetchSessionForGameType,
+} from '../../lib/api/gamesApi';
 import { useAppToast } from '../../context/AppToastContext';
 import { toMessage } from '../../lib/utils/errors';
 import type { GameSession } from '../../types/games';
@@ -59,14 +62,8 @@ export const SlotsPlayPage = () => {
   );
 
   const loadSession = useCallback(async (id: string) => {
-    const s = await fetchSessionById(id);
+    const s = await fetchSessionForGameType(id, 'slots');
     if (!s) {
-      setNotFound(true);
-      setSession(null);
-      return;
-    }
-    const def = s.game_definition as { game_type?: string } | undefined;
-    if (def?.game_type !== 'slots') {
       setNotFound(true);
       setSession(null);
       return;

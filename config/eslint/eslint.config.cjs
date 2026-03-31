@@ -34,6 +34,9 @@ module.exports = [
       '**/test-results/**',
       '**/playwright-report/**',
       '**/blob-report/**',
+      // jscpd HTML report (vendor JS/CSS, not app source)
+      '**/jscpd-report/**',
+      '**/jscpd-full/**',
     ],
   },
 

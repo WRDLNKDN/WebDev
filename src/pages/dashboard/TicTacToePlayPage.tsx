@@ -2,20 +2,24 @@
  * Tic-Tac-Toe play surface: two-player turn-based match.
  * Invite a connection from Games dashboard; board initializes when invitee accepts.
  */
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { Box, Button, Paper, Stack, Typography } from '@mui/material';
 import { useCallback, useEffect, useState } from 'react';
-import { Link as RouterLink, useParams } from 'react-router-dom';
-import { fetchSessionById, makeTicTacToeMove } from '../../lib/api/gamesApi';
+import { useParams } from 'react-router-dom';
+import {
+  fetchSessionForGameType,
+  makeTicTacToeMove,
+} from '../../lib/api/gamesApi';
 import { useAppToast } from '../../context/AppToastContext';
 import { toMessage } from '../../lib/utils/errors';
 import { supabase } from '../../lib/auth/supabaseClient';
 import { useGameSessionRealtime } from '../../hooks/useGameSessionRealtime';
 import type { GameSession, GameSessionParticipant } from '../../types/games';
 import {
+  getMiniGameSessionUnavailableMessage,
   MiniGameLoadingNotFound,
   MiniGamePlayHeaderRow,
   MiniGamePlayPageRoot,
+  MiniGameSessionUnavailableScreen,
 } from './games/MiniGamePlayChrome';
 
 const CELL_SIZE = 64;
@@ -74,14 +78,8 @@ export const TicTacToePlayPage = () => {
   const [makingMove, setMakingMove] = useState(false);
 
   const loadSession = useCallback(async (id: string) => {
-    const s = await fetchSessionById(id);
+    const s = await fetchSessionForGameType(id, 'tic_tac_toe');
     if (!s) {
-      setNotFound(true);
-      setSession(null);
-      return;
-    }
-    const def = s.game_definition as { game_type?: string } | undefined;
-    if (def?.game_type !== 'tic_tac_toe') {
       setNotFound(true);
       setSession(null);
       return;
@@ -154,46 +152,17 @@ export const TicTacToePlayPage = () => {
   const myPosition = iAmCreator ? 0 : 1;
   const isInvitee = ordered[1]?.user_id === myUserId;
 
-  if (
-    session.status === 'pending_invitation' ||
-    session.status === 'declined' ||
-    session.status === 'canceled'
-  ) {
-    const message =
-      session.status === 'pending_invitation'
-        ? isInvitee
-          ? "You've been invited to this game. Accept or decline from the Games page."
-          : 'Waiting for your connection to accept the invitation.'
-        : session.status === 'declined'
-          ? 'This game was declined.'
-          : 'This game was canceled.';
-    return (
-      <Box sx={{ py: 2, px: { xs: 2, sm: 3 } }}>
-        <Button
-          component={RouterLink}
-          to="/dashboard/games"
-          startIcon={<ArrowBackIcon />}
-          variant="outlined"
-          size="small"
-          sx={{ mb: 2 }}
-        >
-          Back to Games
-        </Button>
-        <Paper variant="outlined" sx={{ p: 3, maxWidth: 360 }}>
-          <Typography variant="body1" sx={{ mb: 2 }}>
-            {message}
-          </Typography>
-          <Button
-            component={RouterLink}
-            to="/dashboard/games"
-            variant="contained"
-            fullWidth
-          >
-            Go to Games
-          </Button>
-        </Paper>
-      </Box>
-    );
+  const unavailableMsg = getMiniGameSessionUnavailableMessage(
+    session,
+    isInvitee,
+    {
+      inviteePending:
+        "You've been invited to this game. Accept or decline from the Games page.",
+      hostPending: 'Waiting for your connection to accept the invitation.',
+    },
+  );
+  if (unavailableMsg != null) {
+    return <MiniGameSessionUnavailableScreen message={unavailableMsg} />;
   }
 
   const board = getBoard(session);

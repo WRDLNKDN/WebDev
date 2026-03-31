@@ -1,14 +1,10 @@
 import {
   Alert,
   Button,
-  FormControlLabel,
-  LinearProgress,
   List,
   ListItem,
   ListItemText,
   Paper,
-  Stack,
-  Switch,
   Typography,
 } from '@mui/material';
 import { useCallback, useEffect, useState } from 'react';
@@ -20,6 +16,13 @@ import {
   resolveMarketingEmailEnabled,
 } from '../../lib/settings/privacyConsent';
 import { toMessage } from '../../lib/utils/errors';
+import {
+  SETTINGS_LIST_PAPER_SX,
+  SettingsLoadingLine,
+  SettingsSavingProgress,
+  SettingsSectionStack,
+  SettingsSwitchCard,
+} from './settings/settingsFormPrimitives';
 
 type BlockedUser = {
   blocked_user_id: string;
@@ -184,15 +187,11 @@ export const SettingsPrivacyPage = () => {
   );
 
   if (loading) {
-    return (
-      <Typography variant="body2" color="text.secondary">
-        Loading…
-      </Typography>
-    );
+    return <SettingsLoadingLine />;
   }
 
   return (
-    <Stack spacing={3}>
+    <SettingsSectionStack>
       <Typography variant="h6" sx={{ fontWeight: 700 }}>
         Blocked members
       </Typography>
@@ -206,13 +205,7 @@ export const SettingsPrivacyPage = () => {
           You have not blocked anyone.
         </Typography>
       ) : (
-        <Paper
-          variant="outlined"
-          sx={{
-            borderColor: 'rgba(255,255,255,0.08)',
-            bgcolor: 'rgba(255,255,255,0.02)',
-          }}
-        >
+        <Paper variant="outlined" sx={SETTINGS_LIST_PAPER_SX}>
           <List dense disablePadding>
             {blockedUsers.map((u) => (
               <ListItem
@@ -253,76 +246,32 @@ export const SettingsPrivacyPage = () => {
         verification, and non-marketing account activity) are not affected by
         these settings.
       </Typography>
-      {error && (
+      {error ? (
         <Alert severity="error" onClose={() => setError(null)}>
           {error}
         </Alert>
-      )}
-      {saving ? <LinearProgress aria-label="Saving privacy settings" /> : null}
+      ) : null}
+      {saving ? (
+        <SettingsSavingProgress label="Saving privacy settings" />
+      ) : null}
 
-      <Paper
-        variant="outlined"
-        sx={{
-          p: { xs: 2, md: 2.5 },
-          borderColor: 'rgba(255,255,255,0.08)',
-          bgcolor: 'rgba(255,255,255,0.02)',
-        }}
-      >
-        <FormControlLabel
-          control={
-            <Switch
-              checked={marketingEmail}
-              disabled={saving}
-              onChange={(_, checked) =>
-                void handleMarketingEmailChange(checked)
-              }
-              color="primary"
-              inputProps={{ 'aria-label': 'Toggle marketing emails' }}
-            />
-          }
-          label="Marketing Emails"
-        />
-        <Typography
-          variant="caption"
-          display="block"
-          color="text.secondary"
-          sx={{ mt: 0.5, ml: 7 }}
-        >
-          Promotional and product marketing emails. Off by default.
-        </Typography>
-      </Paper>
+      <SettingsSwitchCard
+        label="Marketing Emails"
+        checked={marketingEmail}
+        disabled={saving}
+        onChange={(v) => void handleMarketingEmailChange(v)}
+        switchAriaLabel="Toggle marketing emails"
+        caption="Promotional and product marketing emails. Off by default."
+      />
 
-      <Paper
-        variant="outlined"
-        sx={{
-          p: { xs: 2, md: 2.5 },
-          borderColor: 'rgba(255,255,255,0.08)',
-          bgcolor: 'rgba(255,255,255,0.02)',
-        }}
-      >
-        <FormControlLabel
-          control={
-            <Switch
-              checked={marketingPush}
-              disabled={saving}
-              onChange={(_, checked) => void handleMarketingPushChange(checked)}
-              color="primary"
-              inputProps={{
-                'aria-label': 'Toggle marketing push notifications',
-              }}
-            />
-          }
-          label="Marketing Push Notifications"
-        />
-        <Typography
-          variant="caption"
-          display="block"
-          color="text.secondary"
-          sx={{ mt: 0.5, ml: 7 }}
-        >
-          Promotional push notifications. Off by default.
-        </Typography>
-      </Paper>
-    </Stack>
+      <SettingsSwitchCard
+        label="Marketing Push Notifications"
+        checked={marketingPush}
+        disabled={saving}
+        onChange={(v) => void handleMarketingPushChange(v)}
+        switchAriaLabel="Toggle marketing push notifications"
+        caption="Promotional push notifications. Off by default."
+      />
+    </SettingsSectionStack>
   );
 };

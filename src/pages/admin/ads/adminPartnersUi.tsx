@@ -24,6 +24,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
+import { AdminListingImageCell } from '../../../components/admin/AdminListingImageCell';
 import type { RefObject } from 'react';
 import { AD_IMAGE_ALLOWED_LABEL } from '../../../lib/api/adminAdvertisersApi';
 import { shouldCloseDialogFromReason } from '../../../lib/ui/dialogFormUtils';
@@ -165,39 +166,7 @@ export const PartnersTable = ({
       <TableBody>
         {rows.map((row) => (
           <TableRow key={row.id}>
-            <TableCell sx={{ width: 56, py: 0.5 }}>
-              {row.image_url ? (
-                <Box
-                  component="img"
-                  src={row.image_url}
-                  alt=""
-                  sx={{
-                    width: 48,
-                    height: 32,
-                    objectFit: 'cover',
-                    borderRadius: 0.5,
-                    border: '1px solid',
-                    borderColor: 'divider',
-                  }}
-                />
-              ) : (
-                <Box
-                  sx={{
-                    width: 48,
-                    height: 32,
-                    borderRadius: 0.5,
-                    bgcolor: 'action.hover',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <Typography variant="caption" color="text.disabled">
-                    —
-                  </Typography>
-                </Box>
-              )}
-            </TableCell>
+            <AdminListingImageCell imageUrl={row.image_url} />
             <TableCell>{row.company_name}</TableCell>
             <TableCell>{row.title ?? '—'}</TableCell>
             <TableCell>

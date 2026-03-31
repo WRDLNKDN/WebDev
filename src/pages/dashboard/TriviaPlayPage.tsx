@@ -21,6 +21,7 @@ import { Link as RouterLink, useNavigate, useParams } from 'react-router-dom';
 import {
   createTriviaSoloSession,
   fetchSessionById,
+  fetchSessionForGameType,
   submitTriviaAnswer,
   type TriviaQuestion,
   type TriviaStatePayload,
@@ -74,15 +75,8 @@ export const TriviaPlayPage = () => {
   );
 
   const loadSession = useCallback(async (id: string) => {
-    const s = await fetchSessionById(id);
+    const s = await fetchSessionForGameType(id, 'trivia');
     if (!s) {
-      setNotFound(true);
-      setSession(null);
-      setQuestions([]);
-      return;
-    }
-    const def = s.game_definition as { game_type?: string } | undefined;
-    if (def?.game_type !== 'trivia') {
       setNotFound(true);
       setSession(null);
       setQuestions([]);

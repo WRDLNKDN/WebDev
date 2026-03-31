@@ -32,6 +32,13 @@ build/
 # --- Lighthouse (generated reports; do not commit) ---
 lighthouse-reports/
 scripts/lighthouse-reports/
+# Default Lighthouse output when run with URL-derived basename (e.g. wrdlnkdn.vercel.app_*.report.html)
+*.report.html
+*.report.json
+
+# --- jscpd (clone reports; vendor HTML/JS — do not commit) ---
+jscpd-report/
+jscpd-full/
 
 # --- Environment Secrets (Integrity Layer) ---
 # We block all .env variants to prevent leaking credentials

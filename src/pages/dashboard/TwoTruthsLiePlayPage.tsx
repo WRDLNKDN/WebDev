@@ -18,7 +18,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link as RouterLink, useParams } from 'react-router-dom';
 import {
   advanceRoundTwoTruthsLie,
-  fetchSessionById,
+  fetchSessionForGameType,
   revealTwoTruthsLie,
   submitTwoTruthsLieStatements,
   submitTwoTruthsLieVote,
@@ -69,14 +69,8 @@ export const TwoTruthsLiePlayPage = () => {
   }, []);
 
   const loadSession = useCallback(async (id: string) => {
-    const s = await fetchSessionById(id);
+    const s = await fetchSessionForGameType(id, 'two_truths_lie');
     if (!s) {
-      setNotFound(true);
-      setSession(null);
-      return;
-    }
-    const def = s.game_definition as { game_type?: string } | undefined;
-    if (def?.game_type !== 'two_truths_lie') {
       setNotFound(true);
       setSession(null);
       return;

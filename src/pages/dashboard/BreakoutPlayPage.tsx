@@ -18,7 +18,7 @@ import { Link as RouterLink, useNavigate, useParams } from 'react-router-dom';
 import {
   completeSession,
   createBreakoutSession,
-  fetchSessionById,
+  fetchSessionForGameType,
   updateSessionState,
   type BreakoutStatePayload,
 } from '../../lib/api/gamesApi';
@@ -116,14 +116,8 @@ export const BreakoutPlayPage = () => {
   paddleXRef.current = paddleX;
 
   const loadSession = useCallback(async (id: string) => {
-    const s = await fetchSessionById(id);
+    const s = await fetchSessionForGameType(id, 'breakout');
     if (!s) {
-      setNotFound(true);
-      setSession(null);
-      return;
-    }
-    const def = s.game_definition as { game_type?: string } | undefined;
-    if (def?.game_type !== 'breakout') {
       setNotFound(true);
       setSession(null);
       return;

@@ -21,7 +21,8 @@ import InstagramIcon from '@mui/icons-material/Instagram';
 import LinkedInIcon from '@mui/icons-material/LinkedIn';
 import YouTubeIcon from '@mui/icons-material/YouTube';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Link as RouterLink, useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
+import { RouterLinkPrefetch } from '../routing/RouterLinkPrefetch';
 import { trackEvent } from '../../lib/analytics/trackEvent';
 import { buildPayQrCodeImageUrl } from '../../lib/marketing/payLink';
 import {
@@ -383,7 +384,7 @@ export const Footer = ({ showChatLink = false }: FooterProps) => {
                     </Link>
                   ) : (
                     <Link
-                      component={RouterLink}
+                      component={RouterLinkPrefetch}
                       to={link.href}
                       onClick={() => handleFooterLinkClick(link)}
                       sx={commonSx}

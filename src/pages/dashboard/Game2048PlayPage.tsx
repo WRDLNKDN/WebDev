@@ -18,7 +18,7 @@ import { Link as RouterLink, useNavigate, useParams } from 'react-router-dom';
 import {
   completeSession,
   create2048Session,
-  fetchSessionById,
+  fetchSessionForGameType,
   spawn2048Tile,
   updateSessionState,
   type Game2048StatePayload,
@@ -157,14 +157,8 @@ export const Game2048PlayPage = () => {
   const [moving, setMoving] = useState(false);
 
   const loadSession = useCallback(async (id: string) => {
-    const s = await fetchSessionById(id);
+    const s = await fetchSessionForGameType(id, '2048');
     if (!s) {
-      setNotFound(true);
-      setSession(null);
-      return;
-    }
-    const def = s.game_definition as { game_type?: string } | undefined;
-    if (def?.game_type !== '2048') {
       setNotFound(true);
       setSession(null);
       return;

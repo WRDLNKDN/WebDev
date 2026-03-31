@@ -4,6 +4,11 @@ export default defineConfig({
   test: {
     environment: 'node',
     globals: true,
+    setupFiles: ['vitest.setup.ts'],
+    environmentMatchGlobs: [
+      ['**/GameEndScreen.test.tsx', 'jsdom'],
+      ['**/RouterLinkPrefetch.test.tsx', 'jsdom'],
+    ],
 
     include: [
       'src/tests/**/*.{test,spec}.ts',

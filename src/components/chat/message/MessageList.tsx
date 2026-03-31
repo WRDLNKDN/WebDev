@@ -448,6 +448,24 @@ export const MessageList = ({
         const revealMenu =
           useHoverRevealActions && showKebabMenu && kebabItems.length > 0;
 
+        let messageBubbleBgcolor: string;
+        if (isOwn) {
+          messageBubbleBgcolor = isLightChrome
+            ? alpha(theme.palette.primary.main, 0.14)
+            : alpha(theme.palette.primary.main, 0.22);
+        } else {
+          messageBubbleBgcolor = isLightChrome
+            ? alpha(theme.palette.common.black, 0.04)
+            : alpha('#ffffff', 0.06);
+        }
+
+        let messageInsetShadowAlpha: number;
+        if (isOwn) {
+          messageInsetShadowAlpha = isLightChrome ? 0.12 : 0.18;
+        } else {
+          messageInsetShadowAlpha = 0.08;
+        }
+
         return (
           <Box key={msg.id}>
             {showDaySeparator ? (
@@ -527,16 +545,10 @@ export const MessageList = ({
                 sx={{
                   borderRadius: 2.25,
                   border: 'none',
-                  bgcolor: isOwn
-                    ? isLightChrome
-                      ? alpha(theme.palette.primary.main, 0.14)
-                      : alpha(theme.palette.primary.main, 0.22)
-                    : isLightChrome
-                      ? alpha(theme.palette.common.black, 0.04)
-                      : alpha('#ffffff', 0.06),
+                  bgcolor: messageBubbleBgcolor,
                   boxShadow: `0 0 0 1px ${alpha(
                     isOwn ? theme.palette.primary.main : theme.palette.divider,
-                    isOwn ? (isLightChrome ? 0.12 : 0.18) : 0.08,
+                    messageInsetShadowAlpha,
                   )} inset`,
                   minWidth: 0,
                   width: '100%',

@@ -8,7 +8,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   createBlackjackSession,
-  fetchSessionById,
+  fetchSessionForGameType,
 } from '../../lib/api/gamesApi';
 import { useAppToast } from '../../context/AppToastContext';
 import { toMessage } from '../../lib/utils/errors';
@@ -106,14 +106,8 @@ export const BlackjackPlayPage = () => {
   const statsRef = useRef({ wins: 0, losses: 0, pushes: 0 });
 
   const loadSession = useCallback(async (id: string) => {
-    const s = await fetchSessionById(id);
+    const s = await fetchSessionForGameType(id, 'blackjack');
     if (!s) {
-      setNotFound(true);
-      setSession(null);
-      return;
-    }
-    const def = s.game_definition as { game_type?: string } | undefined;
-    if (def?.game_type !== 'blackjack') {
       setNotFound(true);
       setSession(null);
       return;

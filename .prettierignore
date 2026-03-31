@@ -30,3 +30,8 @@ src/types/supabase.ts
 # --- Documentation ---
 # We let Prettier handle READMEs, but ignore local changelogs if auto-gen
 # CHANGELOG.md
+
+# --- Local audit artifacts (not source) ---
+jscpd-report/
+jscpd-full/
+*.report.html

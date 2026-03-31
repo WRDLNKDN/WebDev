@@ -15,18 +15,16 @@ import { useCallback, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useAppToast } from '../../context/AppToastContext';
-import { ForwardMessageDialog } from '../../components/chat/dialogs/ForwardMessageDialog';
 import { BlockConfirmDialog } from '../../components/chat/dialogs/BlockConfirmDialog';
 import { ChatRoomHeader } from '../../components/chat/room/ChatRoomHeader';
 import { ChatRoomList } from '../../components/chat/room/ChatRoomList';
 import { CreateGroupDialog } from '../../components/chat/dialogs/CreateGroupDialog';
-import { GroupActionsDialog } from '../../components/chat/dialogs/GroupActionsDialog';
 import {
   MessageInput,
   type MessageReplyDraft,
 } from '../../components/chat/message/MessageInput';
 import { ChatThreadMessageList } from '../../components/chat/message/ChatThreadMessageList';
-import { ReportDialog } from '../../components/chat/dialogs/ReportDialog';
+import { ChatGroupForwardReportDialogs } from '../../components/chat/dialogs/ChatGroupForwardReportDialogs';
 import { StartDmDialog } from '../../components/chat/dialogs/StartDmDialog';
 import type { MessageWithExtras } from '../../hooks/chatTypes';
 import { useChatForwardToRoomFlow } from '../../hooks/useChatForwardToRoomFlow';
@@ -39,7 +37,9 @@ import {
   getDefaultChatDocumentTitle,
   resolveChatDocumentTitle,
 } from '../../lib/chat/documentTitle';
+import { dmTypingThreadProps } from '../../lib/chat/dmTypingThreadProps';
 import { roomMembersToMentionable } from '../../lib/chat/groupMentionMembers';
+import { chatOtherMemberDisplayName } from '../../lib/chat/otherMemberDisplayName';
 import { useUatBannerOffset } from '../../lib/utils/useUatBannerOffset';
 import { getGlassCard } from '../../theme/candyStyles';
 
@@ -451,18 +451,7 @@ export const ChatPage = () => {
           replyTargetSetter={setReplyTarget}
           onForwardSource={setForwardSource}
           scrollToMessageId={searchParams.get('message')}
-          typingAvatarUrl={
-            room?.room_type === 'dm'
-              ? (otherMember?.profile?.avatar ?? null)
-              : undefined
-          }
-          showTyping={
-            !!(
-              room?.room_type === 'dm' &&
-              otherMember?.user_id &&
-              typingUsers.has(otherMember.user_id)
-            )
-          }
+          {...dmTypingThreadProps(room, otherMember, typingUsers)}
         />
       )}
 
@@ -535,49 +524,29 @@ export const ChatPage = () => {
         open={blockDialogOpen}
         onClose={() => setBlockDialogOpen(false)}
         onConfirm={handleBlock}
-        displayName={
-          otherMember?.profile?.display_name ||
-          otherMember?.profile?.handle ||
-          'this user'
-        }
+        displayName={chatOtherMemberDisplayName(otherMember)}
       />
-      {roomId && room && (
-        <GroupActionsDialog
-          open={groupDialogOpen}
-          mode={groupDialogMode}
-          onClose={() => setGroupDialogOpen(false)}
-          roomId={roomId}
-          roomName={room.name ?? ''}
-          roomDescription={room.description}
-          roomImageUrl={room.image_url}
-          currentMembers={room.members ?? []}
-          currentUserId={uid}
-          onSaveDetails={updateGroupDetails}
-          onInvite={inviteMembers}
-          onRemove={removeMember}
-          onTransferAdmin={transferAdmin}
-        />
-      )}
-      {roomId && uid ? (
-        <ForwardMessageDialog
-          open={Boolean(forwardSource)}
-          onClose={() => setForwardSource(null)}
-          rooms={rooms}
-          excludeRoomId={roomId}
-          currentUserId={uid}
-          onSelectRoom={handleForwardToRoom}
-          busy={sending}
-        />
-      ) : null}
-      <ReportDialog
-        open={reportOpen}
-        onClose={() => {
-          setReportOpen(false);
-          setReportTarget(null);
-        }}
-        onSubmit={handleReportSubmit}
-        reportedMessageId={reportTarget?.messageId ?? null}
-        reportedUserId={reportTarget?.userId ?? null}
+      <ChatGroupForwardReportDialogs
+        room={room}
+        roomId={roomId}
+        currentUserId={uid}
+        groupDialogOpen={groupDialogOpen}
+        setGroupDialogOpen={setGroupDialogOpen}
+        groupDialogMode={groupDialogMode}
+        onSaveDetails={updateGroupDetails}
+        onInvite={inviteMembers}
+        onRemove={removeMember}
+        onTransferAdmin={transferAdmin}
+        forwardSource={forwardSource}
+        setForwardSource={setForwardSource}
+        rooms={rooms}
+        handleForwardToRoom={handleForwardToRoom}
+        sending={sending}
+        reportOpen={reportOpen}
+        setReportOpen={setReportOpen}
+        setReportTarget={setReportTarget}
+        reportTarget={reportTarget}
+        onReportSubmit={handleReportSubmit}
       />
     </>
   );

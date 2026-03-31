@@ -9,7 +9,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import {
   completeSession,
   createSnakeSession,
-  fetchSessionById,
+  fetchSessionForGameType,
   updateSessionState,
 } from '../../lib/api/gamesApi';
 import { useAppToast } from '../../context/AppToastContext';
@@ -168,14 +168,8 @@ export const SnakePlayPage = () => {
 
   const loadSession = useCallback(
     async (id: string) => {
-      const s = await fetchSessionById(id);
+      const s = await fetchSessionForGameType(id, 'snake');
       if (!s) {
-        setNotFound(true);
-        setSession(null);
-        return;
-      }
-      const def = s.game_definition as { game_type?: string } | undefined;
-      if (def?.game_type !== 'snake') {
         setNotFound(true);
         setSession(null);
         return;

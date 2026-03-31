@@ -1,7 +1,7 @@
 import { Box, Button, CircularProgress, Typography } from '@mui/material';
 import { useCallback, useEffect, useState } from 'react';
 import { useAppToast } from '../../context/AppToastContext';
-import { ForwardMessageDialog } from '../../components/chat/dialogs/ForwardMessageDialog';
+import { ChatForwardRoomDialog } from '../../components/chat/dialogs/ChatForwardRoomDialog';
 import { ChatRoomHeader } from '../../components/chat/room/ChatRoomHeader';
 import {
   MessageInput,
@@ -11,6 +11,7 @@ import { ChatThreadMessageList } from '../../components/chat/message/ChatThreadM
 import type { ChatRoomWithMembers } from '../../hooks/useChat';
 import type { MessageWithExtras } from '../../hooks/chatTypes';
 import { formatForwardedChatText } from '../../lib/chat/formatForwardedChatText';
+import { dmTypingThreadProps } from '../../lib/chat/dmTypingThreadProps';
 import { roomMembersToMentionable } from '../../lib/chat/groupMentionMembers';
 
 type ChatPageContentPaneProps = {
@@ -202,18 +203,7 @@ export const ChatPageContentPane = ({
               }
               replyTargetSetter={setReplyTarget}
               onForwardSource={setForwardSource}
-              typingAvatarUrl={
-                room?.room_type === 'dm'
-                  ? (otherMember?.profile?.avatar ?? null)
-                  : undefined
-              }
-              showTyping={
-                !!(
-                  room?.room_type === 'dm' &&
-                  otherMember?.user_id &&
-                  typingUsers.has(otherMember.user_id)
-                )
-              }
+              {...dmTypingThreadProps(room, otherMember, typingUsers)}
               scrollToMessageId={scrollToMessageId}
             />
           )}
@@ -232,14 +222,14 @@ export const ChatPageContentPane = ({
             onCancelReply={() => setReplyTarget(null)}
           />
 
-          <ForwardMessageDialog
-            open={Boolean(forwardSource)}
-            onClose={() => setForwardSource(null)}
+          <ChatForwardRoomDialog
+            forwardSource={forwardSource}
+            setForwardSource={setForwardSource}
             rooms={rooms}
-            excludeRoomId={roomId}
+            roomId={roomId}
             currentUserId={uid}
             onSelectRoom={handleForwardToRoom}
-            busy={sending}
+            sending={sending}
           />
         </>
       ) : null}

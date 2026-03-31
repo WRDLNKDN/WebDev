@@ -1,56 +1,32 @@
-// src/pages/LandingPage.tsx
-import {
-  Box,
-  Button,
-  CircularProgress,
-  Container,
-  Grid,
-  Stack,
-  Typography,
-} from '@mui/material';
-import PersonAddIcon from '@mui/icons-material/PersonAdd';
-import PersonIcon from '@mui/icons-material/Person';
-import EditIcon from '@mui/icons-material/Edit';
+// src/pages/profile/LandingPage.tsx
+import { Box, CircularProgress } from '@mui/material';
 import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
-import { Helmet } from 'react-helmet-async';
-import { Link as RouterLink, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import type { User } from '@supabase/supabase-js';
 
-// MODULAR COMPONENTS
 import { LandingPageSkeleton } from '../../components/layout/LandingPageSkeleton';
-import { IndustryGroupBlock } from '../../components/profile/identity/IndustryGroupBlock';
-import { PortfolioFrame } from '../../components/portfolio/layout/PortfolioFrame';
-import { PortfolioHighlightsCarousel } from '../../components/portfolio/layout/PortfolioHighlightsCarousel';
-import { PortfolioPreviewModal } from '../../components/portfolio/dialogs/PortfolioPreviewModal';
-import { ProjectCard } from '../../components/portfolio/cards/ProjectCard';
-import { ResumeCard } from '../../components/portfolio/cards/ResumeCard';
-import { IdentityHeader } from '../../components/profile/identity/IdentityHeader';
-import { SkillsInterestsPills } from '../../components/profile/identity/SkillsInterestsPills';
-import { ProfileLinksWidget } from '../../components/profile/links/ProfileLinksWidget';
-
-// --- SYSTEM UPGRADE: THE DIVERGENCE COMPONENT ---
+import { LandingPageContent } from './components/LandingPageContent';
 import { NotFoundPage } from '../misc/NotFoundPage';
-
-const DivergencePage = lazy(async () => {
-  const m = await import('../misc/DivergencePage');
-  return { default: m.DivergencePage };
-});
-
-// LOGIC & TYPES
 import { useCurrentUserAvatar } from '../../context/AvatarContext';
 import { useAppToast } from '../../context/AppToastContext';
 import { toMessage } from '../../lib/utils/errors';
 import { hasVisibleSocialLinks } from '../../lib/profile/visibleSocialLinks';
 import { normalizeIndustryGroups } from '../../lib/profile/industryGroups';
 import {
-  buildPortfolioCategorySections,
-  portfolioCategoryToSectionTestId,
-} from '../../lib/portfolio/portfolioSections';
-import { buildResumePreviewItem } from '../../lib/portfolio/resumePreviewItem';
+  resumeFieldsFromCreds,
+  selectedInterestsFromCredsInput,
+  selectedSkillsFromCredsInput,
+} from '../../lib/profile/nerdCredsDisplay';
+import { buildPortfolioCategorySections } from '../../lib/portfolio/portfolioSections';
 import { supabase } from '../../lib/auth/supabaseClient';
 import type { PortfolioItem } from '../../types/portfolio';
 import type { DashboardProfile, NerdCreds } from '../../types/profile';
 import { safeStr } from '../../utils/stringUtils';
+
+const DivergencePage = lazy(async () => {
+  const m = await import('../misc/DivergencePage');
+  return { default: m.DivergencePage };
+});
 
 export const LandingPage = () => {
   const { handle } = useParams<{ handle: string }>();
@@ -70,11 +46,9 @@ export const LandingPage = () => {
   const { avatarUrl: currentUserAvatarUrl } = useCurrentUserAvatar();
   const { showToast } = useAppToast();
 
-  // Easter Egg Check
   const isSecretHandle =
     handle?.toLowerCase() === 'glitch' || handle?.toLowerCase() === 'neo';
 
-  // Viewer session for Connect button
   useEffect(() => {
     const init = async () => {
       const {
@@ -91,7 +65,6 @@ export const LandingPage = () => {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Check if viewer is already following this profile
   useEffect(() => {
     if (!viewer || !profile || viewer.id === profile.id) {
       setFollowCheckDone(!!viewer && !!profile);
@@ -157,7 +130,6 @@ export const LandingPage = () => {
     }
   }, [viewer, profile, showToast]);
 
-  // /profile/:handle is owner-only. Non-owners get 404 (no leak). Use RPC so only owner can load by handle.
   useEffect(() => {
     const fetchOwnerProfile = async () => {
       if (isSecretHandle || !handle?.trim()) {
@@ -217,7 +189,6 @@ export const LandingPage = () => {
 
   if (loading) return <LandingPageSkeleton />;
 
-  // --- DIVERGENCE CHECK ---
   if (isSecretHandle)
     return (
       <Suspense
@@ -234,261 +205,46 @@ export const LandingPage = () => {
   if (!profile) return <NotFoundPage />;
 
   const creds = profile.nerd_creds as Record<string, unknown>;
-  const resumeThumbnailUrl =
-    typeof creds.resume_thumbnail_url === 'string'
-      ? creds.resume_thumbnail_url
-      : null;
-  const resumeFileName =
-    typeof creds.resume_file_name === 'string' ? creds.resume_file_name : null;
-  const resumeThumbnailStatus =
-    creds.resume_thumbnail_status === 'pending' ||
-    creds.resume_thumbnail_status === 'complete' ||
-    creds.resume_thumbnail_status === 'failed'
-      ? creds.resume_thumbnail_status
-      : null;
+  const { resumeThumbnailUrl, resumeFileName, resumeThumbnailStatus } =
+    resumeFieldsFromCreds(creds);
   const isOwner = !!viewer && viewer.id === profile.id;
   const showConnect =
     !!viewer && viewer.id !== profile.id && followCheckDone && !isSecretHandle;
-  const selectedSkills =
-    Array.isArray(creds.skills) &&
-    creds.skills.every((skill) => typeof skill === 'string')
-      ? (creds.skills as string[]).map((skill) => skill.trim()).filter(Boolean)
-      : typeof creds.skills === 'string'
-        ? creds.skills
-            .split(',')
-            .map((skill) => skill.trim())
-            .filter(Boolean)
-        : [];
-  const selectedInterests: string[] =
-    Array.isArray(creds.interests) &&
-    creds.interests.every((i) => typeof i === 'string')
-      ? (creds.interests as string[])
-          .map((i) => String(i).trim())
-          .filter(Boolean)
-      : typeof creds.interests === 'string'
-        ? (creds.interests as string)
-            .split(',')
-            .map((i) => i.trim())
-            .filter(Boolean)
-        : [];
-  const nicheField = safeStr(
+  const selectedSkills = selectedSkillsFromCredsInput(creds);
+  const selectedInterests = selectedInterestsFromCredsInput(creds);
+  const nicheFieldRaw = safeStr(
     (profile as unknown as { niche_field?: string }).niche_field,
   );
   const industryGroups = normalizeIndustryGroups(profile);
   const hasLinks = hasVisibleSocialLinks(profile.socials);
   const portfolioSections = buildPortfolioCategorySections(projects);
-  const resumePreviewProject = buildResumePreviewItem({
-    url: profile.resume_url,
-    fileName: resumeFileName,
-    thumbnailUrl: resumeThumbnailUrl,
-    thumbnailStatus: resumeThumbnailStatus,
-  });
-
-  const ownerActions = isOwner ? (
-    <Button
-      component={RouterLink}
-      to="/dashboard"
-      state={{ openEditDialog: true }}
-      variant="outlined"
-      startIcon={<EditIcon />}
-      size="medium"
-      sx={{
-        borderColor: 'rgba(255,255,255,0.4)',
-        color: 'white',
-        width: { xs: '100%', sm: 'auto' },
-      }}
-    >
-      Edit profile
-    </Button>
-  ) : null;
-
-  const connectActions = showConnect ? (
-    <Stack
-      direction={{ xs: 'column', sm: 'row' }}
-      spacing={1}
-      alignItems={{ xs: 'stretch', sm: 'center' }}
-      sx={{ width: { xs: '100%', sm: 'auto' } }}
-    >
-      {isFollowing ? (
-        <>
-          <Button
-            variant="outlined"
-            startIcon={<PersonIcon />}
-            disabled
-            size="medium"
-            sx={{ width: { xs: '100%', sm: 'auto' } }}
-          >
-            Following
-          </Button>
-          <Button
-            variant="text"
-            size="medium"
-            disabled={connectionLoading}
-            onClick={() => void unfollow()}
-            sx={{ width: { xs: '100%', sm: 'auto' } }}
-          >
-            Unfollow
-          </Button>
-        </>
-      ) : (
-        <Button
-          variant="contained"
-          startIcon={<PersonAddIcon />}
-          disabled={connectionLoading}
-          onClick={() => void follow()}
-          size="medium"
-          sx={{ width: { xs: '100%', sm: 'auto' } }}
-        >
-          {connectionLoading ? 'Connecting…' : 'Connect'}
-        </Button>
-      )}
-    </Stack>
-  ) : null;
 
   return (
-    <>
-      <Helmet>
-        <title>{safeStr(profile.display_name)} | Verified Generalist</title>
-        <meta name="description" content={safeStr(profile.display_name)} />
-      </Helmet>
-
-      <Box
-        component="main"
-        sx={{
-          position: 'relative',
-          minWidth: 0,
-          overflowX: 'hidden',
-          py: { xs: 2, sm: 4, md: 8 },
-          px: { xs: 1.25, sm: 2, md: 3 },
-        }}
-      >
-        <Container maxWidth="lg" disableGutters>
-          {/* 1. IDENTITY SECTION (canonical three-column: Avatar | Bio + Skills | Industries) */}
-          <IdentityHeader
-            layoutVariant="three-column"
-            displayName={safeStr(profile.display_name)}
-            tagline={profile.tagline ?? undefined}
-            bio={
-              safeStr(profile.additional_context).trim() ||
-              safeStr(creds.bio).trim()
-            }
-            bioIsPlaceholder={false}
-            avatarUrl={
-              viewer?.id === profile.id
-                ? (currentUserAvatarUrl ?? resolvedAvatarUrl ?? profile.avatar)
-                : (resolvedAvatarUrl ?? profile.avatar ?? undefined)
-            }
-            statusEmoji={safeStr(creds.status_emoji, '⚡')}
-            statusMessage={safeStr(creds.status_message)}
-            badges={
-              <SkillsInterestsPills
-                skills={selectedSkills}
-                interests={selectedInterests}
-              />
-            }
-            rightColumn={
-              industryGroups.length > 0 || nicheField ? (
-                <IndustryGroupBlock
-                  groups={industryGroups}
-                  nicheField={nicheField}
-                />
-              ) : undefined
-            }
-            actions={
-              <>
-                {ownerActions}
-                {connectActions}
-              </>
-            }
-          />
-
-          {/* 2. LINKS SECTION (full width below Identity) */}
-          {hasLinks && (
-            <Box sx={{ mb: { xs: 2, sm: 4, md: 6 } }}>
-              <ProfileLinksWidget
-                socials={profile.socials || []}
-                grouped
-                collapsible
-                defaultExpanded={true}
-              />
-            </Box>
-          )}
-
-          {/* 3. PORTFOLIO SHOWCASE */}
-          <Grid
-            container
-            spacing={{ xs: 2, sm: 3, md: 4 }}
-            sx={{ mt: { xs: 2, sm: 4, md: 6 } }}
-          >
-            <Grid size={12} sx={{ minWidth: 0 }}>
-              <PortfolioFrame title="Portfolio">
-                <PortfolioHighlightsCarousel
-                  projects={projects}
-                  onOpenPreview={setPreviewProject}
-                />
-
-                <ResumeCard
-                  url={profile.resume_url}
-                  fileName={resumeFileName}
-                  thumbnailUrl={resumeThumbnailUrl}
-                  thumbnailStatus={resumeThumbnailStatus}
-                  onOpenPreview={setPreviewProject}
-                  previewProject={resumePreviewProject}
-                />
-
-                {portfolioSections.map((section) => (
-                  <Box
-                    key={section.category}
-                    data-testid={portfolioCategoryToSectionTestId(
-                      section.category,
-                    )}
-                    sx={{ width: '100%' }}
-                  >
-                    <Typography
-                      variant="overline"
-                      sx={{
-                        display: 'block',
-                        fontWeight: 700,
-                        letterSpacing: 1.1,
-                        mb: 1.5,
-                        color: 'text.secondary',
-                      }}
-                    >
-                      {section.category}
-                    </Typography>
-                    <Box
-                      sx={{
-                        display: 'grid',
-                        gap: { xs: 1.5, sm: 2, md: 2.5 },
-                        gridTemplateColumns: {
-                          xs: '1fr',
-                          sm: 'repeat(2, minmax(0, 1fr))',
-                          lg: 'repeat(3, minmax(0, 1fr))',
-                        },
-                        alignItems: 'stretch',
-                      }}
-                    >
-                      {section.projects.map((project) => (
-                        <ProjectCard
-                          key={`${section.category}-${project.id}`}
-                          project={project}
-                          variant="showcase"
-                          onOpenPreview={setPreviewProject}
-                        />
-                      ))}
-                    </Box>
-                  </Box>
-                ))}
-              </PortfolioFrame>
-            </Grid>
-          </Grid>
-        </Container>
-      </Box>
-      <PortfolioPreviewModal
-        project={previewProject}
-        open={Boolean(previewProject)}
-        onClose={() => setPreviewProject(null)}
-      />
-    </>
+    <LandingPageContent
+      profile={profile}
+      viewer={viewer}
+      currentUserAvatarUrl={currentUserAvatarUrl}
+      resolvedAvatarUrl={resolvedAvatarUrl}
+      creds={creds}
+      selectedSkills={selectedSkills}
+      selectedInterests={selectedInterests}
+      industryGroups={industryGroups}
+      nicheField={nicheFieldRaw || null}
+      hasLinks={hasLinks}
+      projects={projects}
+      portfolioSections={portfolioSections}
+      previewProject={previewProject}
+      setPreviewProject={setPreviewProject}
+      resumeThumbnailUrl={resumeThumbnailUrl}
+      resumeFileName={resumeFileName}
+      resumeThumbnailStatus={resumeThumbnailStatus}
+      isOwner={isOwner}
+      showConnect={showConnect}
+      isFollowing={isFollowing}
+      connectionLoading={connectionLoading}
+      onFollow={() => void follow()}
+      onUnfollow={() => void unfollow()}
+      portfolioFrameTitle="Portfolio"
+    />
   );
 };

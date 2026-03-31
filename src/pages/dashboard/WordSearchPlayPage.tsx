@@ -18,7 +18,7 @@ import { Link as RouterLink, useNavigate, useParams } from 'react-router-dom';
 import {
   completeSession,
   createWordSearchSession,
-  fetchSessionById,
+  fetchSessionForGameType,
   submitWordSearchWord,
   type WordSearchStatePayload,
 } from '../../lib/api/gamesApi';
@@ -81,14 +81,8 @@ export const WordSearchPlayPage = () => {
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const loadSession = useCallback(async (id: string) => {
-    const s = await fetchSessionById(id);
+    const s = await fetchSessionForGameType(id, 'word_search');
     if (!s) {
-      setNotFound(true);
-      setSession(null);
-      return;
-    }
-    const def = s.game_definition as { game_type?: string } | undefined;
-    if (def?.game_type !== 'word_search') {
       setNotFound(true);
       setSession(null);
       return;

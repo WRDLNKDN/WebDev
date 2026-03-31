@@ -1,4 +1,5 @@
 // vitest.setup.ts
+import '@testing-library/jest-dom/vitest';
 import dotenv from 'dotenv';
 import path from 'node:path';
 

@@ -13,11 +13,15 @@ import {
   DialogTitle,
   List,
   ListItemButton,
-  TextField,
   Typography,
 } from '@mui/material';
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '../../lib/auth/supabaseClient';
+import {
+  buildSharedPostChatContent,
+  insertSharedPostChatMessage,
+} from '../../lib/feed/sharePostToChat';
+import { SharePostOptionalMessageField } from './SharePostOptionalMessageField';
 import type { ChatRoomWithMembers } from '../../hooks/chatTypes';
 
 export type ShareToGroupDialogProps = {
@@ -67,15 +71,15 @@ export const ShareToGroupDialog = ({
     setSending(true);
     setError(null);
     try {
-      const parts = [optionalMessage.trim(), postUrl].filter(Boolean);
-      const content = parts.join('\n\n');
+      const content = buildSharedPostChatContent(
+        optionalMessage.trim(),
+        postUrl,
+      );
 
-      await supabase.from('chat_messages').insert({
-        room_id: selectedRoomId,
-        sender_id: session.user.id,
-        content: content || postUrl,
-        is_system_message: false,
-        is_deleted: false,
+      await insertSharedPostChatMessage({
+        roomId: selectedRoomId,
+        senderId: session.user.id,
+        content,
       });
       onSent();
       onClose();
@@ -124,17 +128,9 @@ export const ShareToGroupDialog = ({
                 </ListItemButton>
               ))}
             </List>
-            <TextField
-              fullWidth
-              size="small"
-              placeholder="Add a message (optional)"
+            <SharePostOptionalMessageField
               value={optionalMessage}
-              onChange={(e) => setOptionalMessage(e.target.value)}
-              multiline
-              minRows={2}
-              maxRows={4}
-              sx={{ mt: 1 }}
-              inputProps={{ 'aria-label': 'Optional message' }}
+              onChange={setOptionalMessage}
             />
           </>
         )}

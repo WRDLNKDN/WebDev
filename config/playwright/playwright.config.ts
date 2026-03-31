@@ -1,10 +1,12 @@
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { defineConfig, devices } from '@playwright/test';
 import dotenv from 'dotenv';
 
 // npm does not load .env for Playwright; mirror backend/Vitest so SUPABASE_* from
 // repo root enable the API webServer when present.
-const repoRoot = process.cwd();
+const configDir = path.dirname(fileURLToPath(import.meta.url));
+const repoRoot = path.resolve(configDir, '../..');
 dotenv.config({ path: path.join(repoRoot, '.env'), quiet: true });
 dotenv.config({
   path: path.join(repoRoot, '.env.local'),
@@ -23,14 +25,25 @@ const hasBackendEnv = Boolean(
 const frontendOnlyE2e =
   process.env.PLAYWRIGHT_FRONTEND_ONLY === '1' ||
   process.env.PLAYWRIGHT_FRONTEND_ONLY === 'true';
+/**
+ * Serve production build via `vite preview` (run `npm run build` first).
+ * Avoids dev-server dynamic-import flakes; use `npm run test:e2e:preview`
+ * (all projects) or `npm run test:e2e:preview:chromium` (PR / `check:full`).
+ */
+const usePreviewServer =
+  process.env.PLAYWRIGHT_PREVIEW === '1' ||
+  process.env.PLAYWRIGHT_PREVIEW === 'true';
 /** API webServer when Supabase backend env is set (after loading .env); opt out with PLAYWRIGHT_FRONTEND_ONLY=1. */
 const useBackendServer =
   !frontendOnlyE2e &&
+  !usePreviewServer &&
   (process.env.PLAYWRIGHT_USE_BACKEND === 'true' || hasBackendEnv);
-const frontendCommand = useBackendServer
-  ? 'npm run e2e:serve:frontend'
-  : 'PLAYWRIGHT_FRONTEND_ONLY=true npm run e2e:serve:frontend';
-const canReuseFrontendServer = !isCI && useBackendServer;
+const frontendCommand = usePreviewServer
+  ? 'vite preview --config config/vite/vite.config.ts --host 127.0.0.1 --port 5173 --strictPort'
+  : useBackendServer
+    ? 'npm run e2e:serve:frontend'
+    : 'PLAYWRIGHT_FRONTEND_ONLY=true npm run e2e:serve:frontend';
+const canReuseFrontendServer = !isCI && useBackendServer && !usePreviewServer;
 const LOCAL_WORKERS = 2;
 const CI_WORKERS = Number(process.env.PLAYWRIGHT_CI_WORKERS || '1');
 
@@ -79,6 +92,7 @@ export default defineConfig({
       : []),
     {
       command: frontendCommand,
+      cwd: repoRoot,
       url: BASE_URL,
       reuseExistingServer: canReuseFrontendServer,
       timeout: 180_000,

@@ -1,29 +1,14 @@
-import {
-  Box,
-  Button,
-  Container,
-  Grid,
-  Snackbar,
-  Stack,
-  Typography,
-} from '@mui/material';
+import { Box, Button, Container, Grid, Snackbar, Stack } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import PersonIcon from '@mui/icons-material/Person';
 import { Helmet } from 'react-helmet-async';
 import { Link as RouterLink } from 'react-router-dom';
 import type { User } from '@supabase/supabase-js';
-import { PortfolioFrame } from '../../../components/portfolio/layout/PortfolioFrame';
-import { PortfolioHighlightsCarousel } from '../../../components/portfolio/layout/PortfolioHighlightsCarousel';
 import { PortfolioPreviewModal } from '../../../components/portfolio/dialogs/PortfolioPreviewModal';
-import { ProjectCard } from '../../../components/portfolio/cards/ProjectCard';
-import { ResumeCard } from '../../../components/portfolio/cards/ResumeCard';
-import { IdentityHeader } from '../../../components/profile/identity/IdentityHeader';
-import { IndustryGroupBlock } from '../../../components/profile/identity/IndustryGroupBlock';
 import { ProfileLinksWidget } from '../../../components/profile/links/ProfileLinksWidget';
-import { SkillsInterestsPills } from '../../../components/profile/identity/SkillsInterestsPills';
-import { buildResumePreviewItem } from '../../../lib/portfolio/resumePreviewItem';
-import { portfolioCategoryToSectionTestId } from '../../../lib/portfolio/portfolioSections';
+import { ProfileThreeColumnIdentityHeader } from './profileIdentityShared';
+import { ProfilePortfolioShowcase } from './profilePortfolioShowcase';
 import type { PortfolioItem } from '../../../types/portfolio';
 import type { DashboardProfile, IndustryGroup } from '../../../types/profile';
 import { safeStr } from '../../../utils/stringUtils';
@@ -52,8 +37,11 @@ type LandingPageContentProps = {
   connectionLoading: boolean;
   onFollow: () => void;
   onUnfollow: () => void;
-  snack: string | null;
-  setSnack: (value: string | null) => void;
+  /** When both are set, a snackbar is rendered for transient messages. */
+  snack?: string | null;
+  setSnack?: (value: string | null) => void;
+  /** Portfolio frame title (owner `/profile/:handle` uses "Portfolio"). */
+  portfolioFrameTitle?: string;
 };
 
 export const LandingPageContent = ({
@@ -80,16 +68,10 @@ export const LandingPageContent = ({
   connectionLoading,
   onFollow,
   onUnfollow,
-  snack,
+  snack = null,
   setSnack,
+  portfolioFrameTitle = 'Portfolio Showcase',
 }: LandingPageContentProps) => {
-  const resumePreviewProject = buildResumePreviewItem({
-    url: profile.resume_url,
-    fileName: resumeFileName,
-    thumbnailUrl: resumeThumbnailUrl,
-    thumbnailStatus: resumeThumbnailStatus,
-  });
-
   const ownerActions = isOwner ? (
     <Button
       component={RouterLink}
@@ -168,8 +150,7 @@ export const LandingPageContent = ({
         }}
       >
         <Container maxWidth="lg" disableGutters>
-          <IdentityHeader
-            layoutVariant="three-column"
+          <ProfileThreeColumnIdentityHeader
             displayName={safeStr(profile.display_name)}
             memberHandle={profile.handle?.trim() || undefined}
             tagline={profile.tagline ?? undefined}
@@ -185,20 +166,10 @@ export const LandingPageContent = ({
             }
             statusEmoji={safeStr(creds.status_emoji, '⚡')}
             statusMessage={safeStr(creds.status_message)}
-            badges={
-              <SkillsInterestsPills
-                skills={selectedSkills}
-                interests={selectedInterests}
-              />
-            }
-            rightColumn={
-              industryGroups.length > 0 || nicheField ? (
-                <IndustryGroupBlock
-                  groups={industryGroups}
-                  nicheField={nicheField}
-                />
-              ) : undefined
-            }
+            selectedSkills={selectedSkills}
+            selectedInterests={selectedInterests}
+            industryGroups={industryGroups}
+            nicheField={nicheField}
             actions={
               <>
                 {ownerActions}
@@ -224,63 +195,16 @@ export const LandingPageContent = ({
             sx={{ mt: { xs: 2, sm: 4, md: 6 } }}
           >
             <Grid size={12} sx={{ minWidth: 0 }}>
-              <PortfolioFrame title="Portfolio Showcase">
-                <PortfolioHighlightsCarousel
-                  projects={projects}
-                  onOpenPreview={setPreviewProject}
-                />
-                <ResumeCard
-                  url={profile.resume_url}
-                  fileName={resumeFileName}
-                  thumbnailUrl={resumeThumbnailUrl}
-                  thumbnailStatus={resumeThumbnailStatus}
-                  onOpenPreview={setPreviewProject}
-                  previewProject={resumePreviewProject}
-                />
-                {portfolioSections.map((section) => (
-                  <Box
-                    key={section.category}
-                    data-testid={portfolioCategoryToSectionTestId(
-                      section.category,
-                    )}
-                    sx={{ width: '100%' }}
-                  >
-                    <Typography
-                      variant="overline"
-                      sx={{
-                        display: 'block',
-                        fontWeight: 700,
-                        letterSpacing: 1.1,
-                        mb: 1.5,
-                        color: 'text.secondary',
-                      }}
-                    >
-                      {section.category}
-                    </Typography>
-                    <Box
-                      sx={{
-                        display: 'grid',
-                        gap: { xs: 1.5, sm: 2, md: 2.5 },
-                        gridTemplateColumns: {
-                          xs: '1fr',
-                          sm: 'repeat(2, minmax(0, 1fr))',
-                          lg: 'repeat(3, minmax(0, 1fr))',
-                        },
-                        alignItems: 'stretch',
-                      }}
-                    >
-                      {section.projects.map((project) => (
-                        <ProjectCard
-                          key={`${section.category}-${project.id}`}
-                          project={project}
-                          variant="showcase"
-                          onOpenPreview={setPreviewProject}
-                        />
-                      ))}
-                    </Box>
-                  </Box>
-                ))}
-              </PortfolioFrame>
+              <ProfilePortfolioShowcase
+                frameTitle={portfolioFrameTitle}
+                projects={projects}
+                portfolioSections={portfolioSections}
+                resumeUrl={profile.resume_url}
+                resumeFileName={resumeFileName}
+                resumeThumbnailUrl={resumeThumbnailUrl}
+                resumeThumbnailStatus={resumeThumbnailStatus}
+                onOpenPreview={setPreviewProject}
+              />
             </Grid>
           </Grid>
         </Container>
@@ -290,13 +214,15 @@ export const LandingPageContent = ({
         open={Boolean(previewProject)}
         onClose={() => setPreviewProject(null)}
       />
-      <Snackbar
-        open={Boolean(snack)}
-        autoHideDuration={6000}
-        onClose={() => setSnack(null)}
-        message={snack}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-      />
+      {setSnack ? (
+        <Snackbar
+          open={Boolean(snack)}
+          autoHideDuration={6000}
+          onClose={() => setSnack(null)}
+          message={snack ?? ''}
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        />
+      ) : null}
     </>
   );
 };

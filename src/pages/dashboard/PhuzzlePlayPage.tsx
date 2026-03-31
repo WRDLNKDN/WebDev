@@ -1,6 +1,6 @@
 /**
- * Phuzzle play surface: embeds https://phuzzle.vercel.app/ in an iframe.
- * Session is created from the Games dashboard; completion is recorded via "Mark as complete".
+ * WRDLNKDN games shell: embeds the external Phuzzle app in an iframe for play.
+ * Session completion is recorded here via **Mark as complete** (Supabase), not via embed APIs.
  */
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
@@ -19,7 +19,7 @@ import {
   completeSession,
   createSoloSession,
   fetchGameDefinitionByType,
-  fetchSessionById,
+  fetchSessionForGameType,
 } from '../../lib/api/gamesApi';
 import { useAppToast } from '../../context/AppToastContext';
 import { toMessage } from '../../lib/utils/errors';
@@ -38,14 +38,8 @@ export const PhuzzlePlayPage = () => {
   const [startingNew, setStartingNew] = useState(false);
 
   const loadSession = useCallback(async (id: string) => {
-    const s = await fetchSessionById(id);
+    const s = await fetchSessionForGameType(id, 'phuzzle');
     if (!s) {
-      setNotFound(true);
-      setSession(null);
-      return;
-    }
-    const def = s.game_definition as { game_type?: string } | undefined;
-    if (def?.game_type !== 'phuzzle') {
       setNotFound(true);
       setSession(null);
       return;
@@ -112,7 +106,7 @@ export const PhuzzlePlayPage = () => {
           minHeight: 320,
         }}
       >
-        <CircularProgress aria-label="Loading Phuzzle" />
+        <CircularProgress aria-label="Loading puzzle session" />
       </Box>
     );
   }
@@ -225,7 +219,7 @@ export const PhuzzlePlayPage = () => {
       >
         <Box
           component="iframe"
-          title="Phuzzle"
+          title="Embedded puzzle"
           src={PHUZZLE_APP_URL}
           sx={{
             flex: 1,

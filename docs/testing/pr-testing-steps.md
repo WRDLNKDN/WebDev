@@ -237,7 +237,8 @@ profile routes (IA), Directory, footer, and Dashboard.
 
 - [ ] **E2E (if run)**  
        Critical paths (e.g. sign-in, Feed, Directory) pass if you run E2E tests.
-      Preferred command: `npm run test:e2e`.
+      Preferred (matches PR CI): `npm run test:e2e:preview:chromium` or
+      `npm run check:full`. For dev-server iteration: `npm run test:e2e`.
 
 ---
 

@@ -19,29 +19,20 @@ function normalizeOwnerType(value) {
 }
 
 function parseProjectUrl(url) {
-  if (!url) return {};
-  try {
-    const { pathname } = new URL(url);
-    const segments = pathname.split('/').filter(Boolean);
-    if (
-      segments.length >= 4 &&
-      (segments[0] === 'orgs' || segments[0] === 'users') &&
-      segments[2] === 'projects'
-    ) {
-      const fromUrl = {
-        ownerType: segments[0] === 'orgs' ? 'org' : 'user',
-        ownerLogin: segments[1],
-        projectNumber: Number.parseInt(segments[3], 10),
-      };
-      if (Number.isNaN(fromUrl.projectNumber)) {
-        delete fromUrl.projectNumber;
-      }
-      return fromUrl;
-    }
-  } catch (_error) {
-    /* noop */
-  }
-  return {};
+  const trimmed = trimStr(url);
+  if (!trimmed) return {};
+
+  const match =
+    /^https?:\/\/[^/]+\/(orgs|users)\/([^/]+)\/projects\/(\d+)(?:\/|$)/i.exec(
+      trimmed,
+    );
+  if (!match) return {};
+
+  return {
+    ownerType: match[1].toLowerCase() === 'orgs' ? 'org' : 'user',
+    ownerLogin: match[2],
+    projectNumber: Number.parseInt(match[3], 10),
+  };
 }
 
 module.exports = async function getProjectBackfillConfig(

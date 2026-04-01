@@ -101,7 +101,7 @@ function matches(predicate: Predicate, path: string): boolean {
 /** Strip trailing `/` without regex (avoids ReDoS false positives from `+` quantifiers). */
 function stripTrailingSlashes(segment: string): string {
   let end = segment.length;
-  while (end > 0 && segment.charCodeAt(end - 1) === 47) {
+  while (end > 0 && segment.codePointAt(end - 1) === 47) {
     end -= 1;
   }
   return segment.slice(0, end);

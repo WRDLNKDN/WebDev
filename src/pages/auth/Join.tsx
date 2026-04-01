@@ -79,6 +79,40 @@ const JOIN_CARD_INPUT_MOBILE_SX = {
   '& .MuiInputBase-input': { fontSize: { xs: '1rem' } },
 } as const;
 
+function computeJoinCardScale(
+  viewport: HTMLDivElement,
+  card: HTMLDivElement,
+): number {
+  const availableHeight = Math.max(
+    viewport.clientHeight - JOIN_FIT_PADDING * 2,
+    1,
+  );
+  const availableWidth = Math.max(
+    viewport.clientWidth - JOIN_FIT_PADDING * 2,
+    1,
+  );
+  const naturalHeight = card.scrollHeight;
+  const naturalWidth = card.offsetWidth;
+
+  if (!naturalHeight || !naturalWidth) return 1;
+
+  return Math.max(
+    JOIN_MIN_SCALE,
+    Math.min(1, availableHeight / naturalHeight, availableWidth / naturalWidth),
+  );
+}
+
+function setJoinCardScale(
+  viewport: HTMLDivElement,
+  card: HTMLDivElement,
+  setCardScale: React.Dispatch<React.SetStateAction<number>>,
+): void {
+  const nextScale = computeJoinCardScale(viewport, card);
+  setCardScale((prev) =>
+    Math.abs(prev - nextScale) < 0.01 ? prev : nextScale,
+  );
+}
+
 export const Join = () => {
   const navigate = useNavigate();
   const { showToast } = useAppToast();
@@ -185,56 +219,29 @@ export const Join = () => {
 
     let frameId = 0;
     const scheduleFit = () => {
-      if (frameId) cancelAnimationFrame(frameId);
-      frameId = requestAnimationFrame(() => {
-        const availableHeight = Math.max(
-          viewport.clientHeight - JOIN_FIT_PADDING * 2,
-          1,
-        );
-        const availableWidth = Math.max(
-          viewport.clientWidth - JOIN_FIT_PADDING * 2,
-          1,
-        );
-        const naturalHeight = card.scrollHeight;
-        const naturalWidth = card.offsetWidth;
-
-        if (!naturalHeight || !naturalWidth) {
-          setCardScale(1);
-          return;
-        }
-
-        const nextScale = Math.max(
-          JOIN_MIN_SCALE,
-          Math.min(
-            1,
-            availableHeight / naturalHeight,
-            availableWidth / naturalWidth,
-          ),
-        );
-
-        setCardScale((prev) =>
-          Math.abs(prev - nextScale) < 0.01 ? prev : nextScale,
-        );
+      if (frameId) globalThis.cancelAnimationFrame(frameId);
+      frameId = globalThis.requestAnimationFrame(() => {
+        setJoinCardScale(viewport, card, setCardScale);
       });
     };
 
     scheduleFit();
 
     const observer =
-      typeof ResizeObserver !== 'undefined'
+      typeof ResizeObserver === 'function'
         ? new ResizeObserver(scheduleFit)
         : null;
 
     observer?.observe(viewport);
     observer?.observe(card);
-    window.addEventListener('resize', scheduleFit);
-    window.addEventListener('orientationchange', scheduleFit);
+    globalThis.addEventListener('resize', scheduleFit);
+    globalThis.addEventListener('orientationchange', scheduleFit);
 
     return () => {
-      if (frameId) cancelAnimationFrame(frameId);
+      if (frameId) globalThis.cancelAnimationFrame(frameId);
       observer?.disconnect();
-      window.removeEventListener('resize', scheduleFit);
-      window.removeEventListener('orientationchange', scheduleFit);
+      globalThis.removeEventListener('resize', scheduleFit);
+      globalThis.removeEventListener('orientationchange', scheduleFit);
     };
   }, [checking, state.currentStep]);
 

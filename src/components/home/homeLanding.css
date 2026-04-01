@@ -584,9 +584,10 @@
   position: absolute;
   inset: 0;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  padding: 0;
+  justify-content: flex-end;
+  padding: 0 0 clamp(0.35rem, 1.6vw, 0.8rem);
   pointer-events: none;
   background: rgba(5, 7, 15, 0.22);
 }

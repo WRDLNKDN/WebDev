@@ -476,6 +476,7 @@ export const ChatRoomList = ({
                               ? 'Remove from favorites'
                               : 'Add to favorites'
                           }
+                          aria-pressed={Boolean(room.is_favorite)}
                           data-testid={`chat-room-favorite-${room.id}`}
                           size="small"
                           onPointerDown={(e) => {

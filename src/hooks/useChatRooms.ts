@@ -37,21 +37,14 @@ export type ChatRoomsContextValue = {
 
 const ChatRoomsContext = createContext<ChatRoomsContextValue | null>(null);
 
-async function persistChatRoomFavoriteForMember(
-  userId: string,
+async function persistChatRoomFavorite(
   roomId: string,
   nextFavorite: boolean,
 ): Promise<void> {
-  // Single upsert on PK (room_id, user_id) avoids update+insert races and empty
-  // `.update().select()` rows that some clients treat oddly on first favorite.
-  const { error } = await supabase.from('chat_room_preferences').upsert(
-    {
-      room_id: roomId,
-      user_id: userId,
-      is_favorite: nextFavorite,
-    },
-    { onConflict: 'room_id,user_id' },
-  );
+  const { error } = await supabase.rpc('chat_set_room_favorite', {
+    p_room_id: roomId,
+    p_is_favorite: nextFavorite,
+  });
   if (error) throw error;
 }
 
@@ -619,11 +612,7 @@ function useChatRoomsState() {
       );
 
       try {
-        await persistChatRoomFavoriteForMember(
-          session.user.id,
-          roomId,
-          nextFavorite,
-        );
+        await persistChatRoomFavorite(roomId, nextFavorite);
 
         showToast({
           message: nextFavorite

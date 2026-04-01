@@ -42,7 +42,7 @@ jobs:
         env:
           GITHUBACTION: ${{ secrets.GITHUBACTION }}
         run: |
-          if [ -z "$GITHUBACTION" ] then
+          if [ -z "$GITHUBACTION" ]; then
             echo "::error::Add secret GITHUBACTION or GH_PROJECTS_TOKEN (PAT or GitHub App token with Projects + repo access). GITHUB_TOKEN cannot access GitHub Projects v2 — https://docs.github.com/en/issues/planning-and-tracking-with-projects/automating-your-project/automating-projects-using-actions"
             exit 1
           fi

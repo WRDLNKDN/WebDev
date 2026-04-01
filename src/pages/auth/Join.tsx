@@ -7,10 +7,7 @@ import {
   Container,
   Stack,
   Typography,
-  useMediaQuery,
-  useTheme,
 } from '@mui/material';
-import type { SxProps, Theme } from '@mui/material/styles';
 import { useNavigate } from 'react-router-dom';
 
 import type { Session } from '@supabase/supabase-js';
@@ -36,14 +33,10 @@ import {
   APP_GLASS_SURFACE,
 } from '../../theme/candyStyles';
 
-/** Scroll still works; bars hidden so Join never shows double chrome with Layout. */
-const HIDE_SCROLLBAR_SX = {
-  scrollbarWidth: 'none' as const,
-  msOverflowStyle: 'none' as const,
-  '&::-webkit-scrollbar': { display: 'none' },
-};
+const JOIN_FIT_PADDING = 8;
+const JOIN_MIN_SCALE = 0.72;
 
-/** Fills the layout main region; scroll lives on the glass card, not the page shell. */
+/** Fills the layout main region; signup itself should never introduce scrolling. */
 const BG_SX = {
   flex: 1,
   minHeight: 0,
@@ -78,8 +71,7 @@ const CARD_SX = {
   maxHeight: '100%',
   minHeight: 0,
   overflowX: 'hidden',
-  overflowY: 'auto',
-  WebkitOverflowScrolling: 'touch' as const,
+  overflowY: 'hidden',
 };
 
 /** 16px inputs on narrow viewports reduce iOS Safari zoom-on-focus. */
@@ -89,12 +81,13 @@ const JOIN_CARD_INPUT_MOBILE_SX = {
 
 export const Join = () => {
   const navigate = useNavigate();
-  const theme = useTheme();
-  const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
   const { showToast } = useAppToast();
   const { state, resetSignup, reconcileSessionNoProfile } = useJoin();
   const [checking, setChecking] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [cardScale, setCardScale] = useState(1);
+  const viewportRef = React.useRef<HTMLDivElement | null>(null);
+  const cardRef = React.useRef<HTMLDivElement | null>(null);
 
   // Prevent double scrollbars by making this page own scrolling (same pattern as Layout)
   useEffect(() => {
@@ -184,52 +177,95 @@ export const Join = () => {
   };
 
   const isFlowActive = !['welcome', 'complete'].includes(state.currentStep);
-  /** Mobile/narrow: card traps height and scrolls inside. Desktop: natural height; outer join area scrolls. */
-  const useFlowInnerScroll = isFlowActive && !isMdUp;
 
-  /** Flow steps (mobile): card fills main below navbar; step body scrolls inside. */
-  const flowCardSxMobile: SxProps<Theme> = {
-    flex: 1,
-    minHeight: 0,
-    maxHeight: '100%',
-    display: 'flex',
-    flexDirection: 'column',
-    overflow: 'hidden',
-    overflowY: 'hidden',
-    p: { xs: 0.75, sm: 1.5, md: 2.25 },
-    pb: { xs: 0.75, sm: 2, md: 2.75 },
-  };
+  useEffect(() => {
+    const viewport = viewportRef.current;
+    const card = cardRef.current;
+    if (!viewport || !card) return;
 
-  const flowCardSxDesktop: SxProps<Theme> = {
-    flex: { md: '0 1 auto' },
-    minHeight: { md: 'auto' },
-    maxHeight: { md: 'none' },
-    overflowY: { md: 'visible' },
-    overflow: { md: 'visible' },
-    p: { xs: 0.75, sm: 1.5, md: 2.25 },
-    pb: { xs: 0.75, sm: 2, md: 2.75 },
-  };
+    let frameId = 0;
+    const scheduleFit = () => {
+      if (frameId) cancelAnimationFrame(frameId);
+      frameId = requestAnimationFrame(() => {
+        const availableHeight = Math.max(
+          viewport.clientHeight - JOIN_FIT_PADDING * 2,
+          1,
+        );
+        const availableWidth = Math.max(
+          viewport.clientWidth - JOIN_FIT_PADDING * 2,
+          1,
+        );
+        const naturalHeight = card.scrollHeight;
+        const naturalWidth = card.offsetWidth;
+
+        if (!naturalHeight || !naturalWidth) {
+          setCardScale(1);
+          return;
+        }
+
+        const nextScale = Math.max(
+          JOIN_MIN_SCALE,
+          Math.min(
+            1,
+            availableHeight / naturalHeight,
+            availableWidth / naturalWidth,
+          ),
+        );
+
+        setCardScale((prev) =>
+          Math.abs(prev - nextScale) < 0.01 ? prev : nextScale,
+        );
+      });
+    };
+
+    scheduleFit();
+
+    const observer =
+      typeof ResizeObserver !== 'undefined'
+        ? new ResizeObserver(scheduleFit)
+        : null;
+
+    observer?.observe(viewport);
+    observer?.observe(card);
+    window.addEventListener('resize', scheduleFit);
+    window.addEventListener('orientationchange', scheduleFit);
+
+    return () => {
+      if (frameId) cancelAnimationFrame(frameId);
+      observer?.disconnect();
+      window.removeEventListener('resize', scheduleFit);
+      window.removeEventListener('orientationchange', scheduleFit);
+    };
+  }, [checking, state.currentStep]);
 
   const bgSx = {
     ...BG_SX,
-    ...(isFlowActive && {
-      justifyContent: 'flex-start',
-      alignItems: 'stretch',
-      pt: { xs: 0.25, sm: 0.5 },
-      overflow: { xs: 'hidden', md: 'auto' },
-      overflowX: 'hidden',
-      ...HIDE_SCROLLBAR_SX,
-    }),
+    justifyContent: isFlowActive ? 'flex-start' : 'center',
+    alignItems: 'center',
+    pt: isFlowActive ? { xs: 0.25, sm: 0.5 } : 0,
   };
 
   if (checking) {
     return (
       <Box
+        ref={viewportRef}
         className="app-scroll-container"
         sx={BG_SX}
         data-testid="join-scroll-container"
       >
-        <Container maxWidth="sm" sx={{ ...CARD_SX, p: 4, zIndex: 1 }}>
+        <Container
+          ref={cardRef}
+          maxWidth="sm"
+          sx={{
+            ...CARD_SX,
+            p: 4,
+            zIndex: 1,
+            transform: `scale(${cardScale})`,
+            transformOrigin: 'top center',
+            transition: 'transform 160ms ease-out',
+            willChange: 'transform',
+          }}
+        >
           <Stack direction="row" spacing={2} alignItems="center">
             <CircularProgress
               size={24}
@@ -247,6 +283,7 @@ export const Join = () => {
 
   return (
     <Box
+      ref={viewportRef}
       className="app-scroll-container"
       sx={bgSx}
       data-testid="join-scroll-container"
@@ -259,25 +296,22 @@ export const Join = () => {
               ? 'lg'
               : 'md'
         }
-        sx={
-          [
-            CARD_SX,
-            ...(isFlowActive
-              ? isMdUp
-                ? [flowCardSxDesktop]
-                : [flowCardSxMobile]
-              : []),
-            JOIN_CARD_INPUT_MOBILE_SX,
-            state.currentStep === 'profile' && isMdUp
-              ? { maxWidth: { md: 'min(1120px, 100%)' } }
-              : {},
-            {
-              zIndex: 1,
-              transition: 'max-width 0.4s ease',
-              alignSelf: 'stretch',
-            },
-          ] satisfies SxProps<Theme>
-        }
+        sx={[
+          CARD_SX,
+          JOIN_CARD_INPUT_MOBILE_SX,
+          state.currentStep === 'profile'
+            ? { maxWidth: { md: 'min(1120px, 100%)' } }
+            : {},
+          {
+            zIndex: 1,
+            transition: 'max-width 0.4s ease',
+            alignSelf: 'center',
+            transform: `scale(${cardScale})`,
+            transformOrigin: 'top center',
+            willChange: 'transform',
+          },
+        ]}
+        ref={cardRef}
       >
         {isFlowActive && (
           <Box
@@ -305,26 +339,7 @@ export const Join = () => {
           </Alert>
         )}
 
-        <Box
-          key={state.currentStep}
-          sx={
-            useFlowInnerScroll
-              ? {
-                  flex: 1,
-                  minHeight: 0,
-                  overflowY: 'auto',
-                  overflowX: 'hidden',
-                  WebkitOverflowScrolling: 'touch',
-                  ...HIDE_SCROLLBAR_SX,
-                }
-              : {
-                  flex: { md: '0 1 auto' },
-                  minHeight: { md: 'auto' },
-                  overflowX: 'hidden',
-                  overflowY: { md: 'visible' },
-                }
-          }
-        >
+        <Box key={state.currentStep} sx={{ overflow: 'visible' }}>
           {renderStep()}
         </Box>
       </Container>

@@ -2025,10 +2025,56 @@ as $$
   );
 $$;
 
+create or replace function public.chat_set_room_favorite(
+  p_room_id uuid,
+  p_is_favorite boolean default true
+)
+returns boolean
+language plpgsql
+security definer
+set search_path = public, pg_catalog
+as $$
+declare
+  v_uid uuid;
+  v_next_favorite boolean;
+begin
+  v_uid := auth.uid();
+  if v_uid is null then
+    raise exception 'Not authenticated';
+  end if;
+
+  if p_room_id is null then
+    raise exception 'Room is required';
+  end if;
+
+  if not public.chat_is_room_member(p_room_id) then
+    raise exception 'You do not have access to this chat room.';
+  end if;
+
+  v_next_favorite := coalesce(p_is_favorite, false);
+
+  if v_next_favorite then
+    insert into public.chat_room_preferences (room_id, user_id, is_favorite)
+    values (p_room_id, v_uid, true)
+    on conflict (room_id, user_id)
+    do update
+      set is_favorite = excluded.is_favorite;
+  else
+    delete from public.chat_room_preferences
+    where room_id = p_room_id
+      and user_id = v_uid;
+  end if;
+
+  return v_next_favorite;
+end;
+$$;
+
 revoke all on function public.chat_is_room_member(uuid) from public;
 revoke all on function public.chat_is_room_admin(uuid) from public;
+revoke all on function public.chat_set_room_favorite(uuid, boolean) from public;
 grant execute on function public.chat_is_room_member(uuid) to authenticated;
 grant execute on function public.chat_is_room_admin(uuid) to authenticated;
+grant execute on function public.chat_set_room_favorite(uuid, boolean) to authenticated;
 
 -- chat_create_group: Create group room + members in one transaction (bypasses RLS for reliable creation)
 create or replace function public.chat_create_group(p_name text, p_member_ids uuid[])

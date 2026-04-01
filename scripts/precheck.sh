@@ -16,7 +16,7 @@ echo "----------------------------------------------------------------"
 # 1. EMPTY FILE CHECK (The Anti-Bloat Protocol)
 echo "📂 [STEP 1]: Scanning for ghost files (empty ones)..."
 UPSTREAM="$(git rev-parse --abbrev-ref --symbolic-full-name @{u} 2>/dev/null || true)"
-if [ -n "$UPSTREAM" ]; then
+if [[ -n "$UPSTREAM" ]]; then
   BASE="$(git merge-base HEAD "$UPSTREAM")"
   FILES_TO_CHECK="$(git diff --name-only --diff-filter=AM "$BASE"..HEAD)"
 else
@@ -27,14 +27,14 @@ fi
 ALLOW_EMPTY_REGEX='(^|/)\.gitkeep$|(^|/)\.keep$'
 EMPTY_FILES=""
 while IFS= read -r file; do
-  [ -z "${file:-}" ] && continue
+  [[ -z "${file:-}" ]] && continue
   if echo "$file" | grep -Eq "$ALLOW_EMPTY_REGEX"; then continue; fi
-  if [ -f "$file" ] && [ ! -s "$file" ]; then
+  if [[ -f "$file" && ! -s "$file" ]]; then
     EMPTY_FILES+="$file"$'\n'
   fi
 done <<< "$FILES_TO_CHECK"
 
-if [ -n "$EMPTY_FILES" ]; then
+if [[ -n "$EMPTY_FILES" ]]; then
   echo "🛑 [CRITICAL FAULT]: I found some empty files that aren't .keep files:"
   echo -e "$EMPTY_FILES"
   echo "Please feed them some data or delete them. Integrity first!"

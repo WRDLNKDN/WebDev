@@ -37,6 +37,33 @@ type ProfileOption = EligibleChatConnection & {
   selected: boolean;
 };
 
+type LoadEligibleProfilesResult =
+  | { status: 'success'; profiles: ProfileOption[] }
+  | { status: 'error'; message: string }
+  | { status: 'aborted' };
+
+async function loadEligibleProfilesForGroup(
+  userId: string,
+  isCancelled: () => boolean,
+): Promise<LoadEligibleProfilesResult> {
+  try {
+    const list = await loadEligibleChatConnections(userId);
+    if (isCancelled()) return { status: 'aborted' };
+    return {
+      status: 'success',
+      profiles: list
+        .filter((profile) => profile.id !== userId)
+        .map((profile) => ({ ...profile, selected: false })),
+    };
+  } catch {
+    if (isCancelled()) return { status: 'aborted' };
+    return {
+      status: 'error',
+      message: 'Could not load connections. Try again.',
+    };
+  }
+}
+
 type CreateGroupDialogProps = {
   open: boolean;
   onClose: () => void;
@@ -92,21 +119,17 @@ export const CreateGroupDialog = ({
           return;
         }
 
-        const list = await loadEligibleChatConnections(userId);
-        if (cancelled) return;
-        setProfiles(
-          list
-            .filter((profile) => profile.id !== userId)
-            .map((profile) => ({
-              ...profile,
-              selected: false,
-            })),
+        const result = await loadEligibleProfilesForGroup(
+          userId,
+          () => cancelled,
         );
-      } catch {
-        if (!cancelled) {
-          setError('Could not load connections. Try again.');
+        if (cancelled || result.status === 'aborted') return;
+        if (result.status === 'error') {
+          setError(result.message);
           setProfiles([]);
+          return;
         }
+        setProfiles(result.profiles);
       } finally {
         if (!cancelled) setLoadingList(false);
       }

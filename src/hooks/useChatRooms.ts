@@ -59,6 +59,27 @@ function chatBlockedPairKey(a: string, b: string): string {
   return order <= 0 ? `${a}:${b}` : `${b}:${a}`;
 }
 
+function unwrapRpcStringOrFirst(raw: unknown): string | null {
+  if (typeof raw === 'string') return raw;
+  if (Array.isArray(raw) && raw.length > 0) {
+    const first = raw[0];
+    if (typeof first === 'string') return first;
+  }
+  return null;
+}
+
+function mapChatCreateGroupRpcError(error: unknown): Error {
+  const err = error as { code?: string; message?: string };
+  const isStaleSession =
+    err.code === '23503' ||
+    String(err.message || '').includes('created_by_fkey');
+  return new Error(
+    isStaleSession
+      ? 'Your session may be stale. Sign out and sign in again, then try creating the group.'
+      : toMessage(error),
+  );
+}
+
 function buildBlockedPairSet(
   blocks: ChatBlockRow[] | null | undefined,
   sessionUserId: string,
@@ -516,13 +537,7 @@ function useChatRoomsState() {
       });
       if (error) throw error;
 
-      const raw = roomId as string | string[] | null;
-      const id =
-        typeof raw === 'string'
-          ? raw
-          : Array.isArray(raw) && raw.length > 0
-            ? raw[0]
-            : null;
+      const id = unwrapRpcStringOrFirst(roomId as unknown);
       if (!id) return null;
 
       const canonicalRoomId =
@@ -557,23 +572,10 @@ function useChatRoomsState() {
       });
 
       if (error) {
-        const isStaleSession =
-          error.code === '23503' ||
-          String(error.message || '').includes('created_by_fkey');
-        throw new Error(
-          isStaleSession
-            ? 'Your session may be stale. Sign out and sign in again, then try creating the group.'
-            : toMessage(error),
-        );
+        throw mapChatCreateGroupRpcError(error);
       }
 
-      const raw: unknown = roomId;
-      const id =
-        typeof raw === 'string'
-          ? raw
-          : Array.isArray(raw) && raw.length > 0
-            ? raw[0]
-            : null;
+      const id = unwrapRpcStringOrFirst(roomId);
       if (!id) return null;
 
       if (normalizedDescription || details.imageUrl) {

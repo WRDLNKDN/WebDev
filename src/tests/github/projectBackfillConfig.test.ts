@@ -108,6 +108,32 @@ describe('projectBackfillConfig', () => {
     expect(core.setFailed).not.toHaveBeenCalled();
   });
 
+  it('overrides a wrong GH_PROJECT_OWNER_TYPE using users.getByUsername', async () => {
+    process.env.GH_PROJECT_OWNER_TYPE = 'user';
+    process.env.GH_PROJECT_OWNER_LOGIN = 'WRDLNKDN';
+    process.env.GH_PROJECT_NUMBER = '1';
+    const github = {
+      rest: {
+        users: {
+          getByUsername: vi.fn().mockResolvedValue({
+            data: { type: 'Organization' },
+          }),
+        },
+      },
+    };
+    const core = { setFailed: vi.fn(), info: vi.fn() };
+    const context = { payload: {} };
+
+    await expect(
+      getProjectBackfillConfig(github, context, core),
+    ).resolves.toEqual({
+      ownerType: 'org',
+      ownerLogin: 'WRDLNKDN',
+      projectNumber: 1,
+    });
+    expect(core.info).toHaveBeenCalled();
+  });
+
   it('falls back to the GitHub owner lookup when the payload omits owner type', async () => {
     process.env.GH_PROJECT_NUMBER = '33';
     const github = {
@@ -196,5 +222,28 @@ describe('resolveProjectV2', () => {
       id: 'PVT_user_1',
       fields: { nodes: [{ id: 'field_1', name: 'Status' }] },
     });
+  });
+
+  it('retries with organization when user query cannot resolve (wrong owner_type)', async () => {
+    const err = Object.assign(new Error('Could not resolve to a User'), {
+      errors: [{ message: 'Could not resolve to a User' }],
+    });
+    const github = {
+      graphql: vi
+        .fn()
+        .mockRejectedValueOnce(err)
+        .mockResolvedValueOnce({
+          organization: { projectV2: { id: 'PVT_retry' } },
+        }),
+    };
+
+    await expect(
+      resolveProjectV2(github, {
+        ownerType: 'user',
+        ownerLogin: 'WRDLNKDN',
+        projectNumber: 1,
+      }),
+    ).resolves.toEqual({ id: 'PVT_retry' });
+    expect(github.graphql).toHaveBeenCalledTimes(2);
   });
 });

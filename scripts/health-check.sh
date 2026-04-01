@@ -16,9 +16,9 @@ wait_for_url() {
   # Logic Fix: Removed the $() subshell. 
   # We also fixed the '-output' typo to '--output'.
   until curl --output /dev/null --silent --head --fail "$url"; do
-    if [ $count -eq $timeout ]; then
+    if [[ "$count" -eq "$timeout" ]]; then
       echo -e "\n🛑 [SYSTEM FAULT]: $name failed to respond."
-      if [ "$name" = "API Server" ]; then
+      if [[ "$name" == "API Server" ]]; then
         echo "   Ensure .env has SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY (run: npx supabase status)."
       fi
       exit 1
@@ -28,6 +28,7 @@ wait_for_url() {
     ((count++))
   done
   echo -e "\n✅ [SUCCESS]: $name is active and inhabited."
+  return 0
 }
 
 # 1. Physical Layer Check: Supabase
@@ -43,7 +44,7 @@ echo "----------------------------------------------------------------"
 echo "🚀 [HEALTH CHECK COMPLETE]: Launching the cockpit..."
 
 # 3. Cross-Platform Launch (The WSL 2 Special)
-if [ -f /proc/version ] && grep -qi microsoft /proc/version 2>/dev/null; then
+if [[ -f /proc/version ]] && grep -qi microsoft /proc/version 2>/dev/null; then
   # We are in WSL: Use Windows Explorer to bridge the OS gap
   explorer.exe "http://localhost:5173"
   explorer.exe "http://localhost:54323"

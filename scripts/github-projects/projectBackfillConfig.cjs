@@ -78,7 +78,11 @@ module.exports = async function getProjectBackfillConfig(
       const data = res?.data;
       const fromApi = normalizeOwnerType(data?.type);
       if (fromApi) {
-        if (ownerType && ownerType !== fromApi && typeof core.info === 'function') {
+        if (
+          ownerType &&
+          ownerType !== fromApi &&
+          typeof core.info === 'function'
+        ) {
           core.info(
             `GH_PROJECT_OWNER_TYPE was "${ownerType}" but GitHub reports "${data?.type}" for ${ownerLogin}; using "${fromApi}" for Project v2 GraphQL.`,
           );

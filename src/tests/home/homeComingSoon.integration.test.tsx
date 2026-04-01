@@ -106,6 +106,12 @@ describe('Home (production coming-soon + marketing flags)', () => {
     ).toBeTruthy();
     expect(container.textContent).toContain('COMING SOON!!');
     expect(container.textContent).toContain('What Makes This Different');
+    expect(container.textContent).toContain('See the idea in motion');
+    expect(
+      container
+        .querySelector('button[aria-label="Play Why WRDLNKDN video"]')
+        ?.getAttribute('aria-label'),
+    ).toBe('Play Why WRDLNKDN video');
     expect(container.textContent).toContain('How It Works');
     expect(container.textContent).not.toContain('Join Us');
   });

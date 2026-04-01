@@ -498,7 +498,7 @@
 }
 
 .home-landing__section--video {
-  padding: 0 0 3rem;
+  padding: 1.25rem 0 3rem;
   background:
     radial-gradient(
       circle at top,
@@ -540,6 +540,7 @@
 }
 
 .home-landing__video-frame {
+  position: relative;
   width: min(960px, 100%);
   aspect-ratio: 16 / 9;
   border-radius: 24px;
@@ -554,7 +555,8 @@
 }
 
 .home-landing__video-preview {
-  position: relative;
+  position: absolute;
+  inset: 0;
   display: block;
   width: 100%;
   height: 100%;
@@ -575,47 +577,40 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
+  object-position: center;
 }
 
 .home-landing__video-preview-overlay {
   position: absolute;
   inset: 0;
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: flex-end;
-  gap: 0.75rem;
-  padding: clamp(1rem, 3vw, 1.5rem);
-  background:
-    linear-gradient(180deg, rgba(5, 7, 15, 0.08), rgba(5, 7, 15, 0.72) 58%),
-    linear-gradient(135deg, rgba(56, 132, 210, 0.12), rgba(167, 68, 194, 0.16));
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  pointer-events: none;
+  background: rgba(5, 7, 15, 0.22);
 }
 
-.home-landing__video-preview-badge,
 .home-landing__video-preview-play {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 0.35rem;
+  padding: 0.7rem 1.35rem;
   border-radius: 999px;
+  background: var(--color-secondary);
+  color: #fff;
   font-weight: 700;
-  letter-spacing: 0.04em;
-}
-
-.home-landing__video-preview-badge {
-  padding: 0.45rem 0.75rem;
-  background: rgba(5, 7, 15, 0.78);
-  border: 1px solid rgba(156, 187, 217, 0.4);
-  color: #d7ebff;
-  font-size: 0.74rem;
+  font-size: 0.95rem;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
+  box-shadow:
+    0 10px 28px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.14);
 }
 
-.home-landing__video-preview-play {
-  padding: 0.8rem 1.1rem;
-  background: rgba(20, 84, 142, 0.96);
-  color: #f7fbff;
-  font-size: 0.98rem;
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.28);
+.home-landing__video-preview-play-icon {
+  color: inherit;
 }
 
 .home-landing__video-embed {

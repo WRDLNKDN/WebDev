@@ -1,5 +1,9 @@
 # Video assets
 
+- **why-wrdlnkdn-poster.jpg** — 1280×720 still for the signed-out “Why WRDLNKDN”
+  YouTube preview. YouTube’s CDN thumbnails for this embed are low-res only; if
+  you change the video ID, replace this file (e.g. one frame from 720p source).
+
 - **hero-bg-\*.mp4** — Signed-out home hero (desktop/mobile sources). After
   playback, the UI **crossfades** to on-page copy; see `homeHeroRevealTiming.ts`
   and `src/components/home/homeLanding.css` if you change pacing.

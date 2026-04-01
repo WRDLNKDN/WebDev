@@ -617,6 +617,7 @@ export const MessengerOverlayPanel = ({
                             ? 'Remove from favorites'
                             : 'Add to favorites'
                         }
+                        aria-pressed={Boolean(r.is_favorite)}
                         data-testid={`messenger-overlay-favorite-${r.id}`}
                         size="small"
                         onPointerDown={(e) => {

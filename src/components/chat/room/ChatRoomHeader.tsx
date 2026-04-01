@@ -442,6 +442,7 @@ export const ChatRoomHeader = ({
                 aria-label={
                   isFavorite ? 'Remove from favorites' : 'Add to favorites'
                 }
+                aria-pressed={Boolean(isFavorite)}
                 sx={{
                   minWidth: 36,
                   minHeight: 36,

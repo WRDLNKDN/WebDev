@@ -27,7 +27,14 @@ async function fulfillChatRoomPreferencesGet(
 
   if (wantsObject) {
     const rid = ids[0];
-    const row = rid && roomPrefs.has(rid) ? { room_id: rid } : null;
+    const row =
+      rid && roomPrefs.has(rid)
+        ? {
+            room_id: rid,
+            user_id: userId,
+            is_favorite: roomPrefs.get(rid)!.is_favorite,
+          }
+        : null;
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
@@ -50,59 +57,33 @@ async function fulfillChatRoomPreferencesGet(
   });
 }
 
-async function fulfillChatRoomPreferencesPatch(
-  route: Route,
-  url: URL,
-  roomPrefs: RoomPrefs,
-  syncFavoriteState: () => void,
-  userId: string,
-): Promise<void> {
-  const rid = parsePostgrestEqFilter(url, 'room_id');
-  const uid = parsePostgrestEqFilter(url, 'user_id');
-  const body = route.request().postDataJSON() as { is_favorite?: boolean };
-  if (rid && uid === userId) {
-    roomPrefs.set(rid, { is_favorite: Boolean(body?.is_favorite) });
-    syncFavoriteState();
-  }
-  await route.fulfill({ status: 204, body: '' });
-}
-
-async function fulfillChatRoomPreferencesPost(
+async function fulfillChatSetRoomFavoriteRpc(
   route: Route,
   roomPrefs: RoomPrefs,
   syncFavoriteState: () => void,
 ): Promise<void> {
-  const raw = route.request().postDataJSON() as
-    | {
-        room_id?: string;
-        user_id?: string;
-        is_favorite?: boolean;
-      }
-    | Array<{
-        room_id?: string;
-        user_id?: string;
-        is_favorite?: boolean;
-      }>;
-  const rows = Array.isArray(raw) ? raw : [raw];
-  for (const payload of rows) {
-    if (payload.room_id) {
-      roomPrefs.set(payload.room_id, {
-        is_favorite: Boolean(payload.is_favorite),
-      });
+  const payload = route.request().postDataJSON() as {
+    p_room_id?: string;
+    p_is_favorite?: boolean;
+  };
+  if (payload.p_room_id) {
+    if (payload.p_is_favorite) {
+      roomPrefs.set(payload.p_room_id, { is_favorite: true });
+    } else {
+      roomPrefs.delete(payload.p_room_id);
     }
   }
   syncFavoriteState();
   await route.fulfill({
-    status: 201,
+    status: 200,
     contentType: 'application/json',
-    body: JSON.stringify(rows),
+    body: JSON.stringify(Boolean(payload.p_is_favorite)),
   });
 }
 
 async function fulfillChatRoomPreferencesRoute(
   route: Route,
   roomPrefs: RoomPrefs,
-  syncFavoriteState: () => void,
   userId: string,
 ): Promise<void> {
   const method = route.request().method();
@@ -110,20 +91,6 @@ async function fulfillChatRoomPreferencesRoute(
 
   if (method === 'GET') {
     await fulfillChatRoomPreferencesGet(route, url, roomPrefs, userId);
-    return;
-  }
-  if (method === 'PATCH') {
-    await fulfillChatRoomPreferencesPatch(
-      route,
-      url,
-      roomPrefs,
-      syncFavoriteState,
-      userId,
-    );
-    return;
-  }
-  if (method === 'POST') {
-    await fulfillChatRoomPreferencesPost(route, roomPrefs, syncFavoriteState);
     return;
   }
 
@@ -271,12 +238,11 @@ async function stubChatFavoritesSurface(
   });
 
   await page.route('**/rest/v1/chat_room_preferences*', async (route) => {
-    await fulfillChatRoomPreferencesRoute(
-      route,
-      roomPrefs,
-      syncFavoriteState,
-      USER_ID,
-    );
+    await fulfillChatRoomPreferencesRoute(route, roomPrefs, USER_ID);
+  });
+
+  await page.route('**/rest/v1/rpc/chat_set_room_favorite', async (route) => {
+    await fulfillChatSetRoomFavoriteRpc(route, roomPrefs, syncFavoriteState);
   });
 
   await page.route('**/rest/v1/profiles*', async (route) => {

@@ -7,6 +7,34 @@ function trimStr(value) {
   return String(value).trim();
 }
 
+function normalizeOwnerType(value) {
+  const normalized = trimStr(value).toLowerCase();
+  if (normalized === 'org' || normalized === 'organization') {
+    return 'org';
+  }
+  if (normalized === 'user' || normalized === 'person') {
+    return 'user';
+  }
+  return '';
+}
+
+function parseProjectUrl(url) {
+  const trimmed = trimStr(url);
+  if (!trimmed) return {};
+
+  const match =
+    /^https?:\/\/[^/]+\/(orgs|users)\/([^/]+)\/projects\/(\d+)(?:\/|$)/i.exec(
+      trimmed,
+    );
+  if (!match) return {};
+
+  return {
+    ownerType: match[1].toLowerCase() === 'orgs' ? 'org' : 'user',
+    ownerLogin: match[2],
+    projectNumber: Number.parseInt(match[3], 10),
+  };
+}
+
 module.exports = async function getProjectBackfillConfig(
   github,
   context,
@@ -14,48 +42,55 @@ module.exports = async function getProjectBackfillConfig(
 ) {
   const inputs = context.payload.inputs || {};
   const repositoryOwner = context.payload.repository?.owner;
-  let inferredOwnerType =
-    repositoryOwner?.type === 'Organization'
-      ? 'org'
-      : repositoryOwner?.type === 'User'
-        ? 'user'
-        : '';
-  const ownerLogin = trimStr(
+  const urlFallback = parseProjectUrl(process.env.GH_PROJECT_URL);
+  let ownerLogin = trimStr(
     inputs.owner_login ||
       process.env.GH_PROJECT_OWNER_LOGIN ||
+      urlFallback.ownerLogin ||
       repositoryOwner?.login ||
       context.repo?.owner ||
       '',
   );
-  if (!inferredOwnerType && ownerLogin && github?.rest?.users?.getByUsername) {
+
+  let ownerType = normalizeOwnerType(
+    inputs.owner_type ||
+      process.env.GH_PROJECT_OWNER_TYPE ||
+      urlFallback.ownerType,
+  );
+
+  const repoOwnerMatchesLogin = repositoryOwner?.login
+    ? repositoryOwner.login.localeCompare(ownerLogin, undefined, {
+        sensitivity: 'accent',
+        usage: 'search',
+      }) === 0
+    : false;
+
+  if (!ownerType && ownerLogin && github?.rest?.users?.getByUsername) {
     try {
       const { data } = await github.rest.users.getByUsername({
         username: ownerLogin,
       });
-      inferredOwnerType =
-        data?.type === 'Organization'
-          ? 'org'
-          : data?.type === 'User'
-            ? 'user'
-            : '';
+      ownerType = normalizeOwnerType(data?.type);
     } catch (error) {
       if (typeof core.info === 'function') {
         core.info(
-          `Could not infer project owner type for ${ownerLogin}; continuing with configured values only.`,
+          `Could not infer project owner type for ${ownerLogin}; will fall back to repository owner metadata if available.`,
         );
       }
     }
   }
-  const ownerType = trimStr(
-    inputs.owner_type ||
-      process.env.GH_PROJECT_OWNER_TYPE ||
-      inferredOwnerType ||
-      '',
-  );
+
+  if (!ownerType && repoOwnerMatchesLogin) {
+    ownerType = normalizeOwnerType(repositoryOwner?.type);
+  }
+
+  if (!ownerType) {
+    ownerType = normalizeOwnerType(context.repo?.owner ?? '');
+  }
   const rawProject =
     inputs.project_number != null && String(inputs.project_number).trim() !== ''
       ? inputs.project_number
-      : process.env.GH_PROJECT_NUMBER;
+      : (process.env.GH_PROJECT_NUMBER ?? urlFallback.projectNumber);
   const projectNumber = Number(trimStr(rawProject));
 
   if (ownerType !== 'org' && ownerType !== 'user') {
@@ -71,9 +106,15 @@ module.exports = async function getProjectBackfillConfig(
     return null;
   }
 
-  return {
+  const config = {
     ownerType,
     ownerLogin,
     projectNumber,
   };
+  if (typeof core?.info === 'function') {
+    core.info(
+      `Project config → ownerType=${ownerType}, ownerLogin=${ownerLogin}, projectNumber=${projectNumber}`,
+    );
+  }
+  return config;
 };

@@ -171,6 +171,14 @@ async function stubChatKeyboardSurface(page: import('@playwright/test').Page) {
     });
   });
 
+  await page.route('**/rest/v1/rpc/chat_set_room_favorite', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: 'true',
+    });
+  });
+
   await page.route('**/rest/v1/feed_connections*', async (route) => {
     const url = new URL(route.request().url());
     const userId = url.searchParams.get('user_id') ?? '';

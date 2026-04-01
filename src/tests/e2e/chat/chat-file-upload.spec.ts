@@ -226,6 +226,7 @@ test.describe('Chat file upload', () => {
     const { stubAdminRpc } = await seedSignedInSession(page.context());
     await stubAdminRpc(page);
     await stubChatRoom(page);
+    await page.setViewportSize({ width: 1440, height: 900 });
 
     let processedGifRequested = false;
     let uploadPath: string | null = null;
@@ -325,7 +326,23 @@ test.describe('Chat file upload', () => {
     await expect
       .poll(() => uploadMimeType ?? '')
       .toMatch(/^(image\/gif|multipart\/form-data;)/);
-    await expect(page.getByAltText('GIF attachment')).toHaveCount(1);
+    const gifPreview = page.getByAltText('GIF attachment');
+    await expect(gifPreview).toHaveCount(1);
+    await expect
+      .poll(async () =>
+        gifPreview.evaluate((element) => {
+          const styles = globalThis.getComputedStyle(element);
+          return {
+            objectFit: styles.objectFit,
+            maxHeight: styles.maxHeight,
+            height: styles.height,
+          };
+        }),
+      )
+      .toMatchObject({
+        objectFit: 'contain',
+        maxHeight: '520px',
+      });
   });
 
   test('rejects a gif above the 6MB upload ceiling with a clear message', async ({

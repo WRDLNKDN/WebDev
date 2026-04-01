@@ -112,7 +112,7 @@ const TECHNICAL_PHRASES: Array<{ pattern: RegExp; friendly: string }> = [
     friendly: "We couldn't add that GIF. Please try another one.",
   },
   {
-    pattern: /reply_to_message_id|schema cache/i,
+    pattern: /reply_to_message_id|column of ['"]?chat_messages.*schema cache/i,
     friendly:
       "Replying isn't fully available right now. Please refresh and try again.",
   },
@@ -127,12 +127,12 @@ const TECHNICAL_PHRASES: Array<{ pattern: RegExp; friendly: string }> = [
   {
     pattern: /relation ["'].*["'] does not exist|relation .* does not exist/i,
     friendly:
-      'Database table not found. Run migrations (e.g. supabase db reset) or contact your administrator.',
+      'Database table not found. Run migrations (e.g. npm run supabase:reset) or contact your administrator.',
   },
   {
     pattern: /unrecognized encoding|function.*does not exist/i,
     friendly:
-      'Share link feature needs a database update. Run: supabase db reset (or apply migrations), then try again.',
+      'Share link feature needs a database update. Run: npm run supabase:reset (or apply migrations), then try again.',
   },
   {
     pattern: /permission denied for (table|relation)/i,

@@ -16,6 +16,7 @@ import { useAppToast } from '../context/AppToastContext';
 import { sanitizeChatRoomPreview } from '../lib/chat/roomPreview';
 import { toMessage } from '../lib/utils/errors';
 import {
+  isChatGroupOptionalDetailsUnsupportedError,
   normalizeChatGroupDescription,
   type ChatGroupDetailsInput,
 } from '../lib/chat/groupDetails';
@@ -38,6 +39,7 @@ export type ChatRoomsContextValue = {
 const ChatRoomsContext = createContext<ChatRoomsContextValue | null>(null);
 
 async function persistChatRoomFavorite(
+  userId: string,
   roomId: string,
   nextFavorite: boolean,
 ): Promise<void> {
@@ -45,7 +47,39 @@ async function persistChatRoomFavorite(
     p_room_id: roomId,
     p_is_favorite: nextFavorite,
   });
-  if (error) throw error;
+  if (!error) return;
+
+  const rawMessage = String(error.message ?? '');
+  const shouldFallbackToDirectPreferenceWrite =
+    /chat_set_room_favorite/i.test(rawMessage) ||
+    /schema cache/i.test(rawMessage) ||
+    /function.*does not exist/i.test(rawMessage) ||
+    error.code === 'PGRST202' ||
+    error.code === '42883';
+
+  if (!shouldFallbackToDirectPreferenceWrite) throw error;
+
+  if (nextFavorite) {
+    const { error: upsertError } = await supabase
+      .from('chat_room_preferences')
+      .upsert(
+        {
+          room_id: roomId,
+          user_id: userId,
+          is_favorite: true,
+        },
+        { onConflict: 'room_id,user_id' },
+      );
+    if (upsertError) throw upsertError;
+    return;
+  }
+
+  const { error: deleteError } = await supabase
+    .from('chat_room_preferences')
+    .delete()
+    .eq('room_id', roomId)
+    .eq('user_id', userId);
+  if (deleteError) throw deleteError;
 }
 
 type ChatBlockRow = { blocker_id: string; blocked_user_id: string };
@@ -576,6 +610,7 @@ function useChatRoomsState() {
             : null;
       if (!id) return null;
 
+      let skippedOptionalDetails = false;
       if (normalizedDescription || details.imageUrl) {
         const { error: roomUpdateError } = await supabase
           .from('chat_rooms')
@@ -584,13 +619,28 @@ function useChatRoomsState() {
             image_url: details.imageUrl ?? null,
           })
           .eq('id', id);
-        if (roomUpdateError) throw roomUpdateError;
+        if (roomUpdateError) {
+          if (isChatGroupOptionalDetailsUnsupportedError(roomUpdateError)) {
+            skippedOptionalDetails = true;
+            console.warn('createGroup optional details not saved:', {
+              roomId: id,
+              message: toMessage(roomUpdateError),
+              code: roomUpdateError.code,
+              details: roomUpdateError.details,
+              hint: roomUpdateError.hint,
+            });
+          } else {
+            throw roomUpdateError;
+          }
+        }
       }
 
       await fetchRooms();
       showToast({
-        message: 'Group created.',
-        severity: 'success',
+        message: skippedOptionalDetails
+          ? 'Group created. Some optional details could not be saved yet.'
+          : 'Group created.',
+        severity: skippedOptionalDetails ? 'info' : 'success',
       });
       return id as string;
     },
@@ -612,7 +662,7 @@ function useChatRoomsState() {
       );
 
       try {
-        await persistChatRoomFavorite(roomId, nextFavorite);
+        await persistChatRoomFavorite(session.user.id, roomId, nextFavorite);
 
         showToast({
           message: nextFavorite

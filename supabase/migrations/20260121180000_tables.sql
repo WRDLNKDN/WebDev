@@ -1826,6 +1826,24 @@ $$;
 revoke all on function public.are_chat_connections(uuid, uuid) from public;
 grant execute on function public.are_chat_connections(uuid, uuid) to authenticated, service_role;
 
+-- chat_blocked: true if either user has blocked the other
+create or replace function public.chat_blocked(a uuid, b uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public, pg_catalog
+as $$
+  select exists (
+    select 1 from public.chat_blocks cb
+    where (cb.blocker_id = a and cb.blocked_user_id = b)
+       or (cb.blocker_id = b and cb.blocked_user_id = a)
+  );
+$$;
+
+revoke all on function public.chat_blocked(uuid, uuid) from public;
+grant execute on function public.chat_blocked(uuid, uuid) to authenticated, service_role;
+
 -- Member picker (DM + group create / invite): same eligibility as chat_create_group / chat_create_dm.
 create or replace function public.chat_list_eligible_connection_profiles()
 returns table (
@@ -1851,24 +1869,6 @@ $$;
 
 revoke all on function public.chat_list_eligible_connection_profiles() from public;
 grant execute on function public.chat_list_eligible_connection_profiles() to authenticated;
-
--- chat_blocked: true if either user has blocked the other
-create or replace function public.chat_blocked(a uuid, b uuid)
-returns boolean
-language sql
-stable
-security definer
-set search_path = public, pg_catalog
-as $$
-  select exists (
-    select 1 from public.chat_blocks cb
-    where (cb.blocker_id = a and cb.blocked_user_id = b)
-       or (cb.blocker_id = b and cb.blocked_user_id = a)
-  );
-$$;
-
-revoke all on function public.chat_blocked(uuid, uuid) from public;
-grant execute on function public.chat_blocked(uuid, uuid) to authenticated, service_role;
 
 create or replace function public.chat_create_dm(p_other_user_id uuid)
 returns uuid

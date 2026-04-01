@@ -63,5 +63,7 @@ playwright/.cache/
 supabase/.temp/
 supabase/.branches/
 supabase/.storage/
+# Ignore ad-hoc SQL editor scratch files
+supabase/snippets/Untitled query *.sql
 # Docker Desktop junk
 .docker/

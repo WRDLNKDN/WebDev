@@ -498,7 +498,7 @@
 }
 
 .home-landing__section--video {
-  padding: 0 0 3rem;
+  padding: clamp(1rem, 2.8vw, 1.8rem) 0 3rem;
   background:
     radial-gradient(
       circle at top,

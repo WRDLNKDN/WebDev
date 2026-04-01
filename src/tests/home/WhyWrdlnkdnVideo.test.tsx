@@ -113,4 +113,39 @@ describe('WhyWrdlnkdnVideo', () => {
       'https://www.youtube.com/embed/Qc4D5W2kuBI?playsinline=1&rel=0&autoplay=1',
     );
   });
+
+  it('keeps the preview in place on mobile until the user taps play', async () => {
+    vi.stubGlobal(
+      'matchMedia',
+      vi.fn().mockImplementation(() => ({
+        matches: true,
+        media: '(pointer: coarse)',
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      })),
+    );
+
+    await act(async () => {
+      root.render(<WhyWrdlnkdnVideo />);
+    });
+
+    expect(intersectionCallback).toBeNull();
+    expect(container.querySelector('iframe')).toBeNull();
+
+    const preview = container.querySelector(
+      'button',
+    ) as HTMLButtonElement | null;
+    expect(preview).toBeTruthy();
+
+    await act(async () => {
+      preview?.click();
+    });
+
+    expect(container.querySelector('iframe')?.getAttribute('src')).toBe(
+      'https://www.youtube.com/embed/Qc4D5W2kuBI?playsinline=1&rel=0&autoplay=1',
+    );
+  });
 });

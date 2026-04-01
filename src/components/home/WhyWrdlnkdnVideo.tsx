@@ -4,6 +4,8 @@ import ButtonBase from '@mui/material/ButtonBase';
 const VIDEO_EMBED_BASE = 'https://www.youtube.com/embed/Qc4D5W2kuBI';
 const VIDEO_POSTER =
   'https://i.ytimg.com/vi_webp/Qc4D5W2kuBI/maxresdefault.webp';
+const MOBILE_MANUAL_PLAY_QUERY =
+  '(hover: none), (pointer: coarse), (max-width: 767.98px)';
 
 export const WhyWrdlnkdnVideo = () => {
   const sectionRef = useRef<HTMLElement | null>(null);
@@ -13,6 +15,13 @@ export const WhyWrdlnkdnVideo = () => {
 
   useEffect(() => {
     if (hasMountedPlayer || typeof window === 'undefined') return;
+    if (
+      typeof window.matchMedia === 'function' &&
+      window.matchMedia(MOBILE_MANUAL_PLAY_QUERY).matches
+    ) {
+      return;
+    }
+
     const node = sectionRef.current;
     if (!node || typeof IntersectionObserver === 'undefined') return;
 

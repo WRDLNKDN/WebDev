@@ -53,27 +53,31 @@ From the **project root** (parent of `supabase/`):
 supabase start
 ```
 
-To **reset the database** and re-apply migrations + seed without hitting a known
-502 on container restart, use DB-only reset then start:
+To **reset the database** and re-apply migrations + seed, use the repo script:
 
 ```bash
-supabase stop
-SUPABASE_DB_ONLY=true supabase db reset
-supabase start
+npm run supabase:reset
+```
+
+The repo script still uses the latest DB-only CLI reset under the hood:
+
+```bash
+SUPABASE_DB_ONLY=true npx supabase@latest db reset
 ```
 
 If you already ran `supabase db reset` and got **502: An invalid response was
 received from the upstream server** after "Restarting containers...", the
-migrations and seed usually applied correctly; the 502 is from Kong failing to
-reach a service during restart. Fix it by:
+migrations and seed usually already applied. The current repo script detects the
+transient Storage/Kong restart race, restarts Kong, and waits for the Storage
+gateway to recover before exiting.
+
+If `npm run supabase:reset` still ends with a Storage 502 after the helper
+retry, run:
 
 ```bash
-supabase stop
-supabase start
+npx supabase@latest stop
+npx supabase@latest start
 ```
-
-Then open `http://localhost:54321` (or Studio at 54323). If 502 persists, try
-the DB-only reset flow above.
 
 **NOTICEs** like `function public.get_feed_page(...) does not exist, skipping`
 are normal on a fresh or reset DB: the migration drops objects before creating

@@ -29,8 +29,8 @@
 ## Database
 
 Apply Supabase migrations so `profiles.avatar_type`, `get_directory_page`,
-`generation_jobs`, etc. exist. Local: `npx supabase db reset` or `db push` as
-appropriate.
+`generation_jobs`, etc. exist. Local: `npm run supabase:reset` or
+`npx supabase@latest db push` as appropriate.
 
 ## Deploy checklist
 

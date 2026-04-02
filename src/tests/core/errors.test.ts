@@ -25,4 +25,14 @@ describe('toMessage', () => {
       "Replying isn't fully available right now. Please refresh and try again.",
     );
   });
+
+  it('does not map unrelated schema cache errors to the reply message', () => {
+    expect(
+      toMessage(
+        'Could not find the function public.chat_set_room_favorite(p_room_id, p_is_favorite) in the schema cache.',
+      ),
+    ).not.toBe(
+      "Replying isn't fully available right now. Please refresh and try again.",
+    );
+  });
 });

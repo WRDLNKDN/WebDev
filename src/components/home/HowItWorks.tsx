@@ -9,14 +9,14 @@ const guestSteps = [
   },
   {
     badge: '02',
-    title: 'Set your intent',
-    body: 'Define your values and how you want to show up in the network.',
+    title: 'Create your Showcase',
+    body: 'Upload work samples, add links, and highlight what you want people to see first.',
     to: '/join',
   },
   {
     badge: '03',
-    title: 'Follow people',
-    body: 'Discover and follow others who share your values and goals.',
+    title: 'Discover and Connect',
+    body: 'Find and connect with people who share your industries, skills, hobbies, and interests.',
     to: '/directory',
   },
   {

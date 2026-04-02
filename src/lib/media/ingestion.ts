@@ -1,16 +1,25 @@
 import { supabase } from '../auth/supabaseClient';
 import { processChatGifUpload } from '../api/chatAttachmentsApi';
 import {
-  buildDeterministicAssetThumbnail,
   buildStructuredMediaStoragePath,
   deriveSiblingStoragePath,
-  inferMediaType,
+  getStructuredMediaDerivativeExtensions,
   MEDIA_DISPLAY_FILE_STEM,
   MEDIA_ORIGINAL_FILE_STEM,
   MEDIA_THUMBNAIL_FILE_STEM,
 } from './assets';
+import {
+  buildDocumentPreviewBlob,
+  extractDocumentPreviewTextFromFile,
+  getDocumentMimeTypeForName,
+  isSupportedDocumentMimeType,
+} from './documents';
+import {
+  CHAT_DIRECT_UPLOAD_MAX_FILE_BYTES,
+  STRUCTURED_MEDIA_INPUT_HARD_LIMIT_BYTES,
+} from './mediaSizePolicy';
+import { reportMediaTelemetryAsync } from './telemetry';
 
-const IMAGE_INPUT_MAX_BYTES = 15 * 1024 * 1024;
 const DEFAULT_DISPLAY_LONG_EDGE = 1600;
 const DEFAULT_THUMBNAIL_LONG_EDGE = 480;
 
@@ -22,6 +31,41 @@ type CanvasRenderResult = {
 
 const FILE_EXTENSION_PATTERN = /\.([a-z0-9]+)(?:$|\?)/i;
 
+function trackStructuredTransformTelemetry(params: {
+  eventName: string;
+  stage: 'optimization' | 'preview';
+  surface: string;
+  requestId: string;
+  mimeType: string;
+  inputBytes: number;
+  outputBytes?: number | null;
+  thumbnailBytes?: number | null;
+  failureReason?: string | null;
+  status: 'ready' | 'failed';
+  pipeline: 'structured_public_asset' | 'structured_chat_attachment';
+}) {
+  reportMediaTelemetryAsync({
+    eventName: params.eventName,
+    stage: params.stage,
+    surface: params.surface,
+    requestId: params.requestId,
+    pipeline: params.pipeline,
+    status: params.status,
+    failureCode: params.status === 'failed' ? 'compression_failed' : undefined,
+    failureReason: params.failureReason ?? undefined,
+    meta: {
+      inputBytes: params.inputBytes,
+      outputBytes: params.outputBytes ?? null,
+      thumbnailBytes: params.thumbnailBytes ?? null,
+      bytesSaved:
+        typeof params.outputBytes === 'number'
+          ? Math.max(0, params.inputBytes - params.outputBytes)
+          : null,
+      mimeType: params.mimeType,
+    },
+  });
+}
+
 function getImageDisplayExtension(mimeType: string): 'gif' | 'png' | 'webp' {
   if (mimeType === 'image/gif') return 'gif';
   if (mimeType === 'image/png') return 'png';
@@ -31,9 +75,9 @@ function getImageDisplayExtension(mimeType: string): 'gif' | 'png' | 'webp' {
 function getChatAttachmentDisplayExtension(
   mediaType: StructuredChatAttachmentUpload['mediaType'],
   mimeType: string,
-): 'gif' | 'png' | 'webp' | 'svg' {
-  if (mediaType !== 'image') return 'svg';
-  return getImageDisplayExtension(mimeType);
+): 'gif' | 'png' | 'webp' | 'svg' | 'mp4' {
+  return getStructuredMediaDerivativeExtensions({ mediaType, mimeType })
+    .displayExtension;
 }
 
 export type StructuredPublicAssetUpload = {
@@ -74,17 +118,7 @@ function isSupportedImageMime(mimeType: string): boolean {
 }
 
 function isSupportedDocumentMime(mimeType: string): boolean {
-  return [
-    'application/pdf',
-    'application/msword',
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    'application/vnd.ms-powerpoint',
-    'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-    'application/vnd.ms-excel',
-    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    'text/plain',
-    'text/markdown',
-  ].includes(mimeType);
+  return isSupportedDocumentMimeType(mimeType);
 }
 
 function isSupportedVideoMime(mimeType: string): boolean {
@@ -94,6 +128,8 @@ function isSupportedVideoMime(mimeType: string): boolean {
 function normalizeMimeFromFile(file: File): string {
   const mimeType = file.type.toLowerCase().trim();
   if (mimeType) return mimeType;
+  const documentMime = getDocumentMimeTypeForName(file.name);
+  if (documentMime) return documentMime;
   const extension = getFileExtension(file.name);
   switch (extension) {
     case 'jpg':
@@ -105,16 +141,6 @@ function normalizeMimeFromFile(file: File): string {
       return 'image/webp';
     case 'gif':
       return 'image/gif';
-    case 'pdf':
-      return 'application/pdf';
-    case 'doc':
-      return 'application/msword';
-    case 'docx':
-      return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-    case 'txt':
-      return 'text/plain';
-    case 'md':
-      return 'text/markdown';
     case 'mp4':
       return 'video/mp4';
     case 'webm':
@@ -222,16 +248,15 @@ async function createImageDerivatives(file: File): Promise<{
   return { display, thumbnail };
 }
 
-function buildDocumentFallbackBlob(file: File): Blob {
-  const dataUrl = buildDeterministicAssetThumbnail({
-    mediaType: inferMediaType({ mimeType: normalizeMimeFromFile(file) }),
-    title: file.name,
-    mimeType: normalizeMimeFromFile(file),
+async function buildDocumentPreviewImageBlob(file: File): Promise<Blob> {
+  const mimeType = normalizeMimeFromFile(file);
+  const excerpt = await extractDocumentPreviewTextFromFile(file);
+  return buildDocumentPreviewBlob({
+    fileName: file.name,
+    mimeType,
+    sizeBytes: file.size,
+    excerpt,
   });
-  const svgMarkup = decodeURIComponent(
-    dataUrl.replace(/^data:image\/svg\+xml;charset=UTF-8,/, ''),
-  );
-  return new Blob([svgMarkup], { type: 'image/svg+xml' });
 }
 
 async function uploadPublicBlob(params: {
@@ -277,7 +302,7 @@ export async function uploadStructuredPublicAsset(params: {
   file: File;
   retainOriginal?: boolean;
 }): Promise<StructuredPublicAssetUpload> {
-  if (params.file.size > IMAGE_INPUT_MAX_BYTES) {
+  if (params.file.size > STRUCTURED_MEDIA_INPUT_HARD_LIMIT_BYTES) {
     throw new Error('File is too large to process safely.');
   }
 
@@ -351,7 +376,36 @@ export async function uploadStructuredPublicAsset(params: {
       };
     }
 
-    const { display, thumbnail } = await createImageDerivatives(params.file);
+    let display: CanvasRenderResult;
+    let thumbnail: CanvasRenderResult;
+    try {
+      ({ display, thumbnail } = await createImageDerivatives(params.file));
+      trackStructuredTransformTelemetry({
+        eventName: 'media_derivative_compression_succeeded',
+        stage: 'optimization',
+        surface: params.bucket,
+        requestId: assetId,
+        mimeType,
+        inputBytes: params.file.size,
+        outputBytes: display.blob.size,
+        thumbnailBytes: thumbnail.blob.size,
+        status: 'ready',
+        pipeline: 'structured_public_asset',
+      });
+    } catch (error) {
+      trackStructuredTransformTelemetry({
+        eventName: 'media_derivative_compression_failed',
+        stage: 'optimization',
+        surface: params.bucket,
+        requestId: assetId,
+        mimeType,
+        inputBytes: params.file.size,
+        failureReason: error instanceof Error ? error.message : String(error),
+        status: 'failed',
+        pipeline: 'structured_public_asset',
+      });
+      throw error;
+    }
     const displayUrl = await uploadPublicBlob({
       bucket: params.bucket,
       path: displayPath,
@@ -396,7 +450,35 @@ export async function uploadStructuredPublicAsset(params: {
     MEDIA_DISPLAY_FILE_STEM,
     'svg',
   );
-  const thumbnailBlob = buildDocumentFallbackBlob(params.file);
+  let thumbnailBlob: Blob;
+  try {
+    thumbnailBlob = await buildDocumentPreviewImageBlob(params.file);
+    trackStructuredTransformTelemetry({
+      eventName: 'media_document_preview_succeeded',
+      stage: 'preview',
+      surface: params.bucket,
+      requestId: assetId,
+      mimeType,
+      inputBytes: params.file.size,
+      outputBytes: thumbnailBlob.size,
+      thumbnailBytes: thumbnailBlob.size,
+      status: 'ready',
+      pipeline: 'structured_public_asset',
+    });
+  } catch (error) {
+    trackStructuredTransformTelemetry({
+      eventName: 'media_document_preview_failed',
+      stage: 'preview',
+      surface: params.bucket,
+      requestId: assetId,
+      mimeType,
+      inputBytes: params.file.size,
+      failureReason: error instanceof Error ? error.message : String(error),
+      status: 'failed',
+      pipeline: 'structured_public_asset',
+    });
+    throw error;
+  }
   const thumbnailUrl = await uploadPublicBlob({
     bucket: params.bucket,
     path: thumbnailPath,
@@ -431,13 +513,16 @@ export async function uploadStructuredChatAttachment(params: {
   file: File;
   accessToken?: string | null;
 }): Promise<StructuredChatAttachmentUpload> {
-  if (params.file.size > IMAGE_INPUT_MAX_BYTES) {
+  if (params.file.size > STRUCTURED_MEDIA_INPUT_HARD_LIMIT_BYTES) {
     throw new Error('File is too large to process safely.');
   }
 
   const { mimeType, mediaType } = assertSupportedUpload(params.file);
 
-  if (mimeType === 'image/gif' && params.file.size > 2 * 1024 * 1024) {
+  if (
+    mimeType === 'image/gif' &&
+    params.file.size > CHAT_DIRECT_UPLOAD_MAX_FILE_BYTES
+  ) {
     const processed = await processChatGifUpload({
       file: params.file,
       accessToken: params.accessToken ?? null,
@@ -539,7 +624,36 @@ export async function uploadStructuredChatAttachment(params: {
       };
     }
 
-    const { display, thumbnail } = await createImageDerivatives(params.file);
+    let display: CanvasRenderResult;
+    let thumbnail: CanvasRenderResult;
+    try {
+      ({ display, thumbnail } = await createImageDerivatives(params.file));
+      trackStructuredTransformTelemetry({
+        eventName: 'media_derivative_compression_succeeded',
+        stage: 'optimization',
+        surface: 'chat_attachment',
+        requestId: assetId,
+        mimeType,
+        inputBytes: params.file.size,
+        outputBytes: display.blob.size,
+        thumbnailBytes: thumbnail.blob.size,
+        status: 'ready',
+        pipeline: 'structured_chat_attachment',
+      });
+    } catch (error) {
+      trackStructuredTransformTelemetry({
+        eventName: 'media_derivative_compression_failed',
+        stage: 'optimization',
+        surface: 'chat_attachment',
+        requestId: assetId,
+        mimeType,
+        inputBytes: params.file.size,
+        failureReason: error instanceof Error ? error.message : String(error),
+        status: 'failed',
+        pipeline: 'structured_chat_attachment',
+      });
+      throw error;
+    }
     await uploadPrivateBlob({
       bucket: 'chat-attachments',
       path: displayPath,
@@ -564,7 +678,35 @@ export async function uploadStructuredChatAttachment(params: {
     };
   }
 
-  const fallbackBlob = buildDocumentFallbackBlob(params.file);
+  let fallbackBlob: Blob;
+  try {
+    fallbackBlob = await buildDocumentPreviewImageBlob(params.file);
+    trackStructuredTransformTelemetry({
+      eventName: 'media_document_preview_succeeded',
+      stage: 'preview',
+      surface: 'chat_attachment',
+      requestId: assetId,
+      mimeType,
+      inputBytes: params.file.size,
+      outputBytes: fallbackBlob.size,
+      thumbnailBytes: fallbackBlob.size,
+      status: 'ready',
+      pipeline: 'structured_chat_attachment',
+    });
+  } catch (error) {
+    trackStructuredTransformTelemetry({
+      eventName: 'media_document_preview_failed',
+      stage: 'preview',
+      surface: 'chat_attachment',
+      requestId: assetId,
+      mimeType,
+      inputBytes: params.file.size,
+      failureReason: error instanceof Error ? error.message : String(error),
+      status: 'failed',
+      pipeline: 'structured_chat_attachment',
+    });
+    throw error;
+  }
   await uploadPrivateBlob({
     bucket: 'chat-attachments',
     path: displayPath,

@@ -3,6 +3,7 @@ import DashboardIcon from '@mui/icons-material/Dashboard';
 import FlagIcon from '@mui/icons-material/Flag';
 import HandshakeIcon from '@mui/icons-material/Handshake';
 import MonitorHeartIcon from '@mui/icons-material/MonitorHeart';
+import PermMediaIcon from '@mui/icons-material/PermMedia';
 import ReportProblemIcon from '@mui/icons-material/ReportProblem';
 import VideoLibraryIcon from '@mui/icons-material/VideoLibrary';
 import {
@@ -72,6 +73,11 @@ const NAV_ITEMS: NavItem[] = [
     label: 'Feature Flags',
     to: '/admin/feature-flags',
     icon: <FlagIcon />,
+  },
+  {
+    label: 'Media Health',
+    to: '/admin/media-health',
+    icon: <PermMediaIcon />,
   },
 ];
 

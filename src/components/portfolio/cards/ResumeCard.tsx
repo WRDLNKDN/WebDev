@@ -21,7 +21,11 @@ import {
 } from '@mui/material';
 import { useRef, useState } from 'react';
 import { AssetThumbnail } from '../../media/AssetThumbnail';
-import { createNormalizedResumeAsset } from '../../../lib/media/assets';
+import { MediaStatusBanner } from '../../media/MediaStatusBanner';
+import {
+  createNormalizedAsset,
+  createNormalizedResumeAsset,
+} from '../../../lib/media/assets';
 import { RESUME_PREVIEW_UNSUPPORTED_MESSAGE } from '../../../lib/portfolio/resumePreviewSupport';
 import { CANDY_BLUEY, CANDY_HAZARD } from '../../../theme/candyStyles';
 import type { PortfolioItem } from '../../../types/portfolio';
@@ -90,34 +94,20 @@ const ResumeCardThumbnailArea = ({
   }
 
   if (hasThumbnail) {
+    const thumbnailAsset = createNormalizedAsset({
+      sourceType: 'upload',
+      mediaType: 'image',
+      displayUrl: thumbnailUrl ?? null,
+      thumbnailUrl: thumbnailUrl ?? null,
+      title: resumeTitle,
+    });
+
     return (
-      <Box
-        sx={{
-          width: '100%',
-          minHeight: { xs: 72, sm: 80 },
-          aspectRatio: '16 / 9',
-          maxHeight: { xs: 88, md: 100 },
-          flexShrink: 0,
-          overflow: 'hidden',
-          bgcolor: 'rgba(0,0,0,0.5)',
-          borderBottom: '1px solid rgba(156,187,217,0.18)',
-        }}
-      >
-        <Box
-          component="img"
-          src={thumbnailUrl ?? ''}
-          alt="Resume thumbnail preview"
-          width={400}
-          height={300}
-          sx={{
-            width: '100%',
-            height: '100%',
-            objectFit: 'cover',
-            objectPosition: 'top',
-            display: 'block',
-          }}
-        />
-      </Box>
+      <AssetThumbnail
+        asset={thumbnailAsset}
+        alt="Resume thumbnail preview"
+        compact
+      />
     );
   }
 
@@ -265,6 +255,24 @@ const ResumeCardBodyBlock = ({
   retryThumbnailBusy: boolean;
   onRetryThumbnail?: () => void;
 }) => {
+  const previewStatusState =
+    thumbnailStatus === 'pending'
+      ? {
+          stage: 'converting' as const,
+          message:
+            'Generating preview files so this resume renders consistently across the platform.',
+        }
+      : thumbnailStatus === 'failed' && !ui.isWordResume
+        ? {
+            stage: 'failed' as const,
+            message: ui.errorSuggestsUnsupported
+              ? RESUME_PREVIEW_UNSUPPORTED_MESSAGE
+              : thumbnailError?.trim() ||
+                "We couldn't finish generating the preview. Open the document directly or retry.",
+            retryable: Boolean(onRetryThumbnail),
+          }
+        : null;
+
   return (
     <Box
       sx={{
@@ -300,30 +308,17 @@ const ResumeCardBodyBlock = ({
           </Typography>
         </Box>
       ) : null}
-      {thumbnailStatus === 'failed' && thumbnailError && !ui.isWordResume && (
-        <Box
-          sx={{
-            mb: 1,
-            p: 0.75,
-            borderRadius: 1,
-            bgcolor: 'rgba(255, 132, 132, 0.1)',
-            border: '1px solid rgba(255, 132, 132, 0.3)',
-          }}
-        >
-          <Typography
-            variant="caption"
-            sx={{
-              color: 'error.main',
-              fontSize: '0.75rem',
-              display: 'block',
-            }}
-          >
-            {ui.errorSuggestsUnsupported
-              ? RESUME_PREVIEW_UNSUPPORTED_MESSAGE
-              : 'Preview failed. Open the document directly.'}
-          </Typography>
-        </Box>
-      )}
+      {previewStatusState ? (
+        <MediaStatusBanner
+          state={previewStatusState}
+          compact
+          onRetry={
+            previewStatusState.stage === 'failed' ? onRetryThumbnail : undefined
+          }
+          retryBusy={retryThumbnailBusy}
+          sx={{ mb: 1 }}
+        />
+      ) : null}
       <Box component="p" sx={{ m: 0, mb: 1.1 }}>
         <Typography
           component="span"

@@ -12,15 +12,13 @@ import {
 import type { Session } from '@supabase/supabase-js';
 import { useEffect, useState } from 'react';
 import { Link as RouterLink, useParams } from 'react-router-dom';
-import { PortfolioPreviewFallback } from '../../components/portfolio/PortfolioPreviewFallback';
+import { AssetInlinePreview } from '../../components/media/AssetThumbnail';
 import { AddProjectDialog } from '../../components/portfolio/dialogs/AddProjectDialog';
 import { PortfolioPreviewModal } from '../../components/portfolio/dialogs/PortfolioPreviewModal';
 import { useProfile } from '../../hooks/useProfile';
 import { supabase } from '../../lib/auth/supabaseClient';
-import {
-  getProjectPreviewFallbackLabel,
-  getProjectPreviewMediaUrl,
-} from '../../lib/portfolio/projectPreview';
+import { getProjectPreviewFallbackLabel } from '../../lib/portfolio/projectPreview';
+import { createNormalizedPortfolioAsset } from '../../lib/media/assets';
 import type {
   NewProject,
   PortfolioItem,
@@ -119,7 +117,7 @@ export const ProjectPage = () => {
     session?.user?.id && project && project.owner_id === session.user.id,
   );
   const projectUrl = project?.project_url?.trim() ?? '';
-  const previewMediaUrl = project ? getProjectPreviewMediaUrl(project) : null;
+  const previewAsset = project ? createNormalizedPortfolioAsset(project) : null;
   const previewFallbackLabel = project
     ? getProjectPreviewFallbackLabel(project)
     : 'Project preview';
@@ -210,33 +208,40 @@ export const ProjectPage = () => {
         <Box
           sx={{
             width: '100%',
-            minHeight: 220,
-            maxHeight: 360,
-            borderRadius: 2,
             mb: 3,
-            overflow: 'hidden',
-            border: '1px solid rgba(156,187,217,0.18)',
-            bgcolor: 'rgba(56,132,210,0.08)',
           }}
         >
-          {previewMediaUrl ? (
+          {previewAsset ? (
             <Box
-              component="img"
-              src={previewMediaUrl}
-              alt={project.title}
-              sx={{
-                width: '100%',
-                height: '100%',
-                minHeight: 220,
-                maxHeight: 360,
-                objectFit: 'cover',
+              role="button"
+              tabIndex={0}
+              aria-label="Open project preview"
+              onClick={() => setPreviewOpen(true)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault();
+                  setPreviewOpen(true);
+                }
               }}
-            />
+              sx={{
+                cursor: 'zoom-in',
+              }}
+            >
+              <AssetInlinePreview
+                asset={previewAsset}
+                alt={project.title || previewFallbackLabel}
+                surface="portfolio"
+                sx={{
+                  borderRadius: 2,
+                  borderColor: 'rgba(156,187,217,0.18)',
+                  bgcolor: 'rgba(56,132,210,0.08)',
+                }}
+              />
+            </Box>
           ) : (
-            <PortfolioPreviewFallback
-              project={project}
-              label={previewFallbackLabel}
-            />
+            <Typography color="text.secondary">
+              {previewFallbackLabel}
+            </Typography>
           )}
         </Box>
 

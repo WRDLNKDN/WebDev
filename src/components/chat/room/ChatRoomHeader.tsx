@@ -31,6 +31,7 @@ import type { ReactNode } from 'react';
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createNormalizedGroupImageAsset } from '../../../lib/media/assets';
+import { AssetAvatar } from '../../media/AssetThumbnail';
 import { ProfileAvatar } from '../../avatar/ProfileAvatar';
 import type { ChatRoomWithMembers } from '../../../hooks/useChat';
 import { OnlineIndicator } from './OnlineIndicator';
@@ -99,22 +100,16 @@ export const ChatRoomHeader = ({
 
   const otherMember = room?.members?.find((m) => m.user_id !== currentUserId);
   const otherUserId = otherMember?.user_id;
+  const groupImageAsset =
+    room?.room_type === 'group' && room
+      ? createNormalizedGroupImageAsset(room)
+      : null;
   const displayName =
     room?.room_type === 'group'
       ? room?.name
       : otherMember?.profile?.display_name ||
         otherMember?.profile?.handle ||
         'Chat';
-
-  let avatarUrl: string | undefined;
-  if (room?.room_type === 'dm') {
-    avatarUrl = otherMember?.profile?.avatar ?? undefined;
-  } else if (room) {
-    avatarUrl =
-      createNormalizedGroupImageAsset(room)?.displayUrl ??
-      room.image_url ??
-      undefined;
-  }
   const avatarAlt = displayName || 'Chat';
   let secondaryLabel: string | undefined;
   if (room?.room_type === 'group') {
@@ -364,12 +359,21 @@ export const ChatRoomHeader = ({
           width: { xs: 'calc(100% - 88px)', sm: 'auto' },
         }}
       >
-        <ProfileAvatar
-          src={avatarUrl}
-          alt={avatarAlt}
-          size="small"
-          sx={{ flexShrink: 0, width: 36, height: 36 }}
-        />
+        {room?.room_type === 'group' ? (
+          <AssetAvatar
+            asset={groupImageAsset}
+            alt={avatarAlt}
+            size="small"
+            sx={{ flexShrink: 0, width: 36, height: 36 }}
+          />
+        ) : (
+          <ProfileAvatar
+            src={otherMember?.profile?.avatar ?? undefined}
+            alt={avatarAlt}
+            size="small"
+            sx={{ flexShrink: 0, width: 36, height: 36 }}
+          />
+        )}
         <Box sx={{ minWidth: 0 }}>
           <Typography
             variant="subtitle1"

@@ -32,6 +32,7 @@ import {
   getProjectThumbnailFileError,
   isProjectSourceStorageUrl,
 } from '../../../lib/portfolio/projectMedia';
+import { getUploadSurfaceGuidance } from '../../../lib/media/mediaSizePolicy';
 import { shouldSubmitWithModifier } from '../../../lib/ui/dialogFormUtils';
 import {
   getProjectCategorySelection,
@@ -360,7 +361,8 @@ export const AddProjectDialog = ({
     ? getStoredSourceFileLabel(sourceUrl)
     : null;
   let sourceFileHelperText =
-    'Supported files should be about 2 MB or smaller. Resize large images, export smaller PDFs, or compress before uploading.';
+    getUploadSurfaceGuidance('portfolio_source') ??
+    'Project files are optimized automatically before upload when possible.';
   if (selectedSourceFile) {
     sourceFileHelperText = `${selectedSourceFile.name} selected.`;
   } else if (hasExistingStorageUrl) {
@@ -1118,7 +1120,10 @@ export const AddProjectDialog = ({
                         <FieldLabel
                           text="Project File"
                           required
-                          tooltip="Upload the file that represents this project. Supported files should stay around 2 MB or smaller."
+                          tooltip={
+                            getUploadSurfaceGuidance('portfolio_source') ??
+                            'Upload the file that represents this project.'
+                          }
                         />
                         <Stack
                           direction={{ xs: 'column', sm: 'row' }}

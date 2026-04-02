@@ -1,6 +1,13 @@
 import type { LinkPreviewData } from '../linkPreview';
 import type { ChatMessageAttachment, ChatRoom } from '../../types/chat';
 import type { PortfolioItem } from '../../types/portfolio';
+import type {
+  PlatformMediaAsset,
+  PlatformMediaProcessingState,
+  PlatformMediaSourceType,
+} from './contract';
+import { buildDocumentPreviewDataUrl, detectDocumentKind } from './documents';
+import { createLegacyPlatformMediaAsset } from './legacyCompatibility';
 
 export type NormalizedAssetSourceType = 'upload' | 'link';
 export type NormalizedAssetMediaType = 'image' | 'video' | 'doc' | 'link';
@@ -26,6 +33,10 @@ export type NormalizedAsset = {
   sizeThumbnail: number | null;
   processingState: NormalizedAssetProcessingState;
   fallbackBehavior: string;
+  moderationStatus?: string | null;
+  safeToRender?: boolean;
+  failureMessage?: string | null;
+  abuseReportId?: string | null;
   mimeType?: string | null;
   title?: string | null;
   description?: string | null;
@@ -45,6 +56,42 @@ type FallbackInput = {
   title?: string | null;
   mimeType?: string | null;
 };
+
+export function getStructuredMediaDerivativeExtensions(params: {
+  mediaType: NormalizedAssetMediaType;
+  mimeType?: string | null;
+}): {
+  displayExtension: 'gif' | 'png' | 'webp' | 'svg' | 'mp4';
+  thumbnailExtension: 'jpg' | 'svg';
+} {
+  const mimeType = params.mimeType?.toLowerCase().trim() ?? '';
+
+  if (params.mediaType === 'image') {
+    if (mimeType === 'image/gif') {
+      return {
+        displayExtension: 'gif',
+        thumbnailExtension: 'jpg',
+      };
+    }
+
+    return {
+      displayExtension: mimeType === 'image/png' ? 'png' : 'webp',
+      thumbnailExtension: 'jpg',
+    };
+  }
+
+  if (params.mediaType === 'video') {
+    return {
+      displayExtension: 'mp4',
+      thumbnailExtension: 'jpg',
+    };
+  }
+
+  return {
+    displayExtension: 'svg',
+    thumbnailExtension: 'svg',
+  };
+}
 
 function stableAssetId(seed: string): string {
   let hash = 0;
@@ -97,6 +144,13 @@ export function buildDeterministicAssetThumbnail(input: FallbackInput): string {
   const title =
     input.title?.trim() ||
     (input.mimeType?.split('/').pop()?.toUpperCase() ?? palette.label);
+  if (input.mediaType === 'doc') {
+    return buildDocumentPreviewDataUrl({
+      title,
+      fileName: title,
+      mimeType: input.mimeType,
+    });
+  }
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="675" viewBox="0 0 1200 675" role="img" aria-label="${escapeSvgText(title)}"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="${palette.bg}"/><stop offset="100%" stop-color="#111827"/></linearGradient></defs><rect width="1200" height="675" rx="36" fill="url(#g)"/><rect x="54" y="54" width="1092" height="567" rx="28" fill="none" stroke="rgba(255,255,255,0.16)" stroke-width="6"/><rect x="84" y="88" width="230" height="54" rx="27" fill="${palette.accent}" fill-opacity="0.16"/><text x="114" y="124" font-family="Arial, sans-serif" font-size="28" font-weight="700" fill="${palette.accent}">${palette.label}</text><text x="84" y="238" font-family="Arial, sans-serif" font-size="60" font-weight="700" fill="#f8fafc">${escapeSvgText(title.slice(0, 36) || palette.label)}</text><text x="84" y="304" font-family="Arial, sans-serif" font-size="28" fill="#cbd5e1">Preview unavailable. WRDLNKDN is showing a deterministic fallback.</text></svg>`;
   return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
 }
@@ -131,17 +185,7 @@ export function inferMediaType(params: {
 
   if (mime.startsWith('image/')) return 'image';
   if (mime.startsWith('video/')) return 'video';
-  if (
-    mime.includes('pdf') ||
-    mime.includes('word') ||
-    mime.includes('document') ||
-    mime.includes('presentation') ||
-    mime.includes('sheet') ||
-    mime === 'text/plain' ||
-    mime === 'text/markdown'
-  ) {
-    return 'doc';
-  }
+  if (detectDocumentKind(params)) return 'doc';
 
   if (['image'].includes(resolvedType)) return 'image';
   if (['video'].includes(resolvedType)) return 'video';
@@ -205,6 +249,10 @@ export function createNormalizedAsset(input: {
   sizeDisplay?: number | null;
   sizeThumbnail?: number | null;
   processingState?: NormalizedAssetProcessingState;
+  moderationStatus?: string | null;
+  safeToRender?: boolean;
+  failureMessage?: string | null;
+  abuseReportId?: string | null;
   mimeType?: string | null;
   title?: string | null;
   description?: string | null;
@@ -239,6 +287,10 @@ export function createNormalizedAsset(input: {
     sizeThumbnail: input.sizeThumbnail ?? null,
     processingState: input.processingState ?? 'ready',
     fallbackBehavior: getFallbackBehavior(input.mediaType),
+    moderationStatus: input.moderationStatus ?? null,
+    safeToRender: input.safeToRender ?? true,
+    failureMessage: input.failureMessage ?? null,
+    abuseReportId: input.abuseReportId ?? null,
     mimeType: input.mimeType ?? null,
     title: input.title ?? null,
     description: input.description ?? null,
@@ -248,6 +300,154 @@ export function createNormalizedAsset(input: {
     createdAt: input.createdAt ?? null,
     updatedAt: input.updatedAt ?? null,
   };
+}
+
+function toNormalizedSourceType(
+  sourceType: PlatformMediaSourceType,
+): NormalizedAssetSourceType {
+  return sourceType === 'upload' ? 'upload' : 'link';
+}
+
+function toNormalizedMediaType(
+  asset: Pick<
+    PlatformMediaAsset,
+    'mediaType' | 'rendering' | 'derivatives' | 'source' | 'metadata'
+  >,
+): NormalizedAssetMediaType {
+  if (asset.mediaType === 'video') return 'video';
+  if (asset.mediaType === 'doc') return 'doc';
+  if (asset.mediaType === 'link') return 'link';
+  if (asset.mediaType === 'gif') {
+    const displayMime =
+      asset.derivatives.display?.mimeType ??
+      asset.source.mimeType ??
+      asset.metadata.mimeType ??
+      null;
+    const displayUrl = asset.rendering.displayUrl ?? '';
+    return displayMime === 'video/mp4' || /\.mp4(?:$|\?)/i.test(displayUrl)
+      ? 'video'
+      : 'image';
+  }
+  return 'image';
+}
+
+function toNormalizedProcessingState(
+  asset: Pick<
+    PlatformMediaAsset,
+    'processingState' | 'mediaType' | 'moderationStatus' | 'moderation'
+  >,
+): NormalizedAssetProcessingState {
+  if (
+    asset.moderationStatus === 'quarantined' ||
+    asset.moderation?.safeToRender === false
+  ) {
+    return 'failed';
+  }
+  const state = asset.processingState as PlatformMediaProcessingState;
+  if (state === 'failed' || state === 'deleted') return 'failed';
+  if (state === 'pending' || state === 'uploading') return 'uploading';
+  if (state === 'processing') {
+    return asset.mediaType === 'doc' ? 'converting' : 'optimizing';
+  }
+  return 'ready';
+}
+
+export function createNormalizedAssetFromPlatformMediaAsset(
+  asset: Pick<
+    PlatformMediaAsset,
+    | 'assetId'
+    | 'sourceType'
+    | 'mediaType'
+    | 'processingState'
+    | 'rendering'
+    | 'derivatives'
+    | 'source'
+    | 'metadata'
+    | 'failure'
+    | 'moderationStatus'
+    | 'moderation'
+    | 'createdAt'
+    | 'updatedAt'
+  >,
+): NormalizedAsset {
+  const quarantined =
+    asset.moderationStatus === 'quarantined' ||
+    asset.moderation?.safeToRender === false;
+  const normalizedMediaType = toNormalizedMediaType(asset);
+  const original =
+    asset.derivatives.original ??
+    (asset.rendering.originalUrl
+      ? {
+          sizeBytes: asset.metadata.sizeOriginal ?? null,
+          mimeType: asset.source.mimeType ?? asset.metadata.mimeType ?? null,
+        }
+      : null);
+  const display =
+    asset.derivatives.display ??
+    (asset.rendering.displayUrl
+      ? {
+          sizeBytes: asset.metadata.sizeDisplay ?? null,
+          mimeType: asset.source.mimeType ?? asset.metadata.mimeType ?? null,
+        }
+      : null);
+  const thumbnail =
+    asset.derivatives.thumbnail ??
+    (asset.rendering.thumbnailUrl
+      ? {
+          sizeBytes: asset.metadata.sizeThumbnail ?? null,
+        }
+      : null);
+
+  return createNormalizedAsset({
+    assetId: asset.assetId,
+    sourceType: toNormalizedSourceType(asset.sourceType),
+    mediaType: normalizedMediaType,
+    originalUrl: asset.rendering.originalUrl,
+    displayUrl: asset.rendering.displayUrl,
+    thumbnailUrl: asset.rendering.thumbnailUrl,
+    width:
+      asset.derivatives.display?.width ??
+      asset.derivatives.original?.width ??
+      asset.metadata.width ??
+      null,
+    height:
+      asset.derivatives.display?.height ??
+      asset.derivatives.original?.height ??
+      asset.metadata.height ??
+      null,
+    duration:
+      asset.derivatives.display?.durationMs ??
+      asset.derivatives.original?.durationMs ??
+      asset.metadata.durationMs ??
+      null,
+    sizeOriginal: original?.sizeBytes ?? asset.metadata.sizeOriginal ?? null,
+    sizeDisplay: display?.sizeBytes ?? asset.metadata.sizeDisplay ?? null,
+    sizeThumbnail: thumbnail?.sizeBytes ?? asset.metadata.sizeThumbnail ?? null,
+    processingState: toNormalizedProcessingState(asset),
+    moderationStatus: asset.moderationStatus,
+    safeToRender:
+      asset.moderation?.safeToRender ??
+      asset.moderationStatus !== 'quarantined',
+    failureMessage:
+      asset.moderationStatus === 'quarantined' ||
+      asset.moderation?.safeToRender === false
+        ? 'This media is unavailable.'
+        : (asset.failure?.reason ?? null),
+    abuseReportId: asset.moderation?.abuseReport?.reportId ?? null,
+    mimeType:
+      display?.mimeType ??
+      original?.mimeType ??
+      asset.source.mimeType ??
+      asset.metadata.mimeType ??
+      null,
+    title: quarantined ? 'Media unavailable' : (asset.metadata.title ?? null),
+    description: quarantined ? null : (asset.metadata.description ?? null),
+    ogImageUrl: asset.metadata.ogImageUrl ?? null,
+    originalFilename: asset.metadata.originalFilename ?? null,
+    provider: asset.metadata.provider ?? asset.source.provider ?? null,
+    createdAt: asset.createdAt ?? null,
+    updatedAt: asset.updatedAt ?? null,
+  });
 }
 
 function replaceTerminalFileName(pathOrUrl: string, fileName: string): string {
@@ -312,102 +512,50 @@ export function createNormalizedLinkAsset(params: {
   description?: string | null;
   thumbnailUrl?: string | null;
 }): NormalizedAsset {
-  const preview = params.preview ?? null;
-  const displayUrl = params.thumbnailUrl ?? preview?.image ?? null;
-  return createNormalizedAsset({
-    sourceType: 'link',
-    mediaType: 'link',
-    originalUrl: params.url,
-    displayUrl,
-    thumbnailUrl: displayUrl,
-    title: params.title ?? preview?.title ?? params.url,
-    description: params.description ?? preview?.description ?? null,
-    ogImageUrl: preview?.image ?? null,
-    provider: preview?.siteName ?? null,
-  });
+  return createNormalizedAssetFromPlatformMediaAsset(
+    createLegacyPlatformMediaAsset({
+      kind: 'link_preview',
+      url: params.url,
+      preview: params.preview ?? null,
+      title: params.title,
+      description: params.description,
+    }),
+  );
+}
+
+export function createNormalizedGifAsset(params: {
+  url: string;
+  surface?: 'feed' | 'chat';
+}): NormalizedAsset {
+  return createNormalizedAssetFromPlatformMediaAsset(
+    createLegacyPlatformMediaAsset({
+      kind: 'gif',
+      gifUrl: params.url,
+      surface: params.surface ?? 'feed',
+    }),
+  );
 }
 
 export function createNormalizedFeedImageAsset(
   publicUrl: string,
 ): NormalizedAsset {
-  const thumbnailUrl = /\/display\./.test(publicUrl)
-    ? deriveSiblingPublicUrl(publicUrl, MEDIA_THUMBNAIL_FILE_STEM, 'jpg')
-    : publicUrl;
-  return createNormalizedAsset({
-    sourceType: 'upload',
-    mediaType: inferMediaType({ url: publicUrl }),
-    originalUrl: null,
-    displayUrl: publicUrl,
-    thumbnailUrl,
-  });
+  return createNormalizedAssetFromPlatformMediaAsset(
+    createLegacyPlatformMediaAsset({
+      kind: 'feed_attachment',
+      imageUrl: publicUrl,
+    }),
+  );
 }
 
 export function createNormalizedPortfolioAsset(
   project: PortfolioItem,
 ): NormalizedAsset {
-  const mediaType = inferMediaType({
-    url: project.project_url,
-    resolvedType: project.resolved_type,
-  });
-  const originalUrl = project.project_url?.trim() || null;
-  const preferredImageUrl = project.image_url?.trim() || null;
-  const preferredThumbnailUrl = project.thumbnail_url?.trim() || null;
-  const structuredOriginalUrl =
-    originalUrl && /\/original\./.test(originalUrl) ? originalUrl : null;
-  let displayUrl = preferredImageUrl;
-  if (!displayUrl) {
-    if (structuredOriginalUrl) {
-      displayUrl = deriveSiblingPublicUrl(
-        structuredOriginalUrl,
-        MEDIA_DISPLAY_FILE_STEM,
-        'webp',
-      );
-    } else if (mediaType === 'image') {
-      displayUrl = originalUrl;
-    } else {
-      displayUrl = preferredThumbnailUrl;
-    }
-  }
-
-  let thumbnailUrl = preferredImageUrl || preferredThumbnailUrl;
-  if (!thumbnailUrl) {
-    if (structuredOriginalUrl) {
-      thumbnailUrl = deriveSiblingPublicUrl(
-        structuredOriginalUrl,
-        MEDIA_THUMBNAIL_FILE_STEM,
-        'jpg',
-      );
-    } else if (mediaType === 'image') {
-      thumbnailUrl = originalUrl;
-    } else {
-      thumbnailUrl = null;
-    }
-  }
-
-  let processingState: NormalizedAssetProcessingState = 'ready';
-  if (project.thumbnail_status === 'pending') {
-    processingState = 'optimizing';
-  } else if (project.thumbnail_status === 'failed') {
-    processingState = 'failed';
-  }
-
-  return createNormalizedAsset({
-    assetId: project.id,
-    sourceType:
-      originalUrl?.includes('/storage/v1/object/public/') ||
-      originalUrl?.includes('/storage/v1/object/sign/')
-        ? 'upload'
-        : 'link',
-    mediaType,
-    originalUrl,
-    displayUrl,
-    thumbnailUrl,
-    title: project.title,
-    description: project.description,
-    processingState,
-    createdAt: project.created_at,
-    updatedAt: project.created_at,
-  });
+  return createNormalizedAssetFromPlatformMediaAsset(
+    createLegacyPlatformMediaAsset({
+      kind: 'portfolio_project',
+      project,
+    }),
+  );
 }
 
 export function createNormalizedResumeAsset(params: {
@@ -418,22 +566,15 @@ export function createNormalizedResumeAsset(params: {
 }): NormalizedAsset | null {
   const url = params.url?.trim() ?? '';
   if (!url) return null;
-  let processingState: NormalizedAssetProcessingState = 'ready';
-  if (params.thumbnailStatus === 'pending') {
-    processingState = 'converting';
-  } else if (params.thumbnailStatus === 'failed') {
-    processingState = 'failed';
-  }
-  return createNormalizedAsset({
-    sourceType: 'upload',
-    mediaType: 'doc',
-    originalUrl: url,
-    displayUrl: params.thumbnailUrl ?? null,
-    thumbnailUrl: params.thumbnailUrl ?? null,
-    title: params.fileName ?? 'Resume',
-    originalFilename: params.fileName ?? null,
-    processingState,
-  });
+  return createNormalizedAssetFromPlatformMediaAsset(
+    createLegacyPlatformMediaAsset({
+      kind: 'profile_resume',
+      url,
+      fileName: params.fileName,
+      thumbnailUrl: params.thumbnailUrl,
+      thumbnailStatus: params.thumbnailStatus,
+    }),
+  );
 }
 
 export function createNormalizedGroupImageAsset(
@@ -441,19 +582,12 @@ export function createNormalizedGroupImageAsset(
 ): NormalizedAsset | null {
   const displayUrl = room.image_url?.trim() ?? '';
   if (!displayUrl) return null;
-  const thumbnailUrl = /\/display\./.test(displayUrl)
-    ? deriveSiblingPublicUrl(displayUrl, MEDIA_THUMBNAIL_FILE_STEM, 'jpg')
-    : displayUrl;
-  return createNormalizedAsset({
-    assetId: room.id,
-    sourceType: 'upload',
-    mediaType: 'image',
-    originalUrl: null,
-    displayUrl,
-    thumbnailUrl,
-    title: room.name ?? 'Group image',
-    updatedAt: room.updated_at,
-  });
+  return createNormalizedAssetFromPlatformMediaAsset(
+    createLegacyPlatformMediaAsset({
+      kind: 'group_image',
+      room,
+    }),
+  );
 }
 
 export type ResolvedChatAttachmentAsset = NormalizedAsset & {
@@ -477,7 +611,11 @@ export function createChatAttachmentStorageDescriptor(
   const hasStructuredOriginalPath = /\/original\./.test(
     attachment.storage_path,
   );
-  const displayExtension = mediaType === 'video' ? 'mp4' : 'webp';
+  const { displayExtension, thumbnailExtension } =
+    getStructuredMediaDerivativeExtensions({
+      mediaType,
+      mimeType: attachment.mime_type,
+    });
   const displayPath = hasStructuredOriginalPath
     ? deriveSiblingStoragePath(
         attachment.storage_path,
@@ -489,22 +627,18 @@ export function createChatAttachmentStorageDescriptor(
     ? deriveSiblingStoragePath(
         attachment.storage_path,
         MEDIA_THUMBNAIL_FILE_STEM,
-        'jpg',
+        thumbnailExtension,
       )
     : null;
 
   return {
-    ...createNormalizedAsset({
-      assetId: attachment.id,
-      sourceType: 'upload',
-      mediaType,
-      originalUrl: urls.originalUrl,
-      displayUrl: urls.displayUrl,
-      thumbnailUrl: urls.thumbnailUrl,
-      sizeOriginal: attachment.file_size,
-      mimeType: attachment.mime_type,
-      createdAt: attachment.created_at,
-    }),
+    ...createNormalizedAssetFromPlatformMediaAsset(
+      createLegacyPlatformMediaAsset({
+        kind: 'chat_attachment',
+        attachment,
+        resolvedUrls: urls,
+      }),
+    ),
     storagePath: attachment.storage_path,
     displayPath,
     thumbnailPath,

@@ -399,3 +399,8 @@ export const AdminFeatureFlagsPage = lazy(async () => {
   const m = await import('../../pages/admin/ops/AdminFeatureFlagsPage');
   return { default: m.AdminFeatureFlagsPage };
 });
+
+export const AdminMediaHealthPage = lazy(async () => {
+  const m = await import('../../pages/admin/ops/AdminMediaHealthPage');
+  return { default: m.AdminMediaHealthPage };
+});

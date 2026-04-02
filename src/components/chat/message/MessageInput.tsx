@@ -31,16 +31,20 @@ import type { EmojiClickData, Theme } from 'emoji-picker-react';
 import { supabase } from '../../../lib/auth/supabaseClient';
 import { uploadStructuredChatAttachment } from '../../../lib/media/ingestion';
 import {
+  runSharedUploadIntake,
+  type SharedUploadState,
+} from '../../../lib/media/uploadIntake';
+import {
   getChatAttachmentRejectionReason,
   normalizeChatAttachmentMime,
 } from '../../../lib/chat/attachmentValidation';
 import { getChatAttachmentProcessingPlan } from '../../../lib/chat/attachmentProcessing';
 import { GifPickerDialog } from '../dialogs/GifPickerDialog';
+import { MediaStatusBanner } from '../../media/MediaStatusBanner';
 import {
   type ChatAttachmentMeta,
   CHAT_ALLOWED_ACCEPT,
 } from '../../../types/chat';
-import { toMessage } from '../../../lib/utils/errors';
 import {
   MentionAutocomplete,
   type MentionableUser,
@@ -117,6 +121,9 @@ export const MessageInput = ({
   const [processingMessage, setProcessingMessage] = useState<string | null>(
     null,
   );
+  const [uploadState, setUploadState] = useState<SharedUploadState | null>(
+    null,
+  );
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messageInputRef = useRef<HTMLInputElement | HTMLTextAreaElement | null>(
     null,
@@ -127,6 +134,7 @@ export const MessageInput = ({
     setPendingAttachment(null);
     setError(null);
     setProcessingMessage(null);
+    setUploadState(null);
   }, []);
   const [gifPickerOpen, setGifPickerOpen] = useState(false);
   const [emojiAnchor, setEmojiAnchor] = useState<HTMLElement | null>(null);
@@ -149,6 +157,7 @@ export const MessageInput = ({
     setText('');
     setError(null);
     setProcessingMessage(null);
+    setUploadState(null);
     setPendingAttachment(null);
     setMentionState({
       open: false,
@@ -187,6 +196,7 @@ export const MessageInput = ({
   const handlePickGif = async (gifUrl: string, title?: string) => {
     setError(null);
     setProcessingMessage(null);
+    setUploadState(null);
     try {
       const res = await fetch(gifUrl);
       if (!res.ok) throw new Error('gif fetch failed');
@@ -227,11 +237,12 @@ export const MessageInput = ({
     if (submitBlocked) return;
 
     setError(null);
+    setUploadState(null);
     const paths: string[] = [];
     const meta: ChatAttachmentMeta[] = [];
 
     if (pendingAttachment) {
-      const { file: f, plan } = pendingAttachment;
+      const { file: f } = pendingAttachment;
       const rejectionReason = getChatAttachmentRejectionReason(f);
       if (rejectionReason) {
         setError(rejectionReason);
@@ -239,6 +250,7 @@ export const MessageInput = ({
       }
 
       setUploading(true);
+      setProcessingMessage(null);
       try {
         const {
           data: { session },
@@ -248,12 +260,23 @@ export const MessageInput = ({
           return;
         }
 
-        setProcessingMessage(plan.helperText || plan.uploadLabel);
         setError(null);
-        const uploaded = await uploadStructuredChatAttachment({
-          ownerId: session.user.id,
+        const uploaded = await runSharedUploadIntake({
+          surface: 'chat_attachment',
           file: f,
-          accessToken: session.access_token,
+          onStateChange: (state) => {
+            setUploadState(state);
+            if (state.status === 'failed') {
+              setProcessingMessage(null);
+              return;
+            }
+          },
+          executeUpload: async ({ file: preparedFile }) =>
+            uploadStructuredChatAttachment({
+              ownerId: session.user.id,
+              file: preparedFile,
+              accessToken: session.access_token,
+            }),
         });
         paths.push(uploaded.storagePath);
         meta.push({
@@ -263,9 +286,9 @@ export const MessageInput = ({
         });
         setPendingAttachment(null);
         setProcessingMessage(null);
-      } catch (cause) {
+      } catch {
         setProcessingMessage(null);
-        setError(toMessage(cause));
+        setError(null);
         return;
       } finally {
         setUploading(false);
@@ -281,6 +304,7 @@ export const MessageInput = ({
     setText('');
     onCancelReply?.();
     setProcessingMessage(null);
+    setUploadState(null);
     requestAnimationFrame(() => {
       messageInputRef.current?.focus();
     });
@@ -300,6 +324,7 @@ export const MessageInput = ({
     // so that choosing a valid file after an invalid one clears the message immediately.
     setError(null);
     setProcessingMessage(null);
+    setUploadState(null);
 
     if (files.length > 1) {
       setError('Only one file per message.');
@@ -415,8 +440,11 @@ export const MessageInput = ({
           </Tooltip>
         </Box>
       ) : null}
-      {error && <Box sx={{ fontSize: 12, color: 'error.main' }}>{error}</Box>}
-      {processingMessage && !error ? (
+      {uploadState ? (
+        <MediaStatusBanner state={uploadState} compact />
+      ) : error ? (
+        <Box sx={{ fontSize: 12, color: 'error.main' }}>{error}</Box>
+      ) : processingMessage ? (
         <Box
           sx={{
             fontSize: 11,

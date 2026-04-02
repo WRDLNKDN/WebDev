@@ -2,6 +2,13 @@
  * Chat types for WRDLNKDN MVP chat (Supabase-backed).
  */
 
+import { CHAT_DIRECT_UPLOAD_MAX_FILE_BYTES } from '../lib/media/mediaSizePolicy';
+export {
+  CHAT_GIF_DIRECT_UPLOAD_MAX_FILE_BYTES,
+  CHAT_GIF_PROCESSING_MAX_FILE_BYTES,
+  CHAT_PROCESSED_MEDIA_MAX_FILE_BYTES,
+} from '../lib/media/mediaSizePolicy';
+
 export type ChatRoomType = 'dm' | 'group';
 
 export type ChatReportCategory =
@@ -114,16 +121,6 @@ export const CHAT_ALLOWED_ACCEPT = [
   ...CHAT_ALLOWED_EXTENSIONS,
 ].join(',');
 
-/** Max size for direct upload of non-GIF attachments. */
-export const CHAT_DIRECT_UPLOAD_MAX_FILE_BYTES = 2 * 1024 * 1024;
-/** Max size for direct upload of GIF attachments. */
-export const CHAT_GIF_DIRECT_UPLOAD_MAX_FILE_BYTES = 6 * 1024 * 1024;
-/**
- * Keep in sync with `CHAT_GIF_PROCESSING_MAX_BYTES` in backend.
- */
-export const CHAT_GIF_PROCESSING_MAX_FILE_BYTES = 6 * 1024 * 1024;
-/** Max stored size for transcoded chat media (output of GIF pipeline). */
-export const CHAT_PROCESSED_MEDIA_MAX_FILE_BYTES = 6 * 1024 * 1024;
 /** Alias for direct-upload ceiling (non-GIF); do not use as max for GIF processing. */
 export const CHAT_MAX_FILE_BYTES = CHAT_DIRECT_UPLOAD_MAX_FILE_BYTES;
 export const CHAT_MAX_ATTACHMENTS_PER_MESSAGE = 1;

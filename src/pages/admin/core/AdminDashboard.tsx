@@ -2,6 +2,7 @@ import CampaignIcon from '@mui/icons-material/Campaign';
 import FlagIcon from '@mui/icons-material/Flag';
 import HandshakeIcon from '@mui/icons-material/Handshake';
 import MonitorHeartIcon from '@mui/icons-material/MonitorHeart';
+import PermMediaIcon from '@mui/icons-material/PermMedia';
 import ReportProblemIcon from '@mui/icons-material/ReportProblem';
 import VideoLibraryIcon from '@mui/icons-material/VideoLibrary';
 import {
@@ -62,6 +63,13 @@ const SECTIONS: SectionCard[] = [
       'Turn site features on or off (Events, Store, Directory, Groups, Chat, etc.).',
     to: '/admin/feature-flags',
     icon: <FlagIcon sx={{ fontSize: 40 }} />,
+  },
+  {
+    title: 'Media Health',
+    description:
+      'Track upload, preview, conversion, and render failures across the shared media pipeline.',
+    to: '/admin/media-health',
+    icon: <PermMediaIcon sx={{ fontSize: 40 }} />,
   },
 ];
 

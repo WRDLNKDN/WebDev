@@ -121,6 +121,11 @@ import { chatUiForMember } from '../../lib/utils/chatUiForMember';
 import { toMessage } from '../../lib/utils/errors';
 import { useUatBannerOffset } from '../../lib/utils/useUatBannerOffset';
 import { uploadStructuredPublicAsset } from '../../lib/media/ingestion';
+import {
+  runSharedUploadIntake,
+  type SharedUploadState,
+} from '../../lib/media/uploadIntake';
+import { MediaStatusBanner } from '../../components/media/MediaStatusBanner';
 
 import { ProfileAvatar } from '../../components/avatar/ProfileAvatar';
 import {
@@ -137,7 +142,6 @@ import { useCurrentUserAvatar } from '../../context/AvatarContext';
 import { INTERACTION_COLORS } from '../../theme/themeConstants';
 
 const FEED_LIMIT = 20;
-const FEED_POST_IMAGE_MAX_BYTES = 6 * 1024 * 1024; // 6MB (match chat attachments)
 const AD_EVERY_N_POSTS = (() => {
   const raw = Number(import.meta.env.VITE_FEED_AD_EVERY_N_POSTS ?? 6);
   const value = Math.floor(raw);
@@ -308,32 +312,6 @@ function removeGifUrlsFromBody(body: string): string {
     .replace(/\n{3,}/g, '\n\n')
     .replace(/[ \t]{2,}/g, ' ')
     .trim();
-}
-
-const SUPPORTED_IMAGE_MIME_TYPES = new Set([
-  'image/jpeg',
-  'image/png',
-  'image/gif',
-  'image/webp',
-]);
-
-const SUPPORTED_IMAGE_EXTENSIONS = new Set([
-  'jpg',
-  'jpeg',
-  'png',
-  'gif',
-  'webp',
-]);
-
-function fileExtension(fileName: string): string {
-  const ext = fileName.split('.').pop();
-  return (ext ?? '').toLowerCase();
-}
-
-function isSupportedImageFile(file: File): boolean {
-  const mime = file.type.toLowerCase();
-  if (SUPPORTED_IMAGE_MIME_TYPES.has(mime)) return true;
-  return SUPPORTED_IMAGE_EXTENSIONS.has(fileExtension(file.name));
 }
 
 type LinkPreviewPayload = {
@@ -1991,6 +1969,8 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
   const composerRef = useRef<HTMLInputElement>(null);
   const [posting, setPosting] = useState(false);
   const [imageUploading, setImageUploading] = useState(false);
+  const [imageUploadState, setImageUploadState] =
+    useState<SharedUploadState | null>(null);
   const [expandedCommentsPostId, setExpandedCommentsPostId] = useState<
     string | null
   >(null);
@@ -2428,6 +2408,7 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
       setComposerValue('');
       setComposerImages([]);
       setComposerScheduledAt(null);
+      setImageUploadState(null);
       setComposerOpen(false);
       await loadPage();
     } catch (e) {
@@ -2448,40 +2429,31 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
       e.target.value = '';
       return;
     }
-    if (!isSupportedImageFile(file)) {
-      showToast({
-        message: 'Only JPG, PNG, GIF, and WebP images are allowed.',
-        severity: 'warning',
-      });
-      e.target.value = '';
-      return;
-    }
-    if (file.size > FEED_POST_IMAGE_MAX_BYTES) {
-      showToast({
-        message: `Image too large (${Math.ceil(file.size / (1024 * 1024))}MB). Max is 6MB per file.`,
-        severity: 'warning',
-      });
-      e.target.value = '';
-      return;
-    }
     setImageUploading(true);
+    setImageUploadState(null);
     try {
-      const asset = await uploadStructuredPublicAsset({
-        bucket: 'feed-post-images',
-        ownerId: session.user.id,
-        scope: 'posts',
+      const asset = await runSharedUploadIntake({
+        surface: 'feed_post_image',
         file,
-        retainOriginal: true,
+        onStateChange: setImageUploadState,
+        executeUpload: async ({ file: preparedFile }) =>
+          uploadStructuredPublicAsset({
+            bucket: 'feed-post-images',
+            ownerId: session.user.id,
+            scope: 'posts',
+            file: preparedFile,
+            retainOriginal: true,
+          }),
       });
       setComposerImages((prev) => [...prev, asset.displayUrl]);
     } catch (err) {
       const details = toMessage(err);
-      showToast({
-        message: details
-          ? `Image upload failed: ${details}`
-          : 'Image upload failed. Please try again.',
-        severity: 'error',
-      });
+      if (!details) {
+        showToast({
+          message: 'Image upload failed. Please try again.',
+          severity: 'error',
+        });
+      }
     } finally {
       setImageUploading(false);
       e.target.value = '';
@@ -3777,6 +3749,7 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
           setComposerOpen(false);
           setComposerImages([]);
           setComposerScheduledAt(null);
+          setImageUploadState(null);
           setGifPickerOpen(false);
         }}
         maxWidth="sm"
@@ -3843,7 +3816,10 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
             </Box>
           </Stack>
           <IconButton
-            onClick={() => setComposerOpen(false)}
+            onClick={() => {
+              setComposerOpen(false);
+              setImageUploadState(null);
+            }}
             aria-label="Close"
             size="small"
           >
@@ -3933,9 +3909,13 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
                   <IconButton
                     size="small"
                     onClick={() =>
-                      setComposerImages((prev) =>
-                        prev.filter((_, j) => j !== i),
-                      )
+                      setComposerImages((prev) => {
+                        const next = prev.filter((_, j) => j !== i);
+                        if (next.length === 0) {
+                          setImageUploadState(null);
+                        }
+                        return next;
+                      })
                     }
                     sx={{
                       position: 'absolute',
@@ -4017,14 +3997,9 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
               >
                 <GifBoxIcon fontSize="small" />
               </IconButton>
-              {imageUploading && (
-                <Stack direction="row" alignItems="center" spacing={0.5}>
-                  <CircularProgress size={14} />
-                  <Typography variant="caption" color="text.secondary">
-                    Uploading…
-                  </Typography>
-                </Stack>
-              )}
+              {imageUploadState ? (
+                <MediaStatusBanner state={imageUploadState} compact />
+              ) : null}
               <IconButton
                 size="small"
                 aria-label="Schedule post"

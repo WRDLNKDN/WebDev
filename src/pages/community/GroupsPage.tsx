@@ -12,7 +12,7 @@ import type { Session } from '@supabase/supabase-js';
 import { alpha } from '@mui/material/styles';
 import { Link as RouterLink } from 'react-router-dom';
 import { useEffect, useMemo, useState } from 'react';
-import { ProfileAvatar } from '../../components/avatar/ProfileAvatar';
+import { AssetAvatar } from '../../components/media/AssetThumbnail';
 import { useChatRooms } from '../../hooks/useChat';
 import { supabase } from '../../lib/auth/supabaseClient';
 import { createNormalizedGroupImageAsset } from '../../lib/media/assets';
@@ -145,11 +145,8 @@ export const GroupsPage = () => {
                     spacing={1}
                   >
                     <Stack direction="row" spacing={1.5} sx={{ minWidth: 0 }}>
-                      <ProfileAvatar
-                        src={
-                          createNormalizedGroupImageAsset(room)?.displayUrl ??
-                          room.image_url
-                        }
+                      <AssetAvatar
+                        asset={createNormalizedGroupImageAsset(room)}
                         alt={room.name || 'Untitled group'}
                         size="small"
                         sx={{ width: 48, height: 48, flexShrink: 0 }}

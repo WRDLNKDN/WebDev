@@ -15,6 +15,7 @@ import {
 } from '@mui/material';
 import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
 import { ProfileAvatar } from '../../avatar/ProfileAvatar';
+import { MediaStatusBanner } from '../../media/MediaStatusBanner';
 import {
   CHAT_GROUP_DESCRIPTION_MAX,
   CHAT_GROUP_IMAGE_ACCEPT,
@@ -25,6 +26,7 @@ import {
   loadEligibleChatConnections,
   type EligibleChatConnection,
 } from '../../../lib/chat/loadEligibleChatConnections';
+import type { SharedUploadState } from '../../../lib/media/uploadIntake';
 import { toMessage } from '../../../lib/utils/errors';
 
 type Mode = 'invite' | 'details' | 'manage' | 'members';
@@ -80,6 +82,8 @@ export const GroupActionsDialog = ({
     null,
   );
   const [pictureRemoved, setPictureRemoved] = useState(false);
+  const [groupImageUploadState, setGroupImageUploadState] =
+    useState<SharedUploadState | null>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -91,6 +95,7 @@ export const GroupActionsDialog = ({
     setPictureFile(null);
     setPictureRemoved(false);
     setPicturePreviewUrl(null);
+    setGroupImageUploadState(null);
 
     if (mode !== 'invite') {
       setAllProfiles([]);
@@ -175,6 +180,7 @@ export const GroupActionsDialog = ({
     const file = event.target.files?.[0] ?? null;
     if (!file) return;
     setError(null);
+    setGroupImageUploadState(null);
     setPictureFile(file);
     setPictureRemoved(false);
     event.target.value = '';
@@ -184,6 +190,7 @@ export const GroupActionsDialog = ({
     setPictureFile(null);
     setPictureRemoved(true);
     setPicturePreviewUrl(null);
+    setGroupImageUploadState(null);
   };
 
   const handleSaveDetails = async () => {
@@ -194,12 +201,14 @@ export const GroupActionsDialog = ({
 
     setBusy(true);
     setError(null);
+    setGroupImageUploadState(null);
     try {
       let imageUrl = pictureRemoved ? null : (roomImageUrl ?? null);
       if (pictureFile) {
         imageUrl = await uploadChatGroupImageAsset({
           file: pictureFile,
           currentUserId,
+          onStateChange: setGroupImageUploadState,
         });
       }
 
@@ -274,6 +283,9 @@ export const GroupActionsDialog = ({
             <Typography variant="caption" color="text.secondary">
               PNG, JPG, or WebP. Square images work best.
             </Typography>
+            {groupImageUploadState ? (
+              <MediaStatusBanner state={groupImageUploadState} compact />
+            ) : null}
             <TextField
               fullWidth
               label="Group name"

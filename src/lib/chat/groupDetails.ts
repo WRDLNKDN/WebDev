@@ -1,4 +1,9 @@
 import { uploadStructuredPublicAsset } from '../media/ingestion';
+import {
+  getSharedUploadRejectionReason,
+  runSharedUploadIntake,
+  type SharedUploadState,
+} from '../media/uploadIntake';
 
 export const CHAT_GROUP_DESCRIPTION_MAX = 256;
 export const CHAT_GROUP_IMAGE_ACCEPT = 'image/png,image/jpeg,image/webp';
@@ -18,22 +23,27 @@ export function normalizeChatGroupDescription(
 }
 
 export function assertValidChatGroupImage(file: File): void {
-  if (!['image/png', 'image/jpeg', 'image/webp'].includes(file.type)) {
-    throw new Error('Group picture must be a PNG, JPG, or WebP image.');
-  }
+  const rejectionReason = getSharedUploadRejectionReason('group_image', file);
+  if (rejectionReason) throw new Error(rejectionReason);
 }
 
 export async function uploadChatGroupImageAsset(params: {
   file: File;
   currentUserId: string;
+  onStateChange?: (state: SharedUploadState) => void;
 }): Promise<string> {
-  assertValidChatGroupImage(params.file);
-  const asset = await uploadStructuredPublicAsset({
-    bucket: 'avatars',
-    ownerId: params.currentUserId,
-    scope: 'groups',
+  const asset = await runSharedUploadIntake({
+    surface: 'group_image',
     file: params.file,
-    retainOriginal: true,
+    onStateChange: params.onStateChange,
+    executeUpload: async ({ file }) =>
+      uploadStructuredPublicAsset({
+        bucket: 'avatars',
+        ownerId: params.currentUserId,
+        scope: 'groups',
+        file,
+        retainOriginal: true,
+      }),
   });
   return asset.displayUrl;
 }

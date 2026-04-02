@@ -80,6 +80,56 @@ function mapChatCreateGroupRpcError(error: unknown): Error {
   );
 }
 
+async function requireChatSessionUserId(): Promise<string> {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  const userId = session?.user?.id;
+  if (!userId) throw new Error('Sign in to create a group');
+  return userId;
+}
+
+function assertValidGroupMemberCount(memberIds: string[]): void {
+  if (memberIds.length >= 100) {
+    throw new Error('A group can have up to 100 members.');
+  }
+}
+
+async function createChatGroupRoomId(
+  normalizedName: string,
+  memberIds: string[],
+): Promise<string | null> {
+  const { data: roomId, error } = await supabase.rpc('chat_create_group', {
+    p_name: normalizedName,
+    p_member_ids: memberIds.length > 0 ? memberIds : [],
+  });
+
+  if (error) {
+    throw mapChatCreateGroupRpcError(error);
+  }
+
+  return unwrapRpcStringOrFirst(roomId);
+}
+
+async function updateChatGroupRoomDetails(args: {
+  roomId: string;
+  description?: string | null;
+  imageUrl?: string | null;
+}): Promise<void> {
+  const { roomId, description, imageUrl } = args;
+  if (!description && !imageUrl) return;
+
+  const { error } = await supabase
+    .from('chat_rooms')
+    .update({
+      description: description ?? null,
+      image_url: imageUrl ?? null,
+    })
+    .eq('id', roomId);
+
+  if (error) throw error;
+}
+
 function buildBlockedPairSet(
   blocks: ChatBlockRow[] | null | undefined,
   sessionUserId: string,
@@ -555,46 +605,28 @@ function useChatRoomsState() {
 
   const createGroup = useCallback(
     async (details: ChatGroupDetailsInput, memberIds: string[]) => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      if (!session?.user) throw new Error('Sign in to create a group');
-      if (memberIds.length >= 100)
-        throw new Error('A group can have up to 100 members.');
+      await requireChatSessionUserId();
+      assertValidGroupMemberCount(memberIds);
+
       const normalizedName = details.name.trim();
       const normalizedDescription = normalizeChatGroupDescription(
         details.description,
       );
-
-      const { data: roomId, error } = await supabase.rpc('chat_create_group', {
-        p_name: normalizedName,
-        p_member_ids: memberIds.length > 0 ? memberIds : [],
-      });
-
-      if (error) {
-        throw mapChatCreateGroupRpcError(error);
-      }
-
-      const id = unwrapRpcStringOrFirst(roomId);
+      const id = await createChatGroupRoomId(normalizedName, memberIds);
       if (!id) return null;
 
-      if (normalizedDescription || details.imageUrl) {
-        const { error: roomUpdateError } = await supabase
-          .from('chat_rooms')
-          .update({
-            description: normalizedDescription,
-            image_url: details.imageUrl ?? null,
-          })
-          .eq('id', id);
-        if (roomUpdateError) throw roomUpdateError;
-      }
+      await updateChatGroupRoomDetails({
+        roomId: id,
+        description: normalizedDescription,
+        imageUrl: details.imageUrl,
+      });
 
       await fetchRooms();
       showToast({
         message: 'Group created.',
         severity: 'success',
       });
-      return id as string;
+      return id;
     },
     [fetchRooms, showToast],
   );

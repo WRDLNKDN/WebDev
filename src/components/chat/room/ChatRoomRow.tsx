@@ -14,6 +14,7 @@ import { useNavigate } from 'react-router-dom';
 import type { ChatRoomWithMembers } from '../../../hooks/useChat';
 import { getChatRoomLabel } from '../../../lib/chat/roomListState';
 import { createNormalizedGroupImageAsset } from '../../../lib/media/assets';
+import { AssetAvatar } from '../../media/AssetThumbnail';
 import { ProfileAvatar } from '../../avatar/ProfileAvatar';
 import {
   CHAT_FAVORITE_ACTIVE_BUTTON_SX,
@@ -60,16 +61,9 @@ function getRoomListAvatarSrc(
   room: ChatRoomWithMembers,
   currentUserId?: string,
 ): string | undefined {
-  if (room.room_type === 'dm') {
-    return (
-      room.members?.find((member) => member.user_id !== currentUserId)?.profile
-        ?.avatar ?? undefined
-    );
-  }
   return (
-    createNormalizedGroupImageAsset(room)?.displayUrl ??
-    room.image_url ??
-    undefined
+    room.members?.find((member) => member.user_id !== currentUserId)?.profile
+      ?.avatar ?? undefined
   );
 }
 
@@ -144,12 +138,21 @@ export const ChatRoomRow = ({
         },
       }}
     >
-      <ProfileAvatar
-        src={getRoomListAvatarSrc(room, currentUserId)}
-        alt={getChatRoomLabel(room, currentUserId)}
-        size="small"
-        sx={{ width: 36, height: 36, flexShrink: 0 }}
-      />
+      {room.room_type === 'group' ? (
+        <AssetAvatar
+          asset={createNormalizedGroupImageAsset(room)}
+          alt={getChatRoomLabel(room, currentUserId)}
+          size="small"
+          sx={{ width: 36, height: 36, flexShrink: 0 }}
+        />
+      ) : (
+        <ProfileAvatar
+          src={getRoomListAvatarSrc(room, currentUserId)}
+          alt={getChatRoomLabel(room, currentUserId)}
+          size="small"
+          sx={{ width: 36, height: 36, flexShrink: 0 }}
+        />
+      )}
       <Box sx={{ flex: 1, minWidth: 0 }}>
         <Stack
           direction="row"

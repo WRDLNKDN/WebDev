@@ -18,6 +18,7 @@ import {
   AdminContentModerationPage,
   AdminDashboard,
   AdminFeatureFlagsPage,
+  AdminMediaHealthPage,
   AdminPartnersPage,
   AdvertisePage,
   AuthCallback,
@@ -733,6 +734,7 @@ export const AppRouteTree = ({
         <Route path="advertisers" element={<AdminAdvertisersPage />} />
         <Route path="community-partners" element={<AdminPartnersPage />} />
         <Route path="feature-flags" element={<AdminFeatureFlagsPage />} />
+        <Route path="media-health" element={<AdminMediaHealthPage />} />
         <Route
           path="resume-thumbnails"
           element={<Navigate to="/admin" replace />}

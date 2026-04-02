@@ -26,6 +26,8 @@ describe('Home marketing sections (static copy)', () => {
     );
     expect(markup).toContain('How It Works');
     expect(markup).toContain('Join with Google or Microsoft');
+    expect(markup).toContain('Create your Showcase');
+    expect(markup).toContain('Discover and Connect');
     expect(markup).toContain('href="/join"');
     expect(markup).toContain('href="/directory"');
     expect(markup).toContain('href="/feed"');

@@ -19,6 +19,7 @@ import {
   SUPPORTED_TEXT_EXTENSIONS,
   SUPPORTED_VIDEO_EXTENSIONS,
 } from './linkUtils';
+import { toMessage } from '../utils/errors';
 
 export const PROJECT_SOURCE_BUCKET = 'project-sources';
 export const PROJECT_THUMBNAIL_BUCKET = 'project-images';
@@ -28,6 +29,37 @@ export {
   PROJECT_THUMBNAIL_HARD_MAX_BYTES,
   PROJECT_THUMBNAIL_MAX_BYTES,
 };
+
+export type ProjectUploadField = 'source' | 'thumbnail';
+
+export class ProjectUploadFieldError extends Error {
+  readonly field: ProjectUploadField;
+
+  constructor(field: ProjectUploadField, message: string) {
+    super(message);
+    this.name = 'ProjectUploadFieldError';
+    this.field = field;
+  }
+}
+
+export function isProjectUploadFieldError(
+  error: unknown,
+  field?: ProjectUploadField,
+): error is ProjectUploadFieldError {
+  return (
+    error instanceof ProjectUploadFieldError &&
+    (field == null || error.field === field)
+  );
+}
+
+export function toProjectUploadFieldError(
+  field: ProjectUploadField,
+  error: unknown,
+): ProjectUploadFieldError {
+  return error instanceof ProjectUploadFieldError
+    ? error
+    : new ProjectUploadFieldError(field, toMessage(error));
+}
 
 const PROJECT_THUMBNAIL_ALLOWED_MIME_TYPES = new Set([
   'image/jpeg',
@@ -66,6 +98,8 @@ const THUMBNAIL_SIZE_GUIDANCE =
 const SOURCE_SIZE_GUIDANCE =
   getUploadSurfaceGuidance('portfolio_source') ??
   'Project files are optimized automatically.';
+const PROJECT_THUMBNAIL_LIMIT_FAILURE_MESSAGE =
+  'Optional thumbnail is still too large after optimization. Try a smaller or simpler image.';
 
 export function isProjectSourceStorageUrl(url: string): boolean {
   return url.includes(`/storage/v1/object/public/${PROJECT_SOURCE_BUCKET}/`);
@@ -156,6 +190,14 @@ export async function uploadPublicProjectAsset(params: {
           scope: params.prefix,
           file,
           retainOriginal: true,
+          maxDisplayBytes:
+            params.bucket === PROJECT_THUMBNAIL_BUCKET
+              ? PROJECT_THUMBNAIL_MAX_BYTES
+              : null,
+          displayLimitFailureMessage:
+            params.bucket === PROJECT_THUMBNAIL_BUCKET
+              ? PROJECT_THUMBNAIL_LIMIT_FAILURE_MESSAGE
+              : null,
         });
         return returnVariant === 'original'
           ? (asset.originalUrl ?? asset.displayUrl)

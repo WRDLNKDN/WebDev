@@ -3,18 +3,9 @@
  * Score increases per brick; game ends when all lives lost.
  * State persisted in game_sessions.state_payload; client runs game loop.
  */
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import ReplayIcon from '@mui/icons-material/Replay';
-import {
-  Box,
-  Button,
-  CircularProgress,
-  Paper,
-  Stack,
-  Typography,
-} from '@mui/material';
+import { Button, Paper, Stack, Typography } from '@mui/material';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Link as RouterLink, useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import {
   completeSession,
   createBreakoutSession,
@@ -25,6 +16,13 @@ import {
 import { useAppToast } from '../../context/AppToastContext';
 import { toMessage } from '../../lib/utils/errors';
 import type { GameSession } from '../../types/games';
+import {
+  MiniGameGameOverPanel,
+  MiniGameIntroScreen,
+  MiniGameLoadingNotFound,
+  MiniGamePlayHeaderRow,
+  MiniGamePlayPageRoot,
+} from './games/MiniGamePlayChrome';
 
 const WIDTH = 400;
 const HEIGHT = 500;
@@ -398,106 +396,38 @@ export const BreakoutPlayPage = () => {
   }, [navigate, showToast]);
 
   if (loading) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-        <CircularProgress aria-label="Loading game" />
-      </Box>
-    );
+    return <MiniGameLoadingNotFound loading notFound={false} />;
   }
 
   if (notFound || (!session && sessionId)) {
-    return (
-      <Box sx={{ py: 2, px: { xs: 2, sm: 3 } }}>
-        <Button
-          component={RouterLink}
-          to="/dashboard/games"
-          startIcon={<ArrowBackIcon />}
-          variant="outlined"
-          size="small"
-          sx={{ mb: 2 }}
-        >
-          Back to Games
-        </Button>
-        <Typography color="text.secondary" sx={{ mb: 2 }}>
-          Game not found.
-        </Typography>
-        <Button
-          component={RouterLink}
-          to="/dashboard/games"
-          variant="contained"
-        >
-          Back to Games
-        </Button>
-      </Box>
-    );
+    return <MiniGameLoadingNotFound loading={false} notFound />;
   }
 
   if (!sessionId && !session) {
     return (
-      <Box sx={{ py: 2, px: { xs: 2, sm: 3 } }}>
-        <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 3 }}>
-          <Button
-            component={RouterLink}
-            to="/dashboard/games"
-            startIcon={<ArrowBackIcon />}
-            variant="outlined"
-            size="small"
-          >
-            Back
-          </Button>
-          <Typography variant="h6" sx={{ fontWeight: 600 }}>
-            Breakout
-          </Typography>
-        </Stack>
-        <Paper variant="outlined" sx={{ p: 3, maxWidth: 360 }}>
-          <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
-            Use the paddle to bounce the ball and break all bricks. Don&apos;t
-            let the ball fall. You have 3 lives.
-          </Typography>
-          <Button
-            variant="contained"
-            fullWidth
-            startIcon={<ReplayIcon />}
-            disabled={startingNew}
-            onClick={() => void handleStartNew()}
-            aria-label="Start new Breakout game"
-          >
-            {startingNew ? 'Starting…' : 'Start new game'}
-          </Button>
-        </Paper>
-      </Box>
+      <MiniGameIntroScreen
+        title="Breakout"
+        description="Use the paddle to bounce the ball and break all bricks. Don't let the ball fall. You have 3 lives."
+        startingNew={startingNew}
+        onStartNew={() => {
+          void handleStartNew();
+        }}
+        startAriaLabel="Start new Breakout game"
+      />
     );
   }
 
   return (
-    <Box sx={{ py: 2, px: { xs: 2, sm: 3 } }}>
-      <Stack
-        direction="row"
-        alignItems="center"
-        justifyContent="space-between"
-        flexWrap="wrap"
-        gap={2}
-        sx={{ mb: 2 }}
-      >
-        <Stack direction="row" alignItems="center" spacing={2}>
-          <Button
-            component={RouterLink}
-            to="/dashboard/games"
-            startIcon={<ArrowBackIcon />}
-            variant="outlined"
-            size="small"
-            aria-label="Back to Games"
-          >
-            Back
-          </Button>
-          <Typography variant="h6" sx={{ fontWeight: 600 }}>
-            Breakout
+    <MiniGamePlayPageRoot>
+      <MiniGamePlayHeaderRow
+        title="Breakout"
+        showStats
+        stats={
+          <Typography variant="body2" color="text.secondary">
+            Score: {score} · Lives: {lives}
           </Typography>
-        </Stack>
-        <Typography variant="body2" color="text.secondary">
-          Score: {score} · Lives: {lives}
-        </Typography>
-      </Stack>
+        }
+      />
 
       <Paper variant="outlined" sx={{ p: 1, display: 'inline-block' }}>
         <canvas
@@ -518,33 +448,18 @@ export const BreakoutPlayPage = () => {
           </Stack>
         )}
         {(gameStatus === 'gameover' || gameStatus === 'win') && (
-          <Stack alignItems="center" spacing={2} sx={{ py: 2 }}>
-            <Typography variant="h6">
-              {gameStatus === 'win' ? 'You cleared all bricks!' : 'Game over'}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Final score: {score}
-            </Typography>
-            <Stack direction="row" spacing={1}>
-              <Button
-                component={RouterLink}
-                to="/dashboard/games"
-                variant="outlined"
-              >
-                Back to Games
-              </Button>
-              <Button
-                variant="contained"
-                startIcon={<ReplayIcon />}
-                onClick={() => void handleStartNew()}
-                disabled={startingNew}
-              >
-                Play again
-              </Button>
-            </Stack>
-          </Stack>
+          <MiniGameGameOverPanel
+            title={
+              gameStatus === 'win' ? 'You cleared all bricks!' : 'Game over'
+            }
+            summary={`Final score: ${score}`}
+            startingNew={startingNew}
+            onPlayAgain={() => {
+              void handleStartNew();
+            }}
+          />
         )}
       </Paper>
-    </Box>
+    </MiniGamePlayPageRoot>
   );
 };

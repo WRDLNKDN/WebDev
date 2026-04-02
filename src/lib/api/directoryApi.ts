@@ -26,6 +26,23 @@ async function readDirectoryJsonBody(
   }
 }
 
+async function postDirectoryAction(
+  supabase: SupabaseClient,
+  path: string,
+  targetId: string,
+): Promise<void> {
+  const res = await authedFetch(
+    directoryUrl(path),
+    {
+      method: 'POST',
+      body: JSON.stringify({ targetId }),
+    },
+    { client: supabase, credentials: API_BASE ? 'omit' : 'include' },
+  );
+  const data = await readDirectoryJsonBody(res);
+  throwIfDirectoryResponseNotOk(res, data);
+}
+
 function throwIfDirectoryResponseNotOk(
   res: Response,
   data: Record<string, unknown>,
@@ -142,78 +159,33 @@ export async function connectRequest(
   supabase: SupabaseClient,
   targetId: string,
 ): Promise<void> {
-  const res = await authedFetch(
-    directoryUrl('/connect'),
-    {
-      method: 'POST',
-      body: JSON.stringify({ targetId }),
-    },
-    { client: supabase, credentials: API_BASE ? 'omit' : 'include' },
-  );
-  const data = await readDirectoryJsonBody(res);
-  throwIfDirectoryResponseNotOk(res, data);
+  return postDirectoryAction(supabase, '/connect', targetId);
 }
 
 export async function acceptRequest(
   supabase: SupabaseClient,
   targetId: string,
 ): Promise<void> {
-  const res = await authedFetch(
-    directoryUrl('/accept'),
-    {
-      method: 'POST',
-      body: JSON.stringify({ targetId }),
-    },
-    { client: supabase, credentials: API_BASE ? 'omit' : 'include' },
-  );
-  const data = await readDirectoryJsonBody(res);
-  throwIfDirectoryResponseNotOk(res, data);
+  return postDirectoryAction(supabase, '/accept', targetId);
 }
 
 export async function declineRequest(
   supabase: SupabaseClient,
   targetId: string,
 ): Promise<void> {
-  const res = await authedFetch(
-    directoryUrl('/decline'),
-    {
-      method: 'POST',
-      body: JSON.stringify({ targetId }),
-    },
-    { client: supabase, credentials: API_BASE ? 'omit' : 'include' },
-  );
-  const data = await readDirectoryJsonBody(res);
-  throwIfDirectoryResponseNotOk(res, data);
+  return postDirectoryAction(supabase, '/decline', targetId);
 }
 
 export async function cancelRequest(
   supabase: SupabaseClient,
   targetId: string,
 ): Promise<void> {
-  const res = await authedFetch(
-    directoryUrl('/cancel'),
-    {
-      method: 'POST',
-      body: JSON.stringify({ targetId }),
-    },
-    { client: supabase, credentials: API_BASE ? 'omit' : 'include' },
-  );
-  const data = await readDirectoryJsonBody(res);
-  throwIfDirectoryResponseNotOk(res, data);
+  return postDirectoryAction(supabase, '/cancel', targetId);
 }
 
 export async function disconnect(
   supabase: SupabaseClient,
   targetId: string,
 ): Promise<void> {
-  const res = await authedFetch(
-    directoryUrl('/disconnect'),
-    {
-      method: 'POST',
-      body: JSON.stringify({ targetId }),
-    },
-    { client: supabase, credentials: API_BASE ? 'omit' : 'include' },
-  );
-  const data = await readDirectoryJsonBody(res);
-  throwIfDirectoryResponseNotOk(res, data);
+  return postDirectoryAction(supabase, '/disconnect', targetId);
 }

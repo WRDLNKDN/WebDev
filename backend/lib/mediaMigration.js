@@ -1,3 +1,5 @@
+import { cleanNullableText, cleanText, cleanUrl } from './mediaSanitizers.js';
+
 export const LEGACY_MEDIA_SURFACE_AUDIT = [
   {
     surface: 'feed',
@@ -171,25 +173,6 @@ export const LEGACY_MEDIA_ROLLOUT_CHECKLIST = [
     deprecatedHandlers: ['chat_rooms.image_url direct avatar rendering'],
   },
 ];
-
-function cleanText(value, max = 500) {
-  return typeof value === 'string' ? value.trim().slice(0, max) : '';
-}
-
-function cleanNullableText(value, max = 500) {
-  const cleaned = cleanText(value, max);
-  return cleaned || null;
-}
-
-function cleanUrl(value) {
-  const candidate = cleanNullableText(value, 2048);
-  if (!candidate) return null;
-  try {
-    return new URL(candidate).toString();
-  } catch {
-    return null;
-  }
-}
 
 function isGiphyUrl(url) {
   const candidate = cleanText(url, 2048).toLowerCase();

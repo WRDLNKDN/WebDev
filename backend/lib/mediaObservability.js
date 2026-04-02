@@ -1,3 +1,10 @@
+import {
+  asPlainObject,
+  cleanNullableText,
+  cleanText,
+  sanitizeJsonValue,
+} from './mediaSanitizers.js';
+
 const MEDIA_HEALTH_STAGES = [
   'validation',
   'upload',
@@ -15,46 +22,6 @@ const FAILURE_CATEGORY_BY_STAGE = {
   preview: 'previewFailures',
   render: 'renderFailures',
 };
-
-function cleanText(value, max = 240) {
-  return typeof value === 'string' ? value.trim().slice(0, max) : '';
-}
-
-function cleanNullableText(value, max = 240) {
-  const cleaned = cleanText(value, max);
-  return cleaned || null;
-}
-
-function sanitizeJsonValue(value, depth = 0) {
-  if (depth > 4) return null;
-  if (value == null) return null;
-  if (typeof value === 'string') return value.trim().slice(0, 2000);
-  if (typeof value === 'number') return Number.isFinite(value) ? value : null;
-  if (typeof value === 'boolean') return value;
-  if (Array.isArray(value)) {
-    return value
-      .slice(0, 40)
-      .map((entry) => sanitizeJsonValue(entry, depth + 1))
-      .filter((entry) => entry != null);
-  }
-  if (typeof value !== 'object') return null;
-
-  return Object.fromEntries(
-    Object.entries(value)
-      .slice(0, 40)
-      .map(([key, entry]) => [
-        key.slice(0, 80),
-        sanitizeJsonValue(entry, depth + 1),
-      ])
-      .filter(([, entry]) => entry != null),
-  );
-}
-
-function asObject(value) {
-  return value && typeof value === 'object' && !Array.isArray(value)
-    ? value
-    : {};
-}
 
 function isFailureLike(entry) {
   const eventName = cleanText(entry.eventName, 160).toLowerCase();
@@ -97,7 +64,7 @@ function inferStage(entry) {
 }
 
 function normalizeClientEvent(raw) {
-  const meta = asObject(sanitizeJsonValue(raw.meta) ?? {});
+  const meta = asPlainObject(sanitizeJsonValue(raw.meta) ?? {});
   return {
     source: 'client',
     eventName: cleanText(raw.eventName, 120) || 'media_client_event',
@@ -316,7 +283,7 @@ async function countMediaAssets(supabase, filters = {}) {
 }
 
 function normalizeAssetEvent(row) {
-  const meta = asObject(row.meta);
+  const meta = asPlainObject(row.meta);
   return {
     source: 'asset',
     eventName: cleanText(row.event_name, 120),
@@ -336,7 +303,7 @@ function normalizeAssetEvent(row) {
 }
 
 function normalizeAuditEvent(row) {
-  const meta = asObject(row.meta);
+  const meta = asPlainObject(row.meta);
   return {
     source: cleanNullableText(meta.source, 40) ?? 'client',
     eventName: cleanText(meta.eventName, 120) || 'media_client_event',

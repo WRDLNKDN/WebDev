@@ -15,6 +15,13 @@ import {
   normalizeMediaAbuseReportRef,
   resolveMediaModeration,
 } from './mediaModeration.js';
+import {
+  asPlainObject,
+  cleanNullableText,
+  cleanText,
+  cleanUrl,
+  sanitizeJsonValue,
+} from './mediaSanitizers.js';
 
 export const MEDIA_ASSET_SOURCE_TYPES = [
   'upload',
@@ -54,37 +61,12 @@ export class MediaServiceError extends Error {
   }
 }
 
-function asPlainObject(value) {
-  return value && typeof value === 'object' && !Array.isArray(value)
-    ? value
-    : {};
-}
-
-function cleanText(value, max = 500) {
-  return typeof value === 'string' ? value.trim().slice(0, max) : '';
-}
-
-function cleanNullableText(value, max = 500) {
-  const cleaned = cleanText(value, max);
-  return cleaned || null;
-}
-
-function cleanUrl(value) {
-  const candidate = cleanNullableText(value, 2048);
-  if (!candidate) return null;
-  try {
-    const parsed = new URL(candidate);
-    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
-      return null;
-    }
-    return parsed.toString();
-  } catch {
-    return null;
-  }
-}
-
 function cleanPath(value) {
   return cleanNullableText(value, 2048);
+}
+
+function sanitizeMediaJsonValue(value) {
+  return sanitizeJsonValue(value, { maxEntries: 50 });
 }
 
 function appendQueryParam(value, key, nextValue) {
@@ -118,31 +100,6 @@ function cleanInteger(value) {
     return Number.isFinite(parsed) ? Math.max(0, Math.round(parsed)) : null;
   }
   return null;
-}
-
-function sanitizeJsonValue(value, depth = 0) {
-  if (depth > 4) return null;
-  if (value == null) return null;
-  if (typeof value === 'string') return value.trim().slice(0, 2000);
-  if (typeof value === 'number') return Number.isFinite(value) ? value : null;
-  if (typeof value === 'boolean') return value;
-  if (Array.isArray(value)) {
-    return value
-      .slice(0, 50)
-      .map((entry) => sanitizeJsonValue(entry, depth + 1))
-      .filter((entry) => entry != null);
-  }
-  if (typeof value !== 'object') return null;
-
-  return Object.fromEntries(
-    Object.entries(value)
-      .slice(0, 50)
-      .map(([key, entry]) => [
-        key.slice(0, 80),
-        sanitizeJsonValue(entry, depth + 1),
-      ])
-      .filter(([, entry]) => entry != null),
-  );
 }
 
 function cleanSourceRef(value) {
@@ -190,7 +147,7 @@ function cleanDerivatives(value) {
 }
 
 function cleanMetadata(value) {
-  const metadata = sanitizeJsonValue(value);
+  const metadata = sanitizeMediaJsonValue(value);
   return metadata && typeof metadata === 'object' && !Array.isArray(metadata)
     ? metadata
     : {};
@@ -249,7 +206,7 @@ function cleanTelemetry(value) {
     lastEventAt: cleanNullableText(input.lastEventAt, 80),
     failureReason: cleanNullableText(input.failureReason, 500),
   };
-  const meta = sanitizeJsonValue(input.meta);
+  const meta = sanitizeMediaJsonValue(input.meta);
 
   return {
     ...Object.fromEntries(
@@ -495,7 +452,7 @@ async function insertMediaEvent(supabase, params) {
     processing_state: params.processingState ?? null,
     failure_code: params.failureCode ?? null,
     failure_reason: params.failureReason ?? null,
-    meta: sanitizeJsonValue(params.meta) ?? {},
+    meta: sanitizeMediaJsonValue(params.meta) ?? {},
   };
   const { error } = await supabase.from('media_asset_events').insert(payload);
   if (error) {
@@ -511,7 +468,7 @@ async function insertAuditEvent(supabase, params) {
     action,
     target_type: 'media_asset',
     target_id: params.assetId,
-    meta: sanitizeJsonValue(params.meta) ?? {},
+    meta: sanitizeMediaJsonValue(params.meta) ?? {},
   });
   if (error) {
     console.warn('[media-assets] failed to write audit_log', error);
@@ -535,7 +492,7 @@ async function trackMediaTelemetry(supabase, params) {
     processingState: params.processingState ?? null,
     failureCode: params.failureCode ?? null,
     failureReason: params.failureReason ?? null,
-    meta: sanitizeJsonValue(params.meta) ?? {},
+    meta: sanitizeMediaJsonValue(params.meta) ?? {},
   });
   await Promise.all([
     insertMediaEvent(supabase, params),

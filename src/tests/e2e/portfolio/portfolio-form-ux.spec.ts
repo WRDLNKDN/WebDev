@@ -5,6 +5,10 @@ import { seedSignedInSession, USER_ID } from '../utils/auth';
 import { fulfillPostgrest } from '../utils/postgrestFulfill';
 import { stubAppSurface } from '../utils/stubAppSurface';
 import { selectResearchCategoryInProjectDialog } from './selectResearchCategory';
+import {
+  PORTFOLIO_E2E_MEMBER_PROFILE,
+  stubPortfolioProfileRoutes,
+} from './portfolioEditStubs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const IMAGE_FIXTURE = path.resolve(
@@ -26,37 +30,11 @@ test.describe('Add Project dialog UX', () => {
     await stubAdminRpc(page);
     await stubAppSurface(page);
 
-    const profile = {
-      id: USER_ID,
-      handle: 'member',
-      display_name: 'Member',
-      status: 'approved',
-      join_reason: ['networking'],
-      participation_style: ['builder'],
-      policy_version: '1.0',
-      industry: 'Technology and Software',
-      secondary_industry: null,
-      tagline: 'Builder',
-      avatar: null,
-      socials: [],
-      nerd_creds: { skills: ['Testing'] },
-      resume_url: null,
-    };
-
-    await page.route(
-      '**/rest/v1/rpc/get_or_create_profile_share_token*',
-      async (route) => {
-        await route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify('member-share-token'),
-        });
-      },
+    await stubPortfolioProfileRoutes(
+      page,
+      PORTFOLIO_E2E_MEMBER_PROFILE,
+      'alwaysPostgrest',
     );
-
-    await page.route('**/rest/v1/profiles*', async (route) => {
-      await fulfillPostgrest(route, [profile]);
-    });
 
     await page.route(
       '**/storage/v1/object/project-sources/**',
@@ -206,7 +184,7 @@ test.describe('Add Project dialog UX', () => {
     expect(postedPortfolioPayloads).toHaveLength(0);
   });
 
-  test('shows size guidance for oversized project source files', async ({
+  test('shows current size guidance for oversized project source files', async ({
     page,
   }) => {
     const dialog = await openAddProjectDialog(page);
@@ -215,16 +193,46 @@ test.describe('Add Project dialog UX', () => {
     await dialog.getByTestId('project-source-file-input').setInputFiles({
       name: 'artifact.pdf',
       mimeType: 'application/pdf',
-      buffer: Buffer.alloc(2 * 1024 * 1024 + 1, 1),
+      buffer: Buffer.alloc(16 * 1024 * 1024, 1),
     });
 
     await expect(
-      dialog.getByText(/Project files should be about 2 MB or smaller\./i),
+      dialog.getByText(/optimized toward a 6 MB target/i),
     ).toBeVisible();
     await expect(
       dialog.getByRole('button', { name: /add to portfolio/i }),
     ).toBeDisabled();
     expect(postedPortfolioPayloads).toHaveLength(0);
+  });
+
+  test('renders thumbnail upload errors inline and clears them after a valid file is selected', async ({
+    page,
+  }) => {
+    const dialog = await openAddProjectDialog(page);
+
+    await dialog.getByTestId('project-thumbnail-file-input').setInputFiles({
+      name: 'thumbnail.png',
+      mimeType: 'image/png',
+      buffer: Buffer.alloc(16 * 1024 * 1024, 1),
+    });
+
+    const thumbnailError = dialog.getByTestId('project-thumbnail-field-error');
+    await expect(thumbnailError).toBeVisible();
+    await expect(thumbnailError).toContainText(
+      /optimized toward a 6 MB target/i,
+    );
+    await expect(thumbnailError).not.toContainText(/2 MB/i);
+    await expect(dialog.getByTestId('project-form-submit-error')).toHaveCount(
+      0,
+    );
+
+    await dialog
+      .getByTestId('project-thumbnail-file-input')
+      .setInputFiles(IMAGE_FIXTURE);
+
+    await expect(
+      dialog.getByTestId('project-thumbnail-field-error'),
+    ).toHaveCount(0);
   });
 
   test('saves a project with an uploaded file as the only source', async ({

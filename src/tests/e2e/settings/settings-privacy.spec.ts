@@ -2,10 +2,9 @@ import type { Page } from '@playwright/test';
 import { expect, test } from '../fixtures';
 import { seedSignedInSession } from '../utils/auth';
 import {
-  stubE2eApiGetOkEmpty,
-  stubFeatureFlagSettingsPrivacyMarketing,
-  stubIsAdminRpcFalse,
-  stubRestV1EmptyReadList,
+  SETTINGS_E2E_MEMBER_PROFILE,
+  stubMutableSettingsProfileRoute,
+  stubSettingsShell,
 } from '../utils/settingsRoutesStubs';
 
 type ConsentUpdatePayload = Record<string, unknown>;
@@ -15,13 +14,7 @@ async function stubPrivacySettingsSurface(
   options: { privacyEnabled: boolean },
 ) {
   const profile = {
-    id: '11111111-1111-4111-8111-111111111111',
-    handle: 'member',
-    display_name: 'Member',
-    status: 'approved',
-    join_reason: ['networking'],
-    participation_style: ['builder'],
-    policy_version: '1.0',
+    ...SETTINGS_E2E_MEMBER_PROFILE,
     marketing_email_enabled: false,
     marketing_opt_in: false,
     marketing_push_enabled: false,
@@ -30,37 +23,14 @@ async function stubPrivacySettingsSurface(
 
   const consentUpdates: ConsentUpdatePayload[] = [];
 
-  await stubE2eApiGetOkEmpty(page);
-  await stubRestV1EmptyReadList(page);
-  await stubIsAdminRpcFalse(page);
-  await stubFeatureFlagSettingsPrivacyMarketing(page, options.privacyEnabled);
-
-  await page.route('**/rest/v1/profiles*', async (route) => {
-    const method = route.request().method();
-
-    if (method === 'PATCH') {
-      const payload = route.request().postDataJSON() as ConsentUpdatePayload;
-      const isMarketingConsentUpdate =
-        'marketing_email_enabled' in payload ||
-        'marketing_push_enabled' in payload;
-      if (isMarketingConsentUpdate) {
-        consentUpdates.push(payload);
-      }
-      Object.assign(profile, payload);
-      await route.fulfill({ status: 204, body: '' });
-      return;
+  await stubSettingsShell(page, options.privacyEnabled);
+  await stubMutableSettingsProfileRoute(page, profile, (payload) => {
+    const isMarketingConsentUpdate =
+      'marketing_email_enabled' in payload ||
+      'marketing_push_enabled' in payload;
+    if (isMarketingConsentUpdate) {
+      consentUpdates.push(payload);
     }
-
-    if (method === 'GET') {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify(profile),
-      });
-      return;
-    }
-
-    await route.fulfill({ status: 204, body: '' });
   });
 
   return { consentUpdates };

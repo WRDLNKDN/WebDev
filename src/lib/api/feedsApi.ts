@@ -1,6 +1,4 @@
-import { messageFromApiResponse } from '../utils/errors';
-import { authedFetch } from './authFetch';
-import { API_BASE, parseJsonResponse } from './feedsApiCore';
+import { API_BASE, requestAuthedJson } from './feedsApiCore';
 import type { FeedsResponse, FeedViewPreference } from './feedsApiTypes';
 
 export type {
@@ -62,37 +60,15 @@ export async function fetchFeeds(options?: {
   if (options?.saved === true) params.set('saved', 'true');
 
   const url = `${API_BASE}/api/feeds?${params.toString()}`;
-  const res = await authedFetch(
+  return requestAuthedJson<FeedsResponse>(
     url,
     { method: 'GET' },
     {
       accessToken: options?.accessToken ?? null,
-      includeJsonContentType: true,
-      credentials: API_BASE ? 'omit' : 'include',
+      statusMessages: {
+        404: "Feed API not found. Run 'npm run dev' to start all services (Vite, Supabase, and the API).",
+        503: "API server isn't running. Run 'npm run dev' or start it with 'npm run api'.",
+      },
     },
   );
-
-  if (!res.ok) {
-    if (res.status === 404) {
-      throw new Error(
-        "Feed API not found. Run 'npm run dev' to start all services (Vite, Supabase, and the API).",
-      );
-    }
-    if (res.status === 503) {
-      throw new Error(
-        "API server isn't running. Run 'npm run dev' or start it with 'npm run api'.",
-      );
-    }
-    let body: { error?: string };
-    try {
-      body = await parseJsonResponse<{ error?: string }>(res, url);
-    } catch (e) {
-      if (e instanceof Error && e.message.includes('returned HTML')) throw e;
-      body = { error: undefined };
-    }
-    const msg = typeof body.error === 'string' ? body.error : undefined;
-    throw new Error(messageFromApiResponse(res.status, msg));
-  }
-
-  return parseJsonResponse<FeedsResponse>(res, url);
 }

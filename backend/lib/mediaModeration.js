@@ -1,3 +1,12 @@
+import {
+  asPlainObject,
+  cleanNullableText,
+  cleanStringArray,
+  cleanText,
+  cleanUrl,
+  sanitizeJsonValue,
+} from './mediaSanitizers.js';
+
 export const MEDIA_ASSET_MODERATION_STATUSES = [
   'unreviewed',
   'pending_review',
@@ -17,73 +26,6 @@ export const MEDIA_ASSET_SAFETY_HOOK_STATUSES = [
 
 const MODERATION_STATUS_SET = new Set(MEDIA_ASSET_MODERATION_STATUSES);
 const SAFETY_HOOK_STATUS_SET = new Set(MEDIA_ASSET_SAFETY_HOOK_STATUSES);
-
-function asPlainObject(value) {
-  return value && typeof value === 'object' && !Array.isArray(value)
-    ? value
-    : {};
-}
-
-function cleanText(value, max = 500) {
-  return typeof value === 'string' ? value.trim().slice(0, max) : '';
-}
-
-function cleanNullableText(value, max = 500) {
-  const cleaned = cleanText(value, max);
-  return cleaned || null;
-}
-
-function cleanUrl(value) {
-  const candidate = cleanNullableText(value, 2048);
-  if (!candidate) return null;
-  try {
-    const parsed = new URL(candidate);
-    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
-      return null;
-    }
-    return parsed.toString();
-  } catch {
-    return null;
-  }
-}
-
-function sanitizeJsonValue(value, depth = 0) {
-  if (depth > 4) return null;
-  if (value == null) return null;
-  if (typeof value === 'string') return value.trim().slice(0, 2000);
-  if (typeof value === 'number') return Number.isFinite(value) ? value : null;
-  if (typeof value === 'boolean') return value;
-  if (Array.isArray(value)) {
-    return value
-      .slice(0, 40)
-      .map((entry) => sanitizeJsonValue(entry, depth + 1))
-      .filter((entry) => entry != null);
-  }
-  if (typeof value !== 'object') return null;
-
-  return Object.fromEntries(
-    Object.entries(value)
-      .slice(0, 40)
-      .map(([key, entry]) => [
-        key.slice(0, 80),
-        sanitizeJsonValue(entry, depth + 1),
-      ])
-      .filter(([, entry]) => entry != null),
-  );
-}
-
-function cleanStringArray(value, maxEntries = 20, maxLength = 240) {
-  const items = Array.isArray(value)
-    ? value
-    : typeof value === 'string'
-      ? [value]
-      : [];
-
-  return items
-    .slice(0, maxEntries)
-    .map((entry) => cleanNullableText(entry, maxLength))
-    .filter((entry) => entry != null);
-}
 
 function uniqueStrings(values) {
   return [...new Set(values.filter(Boolean))];

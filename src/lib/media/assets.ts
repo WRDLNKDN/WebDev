@@ -18,6 +18,21 @@ export type NormalizedAssetProcessingState =
   | 'ready'
   | 'failed';
 
+type NormalizedAssetMetadataFields = {
+  moderationStatus?: string | null;
+  safeToRender?: boolean;
+  failureMessage?: string | null;
+  abuseReportId?: string | null;
+  mimeType?: string | null;
+  title?: string | null;
+  description?: string | null;
+  ogImageUrl?: string | null;
+  originalFilename?: string | null;
+  provider?: string | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+};
+
 export type NormalizedAsset = {
   assetId: string;
   sourceType: NormalizedAssetSourceType;
@@ -33,19 +48,7 @@ export type NormalizedAsset = {
   sizeThumbnail: number | null;
   processingState: NormalizedAssetProcessingState;
   fallbackBehavior: string;
-  moderationStatus?: string | null;
-  safeToRender?: boolean;
-  failureMessage?: string | null;
-  abuseReportId?: string | null;
-  mimeType?: string | null;
-  title?: string | null;
-  description?: string | null;
-  ogImageUrl?: string | null;
-  originalFilename?: string | null;
-  provider?: string | null;
-  createdAt?: string | null;
-  updatedAt?: string | null;
-};
+} & NormalizedAssetMetadataFields;
 
 export const MEDIA_ORIGINAL_FILE_STEM = 'original';
 export const MEDIA_DISPLAY_FILE_STEM = 'display';
@@ -235,7 +238,7 @@ function getFallbackBehavior(mediaType: NormalizedAssetMediaType): string {
   }
 }
 
-export function createNormalizedAsset(input: {
+type CreateNormalizedAssetInput = {
   assetId?: string;
   sourceType: NormalizedAssetSourceType;
   mediaType: NormalizedAssetMediaType;
@@ -249,19 +252,11 @@ export function createNormalizedAsset(input: {
   sizeDisplay?: number | null;
   sizeThumbnail?: number | null;
   processingState?: NormalizedAssetProcessingState;
-  moderationStatus?: string | null;
-  safeToRender?: boolean;
-  failureMessage?: string | null;
-  abuseReportId?: string | null;
-  mimeType?: string | null;
-  title?: string | null;
-  description?: string | null;
-  ogImageUrl?: string | null;
-  originalFilename?: string | null;
-  provider?: string | null;
-  createdAt?: string | null;
-  updatedAt?: string | null;
-}): NormalizedAsset {
+} & NormalizedAssetMetadataFields;
+
+export function createNormalizedAsset(
+  input: CreateNormalizedAssetInput,
+): NormalizedAsset {
   const seed =
     input.assetId ??
     [

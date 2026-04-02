@@ -95,6 +95,11 @@ export type StructuredPublicAssetUpload = {
   originalFilename: string;
 };
 
+type StructuredPublicAssetLimits = {
+  maxDisplayBytes?: number | null;
+  displayLimitFailureMessage?: string | null;
+};
+
 export type StructuredChatAttachmentUpload = {
   assetId: string;
   storagePath: string;
@@ -295,13 +300,28 @@ async function uploadPrivateBlob(params: {
   if (error) throw error;
 }
 
-export async function uploadStructuredPublicAsset(params: {
-  bucket: string;
-  ownerId: string;
-  scope: string;
-  file: File;
-  retainOriginal?: boolean;
-}): Promise<StructuredPublicAssetUpload> {
+function assertStructuredDisplaySizeWithinLimit(
+  params: StructuredPublicAssetLimits,
+  displaySize: number,
+): void {
+  if (params.maxDisplayBytes == null || displaySize <= params.maxDisplayBytes) {
+    return;
+  }
+  throw new Error(
+    params.displayLimitFailureMessage?.trim() ||
+      'Processed media is still too large after optimization. Try a smaller or simpler file.',
+  );
+}
+
+export async function uploadStructuredPublicAsset(
+  params: {
+    bucket: string;
+    ownerId: string;
+    scope: string;
+    file: File;
+    retainOriginal?: boolean;
+  } & StructuredPublicAssetLimits,
+): Promise<StructuredPublicAssetUpload> {
   if (params.file.size > STRUCTURED_MEDIA_INPUT_HARD_LIMIT_BYTES) {
     throw new Error('File is too large to process safely.');
   }
@@ -348,6 +368,7 @@ export async function uploadStructuredPublicAsset(params: {
         mimeType: 'image/jpeg',
         quality: 0.82,
       });
+      assertStructuredDisplaySizeWithinLimit(params, params.file.size);
       const displayUrl = await uploadPublicBlob({
         bucket: params.bucket,
         path: displayPath,
@@ -380,6 +401,7 @@ export async function uploadStructuredPublicAsset(params: {
     let thumbnail: CanvasRenderResult;
     try {
       ({ display, thumbnail } = await createImageDerivatives(params.file));
+      assertStructuredDisplaySizeWithinLimit(params, display.blob.size);
       trackStructuredTransformTelemetry({
         eventName: 'media_derivative_compression_succeeded',
         stage: 'optimization',

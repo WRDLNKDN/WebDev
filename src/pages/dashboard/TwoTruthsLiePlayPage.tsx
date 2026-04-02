@@ -2,11 +2,8 @@
  * Two Truths and a Lie: one player submits three statements (two true, one lie);
  * others vote on which is the lie; results reveal the answer; scores tracked per round.
  */
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import {
-  Box,
   Button,
-  CircularProgress,
   Paper,
   Radio,
   RadioGroup,
@@ -15,7 +12,7 @@ import {
   Typography,
 } from '@mui/material';
 import { useCallback, useEffect, useState } from 'react';
-import { Link as RouterLink, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import {
   advanceRoundTwoTruthsLie,
   fetchSessionForGameType,
@@ -28,6 +25,12 @@ import { useAppToast } from '../../context/AppToastContext';
 import { toMessage } from '../../lib/utils/errors';
 import { supabase } from '../../lib/auth/supabaseClient';
 import type { GameSession, GameSessionParticipant } from '../../types/games';
+import {
+  MiniGameLoadingNotFound,
+  MiniGamePlayHeaderRow,
+  MiniGamePlayPageRoot,
+  MiniGameSessionUnavailableScreen,
+} from './games/MiniGamePlayChrome';
 
 function getState(session: GameSession): TwoTruthsLieStatePayload {
   const raw = session.state_payload as TwoTruthsLieStatePayload | undefined;
@@ -198,68 +201,42 @@ export const TwoTruthsLiePlayPage = () => {
   }, [session, acting, loadSession, showToast]);
 
   if (loading) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-        <CircularProgress aria-label="Loading game" />
-      </Box>
-    );
+    return <MiniGameLoadingNotFound loading notFound={false} />;
   }
 
   if (notFound || (!sessionId?.trim() && !session)) {
     return (
-      <Box sx={{ p: 2 }}>
-        <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 2 }}>
-          <Button
-            component={RouterLink}
-            to="/dashboard/games"
-            startIcon={<ArrowBackIcon />}
-          >
-            Games
-          </Button>
-        </Stack>
-        <Paper variant="outlined" sx={{ p: 3, textAlign: 'center' }}>
-          <Typography color="text.secondary" sx={{ mb: 2 }}>
-            {notFound
-              ? 'Session not found or not a Two Truths and a Lie game.'
-              : 'Start this game by inviting connections from the Games page.'}
-          </Typography>
-          <Button component={RouterLink} to="/dashboard/games">
-            Back to Games
-          </Button>
-        </Paper>
-      </Box>
+      <MiniGameSessionUnavailableScreen
+        message={
+          notFound
+            ? 'Session not found or not a Two Truths and a Lie game.'
+            : 'Start this game by inviting connections from the Games page.'
+        }
+      />
     );
   }
 
   if (!session || !state) return null;
 
   return (
-    <Box sx={{ p: 2 }}>
-      <Stack
-        direction="row"
-        alignItems="center"
-        justifyContent="space-between"
-        sx={{ mb: 2 }}
-      >
-        <Button
-          component={RouterLink}
-          to="/dashboard/games"
-          startIcon={<ArrowBackIcon />}
-        >
-          Games
-        </Button>
-        <Stack direction="row" spacing={2} alignItems="center">
-          <Typography variant="body2" color="text.secondary">
-            Round {(state.roundIndex ?? 0) + 1}
-          </Typography>
-          <Paper variant="outlined" sx={{ px: 2, py: 0.5 }}>
+    <MiniGamePlayPageRoot>
+      <MiniGamePlayHeaderRow
+        title="Two Truths and a Lie"
+        showStats
+        stats={
+          <Stack direction="row" spacing={2} alignItems="center">
             <Typography variant="body2" color="text.secondary">
-              Your score
+              Round {(state.roundIndex ?? 0) + 1}
             </Typography>
-            <Typography variant="h6">{myScore}</Typography>
-          </Paper>
-        </Stack>
-      </Stack>
+            <Paper variant="outlined" sx={{ px: 2, py: 0.5 }}>
+              <Typography variant="body2" color="text.secondary">
+                Your score
+              </Typography>
+              <Typography variant="h6">{myScore}</Typography>
+            </Paper>
+          </Stack>
+        }
+      />
 
       {revealed ? (
         <Paper variant="outlined" sx={{ p: 3 }}>
@@ -440,6 +417,6 @@ export const TwoTruthsLiePlayPage = () => {
           </Typography>
         </Paper>
       )}
-    </Box>
+    </MiniGamePlayPageRoot>
   );
 };

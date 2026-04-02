@@ -3,13 +3,10 @@
  * turn order rotates; win when a player reaches 0 (bust on negative or 1).
  * State persists in game_sessions.state_payload.
  */
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import ReplayIcon from '@mui/icons-material/Replay';
 import {
   Box,
   Button,
   Chip,
-  CircularProgress,
   Paper,
   Stack,
   ToggleButton,
@@ -17,7 +14,7 @@ import {
   Typography,
 } from '@mui/material';
 import { useCallback, useEffect, useState } from 'react';
-import { Link as RouterLink, useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import {
   createDartsSoloSession,
   fetchSessionForGameType,
@@ -28,6 +25,13 @@ import { useAppToast } from '../../context/AppToastContext';
 import { toMessage } from '../../lib/utils/errors';
 import { supabase } from '../../lib/auth/supabaseClient';
 import type { GameSession } from '../../types/games';
+import {
+  MiniGameGameOverPanel,
+  MiniGameIntroScreen,
+  MiniGameLoadingNotFound,
+  MiniGamePlayHeaderRow,
+  MiniGamePlayPageRoot,
+} from './games/MiniGamePlayChrome';
 
 const SEGMENTS = [
   1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
@@ -166,75 +170,53 @@ export const DartsPlayPage = () => {
   }, [navigate, showToast]);
 
   if (loading) {
+    return <MiniGameLoadingNotFound loading notFound={false} />;
+  }
+
+  if (notFound) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-        <CircularProgress aria-label="Loading game" />
-      </Box>
+      <MiniGameLoadingNotFound
+        loading={false}
+        notFound
+        notFoundMessage="Session not found or not a Darts game."
+      />
     );
   }
 
-  if (notFound || (!sessionId?.trim() && !session)) {
+  if (!sessionId?.trim() && !session) {
     return (
-      <Box sx={{ p: 2 }}>
-        <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 2 }}>
-          <Button
-            component={RouterLink}
-            to="/dashboard/games"
-            startIcon={<ArrowBackIcon />}
-          >
-            Games
-          </Button>
-        </Stack>
-        <Paper variant="outlined" sx={{ p: 3, textAlign: 'center' }}>
-          <Typography color="text.secondary" sx={{ mb: 2 }}>
-            {notFound
-              ? 'Session not found or not a Darts game.'
-              : 'Start a Darts game.'}
-          </Typography>
-          <Button
-            variant="contained"
-            startIcon={<ReplayIcon />}
-            onClick={() => void handleStartNew()}
-            disabled={startingNew}
-          >
-            {startingNew ? 'Starting…' : 'New solo game'}
-          </Button>
-        </Paper>
-      </Box>
+      <MiniGameIntroScreen
+        title="Darts"
+        description="Start a Darts game."
+        startingNew={startingNew}
+        onStartNew={() => {
+          void handleStartNew();
+        }}
+        startAriaLabel="Start new Darts game"
+        startButtonLabel="New solo game"
+      />
     );
   }
 
   if (!session || !state) return null;
 
   return (
-    <Box sx={{ p: 2 }}>
-      <Stack
-        direction="row"
-        alignItems="center"
-        justifyContent="space-between"
-        sx={{ mb: 2 }}
-      >
-        <Button
-          component={RouterLink}
-          to="/dashboard/games"
-          startIcon={<ArrowBackIcon />}
-        >
-          Games
-        </Button>
-        <Typography variant="body2" color="text.secondary">
-          {startingScore} ·{' '}
-          {isSolo ? 'Solo' : `Turn: ${currentIndex + 1}/${playerOrder.length}`}
-        </Typography>
-      </Stack>
+    <MiniGamePlayPageRoot>
+      <MiniGamePlayHeaderRow
+        title="Darts"
+        showStats
+        stats={
+          <Typography variant="body2" color="text.secondary">
+            {startingScore} ·{' '}
+            {isSolo
+              ? 'Solo'
+              : `Turn: ${currentIndex + 1}/${playerOrder.length}`}
+          </Typography>
+        }
+      />
 
       {completed ? (
         <Paper variant="outlined" sx={{ p: 3 }}>
-          <Typography variant="h6" sx={{ mb: 1 }}>
-            {winnerId === userId ? 'You win!' : 'Game over'}
-          </Typography>
-          <Typography color="text.secondary" sx={{ mb: 2 }}>
-            Winner: {winnerId?.slice(0, 8)}…
-          </Typography>
           <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
             {playerOrder.map((id) => (
               <Chip
@@ -244,14 +226,15 @@ export const DartsPlayPage = () => {
               />
             ))}
           </Stack>
-          <Button
-            variant="contained"
-            startIcon={<ReplayIcon />}
-            onClick={() => void handleStartNew()}
-            disabled={startingNew}
-          >
-            New game
-          </Button>
+          <MiniGameGameOverPanel
+            title={winnerId === userId ? 'You win!' : 'Game over'}
+            summary={`Winner: ${winnerId?.slice(0, 8)}…`}
+            startingNew={startingNew}
+            onPlayAgain={() => {
+              void handleStartNew();
+            }}
+            playAgainLabel="New game"
+          />
         </Paper>
       ) : (
         <>
@@ -368,6 +351,6 @@ export const DartsPlayPage = () => {
           )}
         </>
       )}
-    </Box>
+    </MiniGamePlayPageRoot>
   );
 };

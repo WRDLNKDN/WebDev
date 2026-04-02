@@ -2,18 +2,16 @@
  * Would You Rather: two-option prompts; players choose A or B;
  * results show percentage per option; prompts rotate after reveal.
  */
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import {
   Box,
   Button,
-  CircularProgress,
   LinearProgress,
   Paper,
   Stack,
   Typography,
 } from '@mui/material';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link as RouterLink, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import {
   advancePromptWouldYouRather,
   fetchSessionForGameType,
@@ -26,6 +24,12 @@ import { useAppToast } from '../../context/AppToastContext';
 import { toMessage } from '../../lib/utils/errors';
 import { supabase } from '../../lib/auth/supabaseClient';
 import type { GameSession, GameSessionParticipant } from '../../types/games';
+import {
+  MiniGameLoadingNotFound,
+  MiniGamePlayHeaderRow,
+  MiniGamePlayPageRoot,
+  MiniGameSessionUnavailableScreen,
+} from './games/MiniGamePlayChrome';
 
 function getState(session: GameSession): WouldYouRatherStatePayload {
   const raw = session.state_payload as WouldYouRatherStatePayload | undefined;
@@ -177,36 +181,18 @@ export const WouldYouRatherPlayPage = () => {
   }, [session, acting, loadSession, showToast]);
 
   if (loading) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-        <CircularProgress aria-label="Loading game" />
-      </Box>
-    );
+    return <MiniGameLoadingNotFound loading notFound={false} />;
   }
 
   if (notFound || (!sessionId?.trim() && !session)) {
     return (
-      <Box sx={{ p: 2 }}>
-        <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 2 }}>
-          <Button
-            component={RouterLink}
-            to="/dashboard/games"
-            startIcon={<ArrowBackIcon />}
-          >
-            Games
-          </Button>
-        </Stack>
-        <Paper variant="outlined" sx={{ p: 3, textAlign: 'center' }}>
-          <Typography color="text.secondary" sx={{ mb: 2 }}>
-            {notFound
-              ? 'Session not found or not a Would You Rather game.'
-              : 'Start this game by inviting connections from the Games page.'}
-          </Typography>
-          <Button component={RouterLink} to="/dashboard/games">
-            Back to Games
-          </Button>
-        </Paper>
-      </Box>
+      <MiniGameSessionUnavailableScreen
+        message={
+          notFound
+            ? 'Session not found or not a Would You Rather game.'
+            : 'Start this game by inviting connections from the Games page.'
+        }
+      />
     );
   }
 
@@ -218,30 +204,22 @@ export const WouldYouRatherPlayPage = () => {
     return (
       <Box sx={{ p: 2 }}>
         <Typography color="text.secondary">Loading prompt…</Typography>
-        <CircularProgress size={24} sx={{ mt: 1 }} />
+        <MiniGameLoadingNotFound loading notFound={false} />
       </Box>
     );
   }
 
   return (
-    <Box sx={{ p: 2 }}>
-      <Stack
-        direction="row"
-        alignItems="center"
-        justifyContent="space-between"
-        sx={{ mb: 2 }}
-      >
-        <Button
-          component={RouterLink}
-          to="/dashboard/games"
-          startIcon={<ArrowBackIcon />}
-        >
-          Games
-        </Button>
-        <Typography variant="body2" color="text.secondary">
-          Prompt {currentIndex + 1} of {prompts.length}
-        </Typography>
-      </Stack>
+    <MiniGamePlayPageRoot>
+      <MiniGamePlayHeaderRow
+        title="Would You Rather"
+        showStats
+        stats={
+          <Typography variant="body2" color="text.secondary">
+            Prompt {currentIndex + 1} of {prompts.length}
+          </Typography>
+        }
+      />
 
       <Paper variant="outlined" sx={{ p: 3 }}>
         <Typography variant="h6" sx={{ mb: 3 }} textAlign="center">
@@ -338,6 +316,6 @@ export const WouldYouRatherPlayPage = () => {
           </Stack>
         )}
       </Paper>
-    </Box>
+    </MiniGamePlayPageRoot>
   );
 };

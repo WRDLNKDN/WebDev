@@ -30,6 +30,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   getProjectSourceFileError,
   getProjectThumbnailFileError,
+  isProjectUploadFieldError,
   isProjectSourceStorageUrl,
 } from '../../../lib/portfolio/projectMedia';
 import { getUploadSurfaceGuidance } from '../../../lib/media/mediaSizePolicy';
@@ -159,6 +160,7 @@ export const AddProjectDialog = ({
   const [previewLoadFailed, setPreviewLoadFailed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [thumbnailError, setThumbnailError] = useState<string | null>(null);
   const [urlTouched, setUrlTouched] = useState(false);
   const [sourceMode, setSourceMode] = useState<'file' | 'url'>('url');
   const [selectedCategory, setSelectedCategory] = useState<
@@ -198,7 +200,9 @@ export const AddProjectDialog = ({
   );
 
   useEffect(() => {
-    if (open) setSubmitError(null);
+    if (!open) return;
+    setSubmitError(null);
+    setThumbnailError(null);
   }, [open]);
 
   useEffect(() => {
@@ -282,10 +286,10 @@ export const AddProjectDialog = ({
   const processThumbnailFile = (file: File) => {
     const error = getProjectThumbnailFileError(file);
     if (error) {
-      setSubmitError(error);
+      setThumbnailError(error);
       return;
     }
-    setSubmitError(null);
+    setThumbnailError(null);
     setSelectedThumbnailFile(file);
     setPreviewUrl(URL.createObjectURL(file));
     setPreviewLoadFailed(false);
@@ -312,6 +316,7 @@ export const AddProjectDialog = ({
   };
 
   const removeThumbnailOverride = () => {
+    setThumbnailError(null);
     setSelectedThumbnailFile(undefined);
     setPreviewUrl(null);
     setPreviewLoadFailed(false);
@@ -357,6 +362,9 @@ export const AddProjectDialog = ({
     sourceMode === 'url' && hasExternalUrl && isExternalUrl(sourceUrl);
   const hasFileSource =
     sourceMode === 'file' && (hasSourceFile || hasExistingStorageUrl);
+  const thumbnailUploadGuidance =
+    getUploadSurfaceGuidance('portfolio_thumbnail') ??
+    'Optional thumbnails are optimized toward a 6 MB target and can start up to 15 MB.';
   const storedSourceFileLabel = hasExistingStorageUrl
     ? getStoredSourceFileLabel(sourceUrl)
     : null;
@@ -586,6 +594,11 @@ export const AddProjectDialog = ({
       onClose();
     } catch (error) {
       console.error(error);
+      if (isProjectUploadFieldError(error, 'thumbnail')) {
+        setThumbnailError(error.message);
+        setSubmitError(null);
+        return;
+      }
       setSubmitError(toMessage(error));
     } finally {
       setBusy(false);
@@ -738,12 +751,19 @@ export const AddProjectDialog = ({
                   role="button"
                   tabIndex={0}
                   aria-label="Upload optional thumbnail"
-                  aria-describedby="project-thumbnail-helper"
+                  aria-describedby={
+                    thumbnailError
+                      ? 'project-thumbnail-helper project-thumbnail-error'
+                      : 'project-thumbnail-helper'
+                  }
                   sx={{
                     width: '100%',
                     maxWidth: { xs: '100%', md: 360 },
                     aspectRatio: PROJECT_IMAGE_RATIO,
-                    border: '2px dashed rgba(255,255,255,0.2)',
+                    border: '2px dashed',
+                    borderColor: thumbnailError
+                      ? 'error.main'
+                      : 'rgba(255,255,255,0.2)',
                     borderRadius: 1,
                     display: 'flex',
                     alignItems: 'center',
@@ -755,7 +775,7 @@ export const AddProjectDialog = ({
                     position: 'relative',
                     transition: 'border-color 160ms ease, transform 160ms ease',
                     '&:hover': {
-                      borderColor: '#00C4CC',
+                      borderColor: thumbnailError ? 'error.light' : '#00C4CC',
                       transform: 'translateY(-1px)',
                     },
                   }}
@@ -810,6 +830,22 @@ export const AddProjectDialog = ({
                     Leave this blank to use the generated thumbnail or fallback
                     preview.
                   </Typography>
+                  <Typography variant="caption">
+                    {selectedThumbnailFile
+                      ? `${selectedThumbnailFile.name} selected.`
+                      : thumbnailUploadGuidance}
+                  </Typography>
+                  {thumbnailError ? (
+                    <Alert
+                      severity="error"
+                      onClose={() => setThumbnailError(null)}
+                      sx={{ mt: 0.5 }}
+                      id="project-thumbnail-error"
+                      data-testid="project-thumbnail-field-error"
+                    >
+                      {thumbnailError}
+                    </Alert>
+                  ) : null}
                   {previewUrl ? (
                     <Button
                       size="small"
@@ -1303,6 +1339,7 @@ export const AddProjectDialog = ({
               severity="error"
               onClose={() => setSubmitError(null)}
               sx={{ mt: 2 }}
+              data-testid="project-form-submit-error"
             >
               {submitError}
             </Alert>

@@ -17,20 +17,15 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '../../lib/auth/supabaseClient';
 import {
   buildSharedPostChatContent,
   insertSharedPostChatMessage,
 } from '../../lib/feed/sharePostToChat';
 import { SharePostOptionalMessageField } from './SharePostOptionalMessageField';
-import {
-  loadEligibleChatConnections,
-  type EligibleChatConnection,
-} from '../../lib/chat/loadEligibleChatConnections';
+import { useEligibleChatConnectionPicker } from '../../lib/chat/useEligibleChatConnectionPicker';
 import { ProfileAvatar } from '../avatar/ProfileAvatar';
-
-type ConnectionProfile = EligibleChatConnection;
 
 export type ShareToConnectionDialogProps = {
   open: boolean;
@@ -50,69 +45,26 @@ export const ShareToConnectionDialog = ({
   onSent,
   onError,
 }: ShareToConnectionDialogProps) => {
-  const searchRef = useRef<HTMLInputElement | null>(null);
-  const [connections, setConnections] = useState<ConnectionProfile[]>([]);
-  const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [optionalMessage, setOptionalMessage] = useState('');
   const [error, setError] = useState<string | null>(null);
-
-  const filtered = useMemo(() => {
-    if (!searchQuery.trim()) return connections;
-    const q = searchQuery.trim().toLowerCase();
-    return connections.filter(
-      (c) =>
-        (c.display_name ?? '').toLowerCase().includes(q) ||
-        (c.handle ?? '').toLowerCase().includes(q) ||
-        (c.email ?? '').toLowerCase().includes(q),
-    );
-  }, [connections, searchQuery]);
+  const {
+    connections,
+    filteredConnections,
+    loadingConnections,
+    loadError,
+    searchInputRef,
+    searchQuery,
+    setSearchQuery,
+  } = useEligibleChatConnectionPicker(open);
 
   useEffect(() => {
     if (!open) return;
-    setSearchQuery('');
     setSelectedIds(new Set());
     setOptionalMessage('');
     setError(null);
-    let cancelled = false;
-    setLoading(true);
-
-    const load = async () => {
-      try {
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
-        if (!session?.user || cancelled) {
-          setConnections([]);
-          return;
-        }
-
-        const list = await loadEligibleChatConnections(session.user.id);
-        if (cancelled) return;
-        setConnections(list);
-      } catch {
-        if (!cancelled) {
-          setError('Could not load connections. Try again.');
-          setConnections([]);
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    };
-
-    void load();
-    return () => {
-      cancelled = true;
-    };
   }, [open]);
-
-  useEffect(() => {
-    if (!open || connections.length === 0) return;
-    const t = window.setTimeout(() => searchRef.current?.focus(), 0);
-    return () => window.clearTimeout(t);
-  }, [open, connections.length]);
 
   const toggle = useCallback((userId: string) => {
     setSelectedIds((prev) => {
@@ -181,12 +133,12 @@ export const ShareToConnectionDialog = ({
         <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
           Choose one or more connections. The post link will be sent in Chat.
         </Typography>
-        {error && (
+        {(error || loadError) && (
           <Typography color="error" variant="body2" sx={{ mb: 1 }}>
-            {error}
+            {error || loadError}
           </Typography>
         )}
-        {loading ? (
+        {loadingConnections ? (
           <Typography variant="body2" color="text.secondary">
             Loading connections…
           </Typography>
@@ -201,7 +153,7 @@ export const ShareToConnectionDialog = ({
             <TextField
               fullWidth
               size="small"
-              inputRef={searchRef}
+              inputRef={searchInputRef}
               placeholder="Search by name, handle, or email…"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -214,7 +166,7 @@ export const ShareToConnectionDialog = ({
               aria-label="Search connections"
             />
             <List dense sx={{ maxHeight: 220, overflow: 'auto' }}>
-              {filtered.map((c) => (
+              {filteredConnections.map((c) => (
                 <ListItemButton
                   key={c.id}
                   onClick={() => toggle(c.id)}
@@ -261,7 +213,7 @@ export const ShareToConnectionDialog = ({
           startIcon={<SendOutlinedIcon />}
           onClick={() => void handleSend()}
           disabled={
-            loading ||
+            loadingConnections ||
             sending ||
             selectedIds.size === 0 ||
             connections.length === 0

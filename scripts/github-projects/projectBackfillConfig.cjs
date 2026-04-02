@@ -65,16 +65,36 @@ module.exports = async function getProjectBackfillConfig(
       }) === 0
     : false;
 
-  if (!ownerType && ownerLogin && github?.rest?.users?.getByUsername) {
+  /**
+   * REST GET /users/{username} returns both Users and Organizations (type field).
+   * GraphQL Project v2 requires user() vs organization() — a wrong GH_PROJECT_OWNER_TYPE
+   * (e.g. "user" for an org login) causes "Could not resolve to a User". Prefer API truth.
+   */
+  if (ownerLogin && github?.rest?.users?.getByUsername) {
     try {
-      const { data } = await github.rest.users.getByUsername({
+      const res = await github.rest.users.getByUsername({
         username: ownerLogin,
       });
-      ownerType = normalizeOwnerType(data?.type);
+      const data = res?.data;
+      const fromApi = normalizeOwnerType(data?.type);
+      if (fromApi) {
+        if (
+          ownerType &&
+          ownerType !== fromApi &&
+          typeof core.info === 'function'
+        ) {
+          core.info(
+            `GH_PROJECT_OWNER_TYPE was "${ownerType}" but GitHub reports "${data?.type}" for ${ownerLogin}; using "${fromApi}" for Project v2 GraphQL.`,
+          );
+        }
+        ownerType = fromApi;
+      }
     } catch (error) {
       if (typeof core.info === 'function') {
         core.info(
-          `Could not infer project owner type for ${ownerLogin}; will fall back to repository owner metadata if available.`,
+          `Could not resolve ${ownerLogin} via users.getByUsername (${String(
+            error?.message ?? error,
+          )}); will use env/repo fallbacks if any.`,
         );
       }
     }

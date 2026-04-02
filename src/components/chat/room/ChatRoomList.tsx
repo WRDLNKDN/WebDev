@@ -3,18 +3,14 @@ import CloseIcon from '@mui/icons-material/Close';
 import ForumOutlinedIcon from '@mui/icons-material/ForumOutlined';
 import GroupOutlinedIcon from '@mui/icons-material/GroupOutlined';
 import SearchIcon from '@mui/icons-material/Search';
-import StarBorderIcon from '@mui/icons-material/StarBorder';
-import StarIcon from '@mui/icons-material/Star';
 import {
   Box,
   Button,
-  IconButton,
   InputAdornment,
   List,
   ListItemButton,
   Stack,
   TextField,
-  Tooltip,
   Typography,
   useTheme,
 } from '@mui/material';
@@ -26,15 +22,8 @@ import {
   deriveVisibleChatRooms,
   getChatRoomLabel,
 } from '../../../lib/chat/roomListState';
-import { createNormalizedGroupImageAsset } from '../../../lib/media/assets';
 import { RemoveChatConfirmDialog } from '../dialogs/RemoveChatConfirmDialog';
-import { ProfileAvatar } from '../../avatar/ProfileAvatar';
-import {
-  CHAT_FAVORITE_ACTIVE_BUTTON_SX,
-  CHAT_FAVORITE_ICON_BUTTON_STAR_SX,
-  CHAT_FAVORITE_IDLE_BUTTON_SX,
-  CHAT_FAVORITE_ROW_BADGE_SX,
-} from '../../../theme/chatFavoriteStyles';
+import { ChatRoomRow } from './ChatRoomRow';
 
 type ChatRoomListProps = {
   rooms: ChatRoomWithMembers[];
@@ -52,17 +41,6 @@ type ChatRoomListProps = {
 
 const DEFAULT_CHAT_PREFIX = '/chat';
 
-function formatConversationTime(value?: string | null): string {
-  if (!value) return '';
-  const date = new Date(value);
-  const now = new Date();
-  const sameDay = date.toDateString() === now.toDateString();
-  if (sameDay) {
-    return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-  }
-  return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
-}
-
 export const ChatRoomList = ({
   rooms,
   loading,
@@ -76,7 +54,6 @@ export const ChatRoomList = ({
 }: ChatRoomListProps) => {
   const theme = useTheme();
   const isLightChrome = theme.palette.mode === 'light';
-  const navigate = useNavigate();
   const { roomId } = useParams<{ roomId?: string }>();
   const [searchQuery, setSearchQuery] = useState('');
   const [removeTarget, setRemoveTarget] = useState<{

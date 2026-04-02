@@ -55,7 +55,8 @@ jobs:
             || vars.GH_PROJECT_OWNER_TYPE }}
           GH_PROJECT_OWNER_LOGIN:
             ${{ github.event.inputs.owner_login ||
-            secrets.GH_PROJECT_OWNER_LOGIN || vars.GH_PROJECT_OWNER_LOGIN }}
+            secrets.GH_PROJECT_OWNER_LOGIN || vars.GH_PROJECT_OWNER_LOGIN ||
+            github.repository_owner }}
           GH_PROJECT_NUMBER:
             ${{ github.event.inputs.project_number || secrets.GH_PROJECT_NUMBER
             || vars.GH_PROJECT_NUMBER }}

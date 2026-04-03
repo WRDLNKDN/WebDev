@@ -1,6 +1,10 @@
 import { Box, Button, Stack, TextField, Typography } from '@mui/material';
-import { AssetThumbnail } from '../../components/media/AssetThumbnail';
-import type { NormalizedAsset } from '../../lib/media/assets';
+import { AssetInlinePreview } from '../../components/media/AssetThumbnail';
+import {
+  createNormalizedGifAsset,
+  getNormalizedAssetDisplayUrl,
+  type NormalizedAsset,
+} from '../../lib/media/assets';
 import {
   LinkPreviewCard,
   linkifyBody,
@@ -100,12 +104,6 @@ export const FeedCardPostContent = ({
           {bodyGifUrls.map((gifUrl) => (
             <Box
               key={gifUrl}
-              component="img"
-              src={gifUrl}
-              alt=""
-              loading="lazy"
-              width={320}
-              height={320}
               onClick={() => openImageLightbox(gifUrl, 'body_gif')}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
@@ -118,16 +116,26 @@ export const FeedCardPostContent = ({
               aria-label="View image full screen"
               sx={{
                 mt: 1,
-                maxWidth: 320,
                 width: '100%',
-                maxHeight: 320,
-                objectFit: 'contain',
-                borderRadius: 1,
-                border: '1px solid',
-                borderColor: 'divider',
+                maxWidth: { xs: '100%', sm: 360, md: 420 },
                 cursor: 'zoom-in',
               }}
-            />
+            >
+              <AssetInlinePreview
+                asset={createNormalizedGifAsset({
+                  url: gifUrl,
+                  surface: 'feed',
+                })}
+                alt=""
+                surface="feed"
+                sx={{
+                  borderRadius: 1,
+                  border: '1px solid',
+                  borderColor: 'divider',
+                  bgcolor: 'rgba(0,0,0,0.18)',
+                }}
+              />
+            </Box>
           ))}
         </>
       )
@@ -138,7 +146,7 @@ export const FeedCardPostContent = ({
     {postAttachmentAssets.length > 0 && (
       <Stack direction="row" spacing={0.5} sx={{ mt: 1.5 }} flexWrap="wrap">
         {postAttachmentAssets.map((asset) => {
-          const openUrl = asset.displayUrl ?? asset.originalUrl ?? '';
+          const openUrl = getNormalizedAssetDisplayUrl(asset);
           return (
             <Box
               key={asset.assetId}
@@ -153,22 +161,17 @@ export const FeedCardPostContent = ({
               role="button"
               aria-label="View image full screen"
               sx={{
-                width: 280,
-                maxWidth: '100%',
-                borderRadius: 1,
-                overflow: 'hidden',
+                width: '100%',
+                maxWidth: { xs: '100%', sm: 360, md: 420 },
                 cursor: 'zoom-in',
               }}
             >
-              <AssetThumbnail
+              <AssetInlinePreview
                 asset={asset}
                 alt=""
-                compact
+                surface="feed"
                 sx={{
-                  minHeight: 0,
-                  maxHeight: 280,
-                  aspectRatio: '1 / 1',
-                  borderBottom: 'none',
+                  borderRadius: 1,
                 }}
               />
             </Box>

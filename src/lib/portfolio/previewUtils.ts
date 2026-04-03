@@ -5,7 +5,7 @@ import {
   normalizeGoogleUrl,
   type PortfolioLinkType,
 } from './linkUtils';
-import { isSupabasePublicResumeUrl } from './resumePreviewSupport';
+import { getDocumentInteractionPolicy } from '../media/documents';
 import type { PortfolioItem } from '../../types/portfolio';
 
 export type PortfolioPreviewKind = 'image' | 'iframe' | 'none';
@@ -18,6 +18,8 @@ export interface PortfolioPreviewModel {
   downloadUrl: string;
   previewUrl: string;
   previewable: boolean;
+  preferDownload: boolean;
+  fallbackMessage: string | null;
 }
 
 function resolveHttpUrl(rawUrl: string | null | undefined): string {
@@ -77,23 +79,33 @@ export function getPortfolioPreviewModel(
     linkType === 'google_slides'
       ? normalizeGoogleUrl(sourceUrl)
       : sourceUrl);
-  let previewable = isPreviewableType(linkType);
-  if (
-    previewable &&
-    linkType === 'document' &&
-    isSupabasePublicResumeUrl(sourceUrl)
-  ) {
-    previewable = false;
-  }
-  const previewUrl = buildPreviewUrl(linkType, sourceUrl, normalizedEmbedUrl);
+  const documentPolicy =
+    linkType === 'pdf' ||
+    linkType === 'document' ||
+    linkType === 'presentation' ||
+    linkType === 'spreadsheet' ||
+    linkType === 'text'
+      ? getDocumentInteractionPolicy({
+          url: sourceUrl,
+          fileName: project?.title ?? sourceUrl,
+          resolvedType: linkType,
+        })
+      : null;
+  const previewable =
+    documentPolicy?.previewable ?? isPreviewableType(linkType);
+  const previewUrl = documentPolicy?.previewUrl
+    ? documentPolicy.previewUrl
+    : buildPreviewUrl(linkType, sourceUrl, normalizedEmbedUrl);
 
   return {
     kind: buildPreviewKind(linkType, previewable),
     linkType,
-    typeLabel: getLinkTypeLabel(linkType),
+    typeLabel: documentPolicy?.typeLabel ?? getLinkTypeLabel(linkType),
     openUrl: sourceUrl,
     downloadUrl: sourceUrl,
     previewUrl,
     previewable,
+    preferDownload: documentPolicy?.preferDownload ?? false,
+    fallbackMessage: documentPolicy?.fallbackMessage ?? null,
   };
 }

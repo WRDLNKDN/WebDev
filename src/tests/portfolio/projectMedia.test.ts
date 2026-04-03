@@ -3,7 +3,9 @@ import {
   getProjectSourceFileError,
   getProjectThumbnailFileError,
   isProjectSourceStorageUrl,
+  PROJECT_SOURCE_HARD_MAX_BYTES,
   PROJECT_SOURCE_MAX_BYTES,
+  PROJECT_THUMBNAIL_HARD_MAX_BYTES,
   PROJECT_THUMBNAIL_MAX_BYTES,
 } from '../../lib/portfolio/projectMedia';
 
@@ -44,15 +46,27 @@ describe('project media validation', () => {
     );
   });
 
-  it('shows size guidance for oversized project source files', () => {
+  it('accepts transformable project source files above the 6MB target when they are still within the input ceiling', () => {
     const file = new File(
       [new Uint8Array(PROJECT_SOURCE_MAX_BYTES + 1)],
+      'artifact.pdf',
+      {
+        type: 'application/pdf',
+      },
+    );
+
+    expect(getProjectSourceFileError(file)).toBeNull();
+  });
+
+  it('shows size guidance for oversized project source files', () => {
+    const file = new File(
+      [new Uint8Array(PROJECT_SOURCE_HARD_MAX_BYTES + 1)],
       'artifact.pdf',
       { type: 'application/pdf' },
     );
 
     expect(getProjectSourceFileError(file)).toContain(
-      'Project files can be optimized automatically up to about 6 MB.',
+      'Project images and PDFs are optimized toward a 6 MB target',
     );
   });
 
@@ -66,15 +80,25 @@ describe('project media validation', () => {
     );
   });
 
-  it('shows size guidance for oversized thumbnail files', () => {
+  it('accepts transformable thumbnails above the 6MB target when they are still within the input ceiling', () => {
     const file = new File(
       [new Uint8Array(PROJECT_THUMBNAIL_MAX_BYTES + 1)],
       'thumbnail.png',
       { type: 'image/png' },
     );
 
+    expect(getProjectThumbnailFileError(file)).toBeNull();
+  });
+
+  it('shows size guidance for oversized thumbnail files', () => {
+    const file = new File(
+      [new Uint8Array(PROJECT_THUMBNAIL_HARD_MAX_BYTES + 1)],
+      'thumbnail.png',
+      { type: 'image/png' },
+    );
+
     expect(getProjectThumbnailFileError(file)).toContain(
-      'Optional thumbnails can be optimized automatically up to about 6 MB.',
+      'Optional thumbnails are optimized toward a 6 MB target',
     );
   });
 

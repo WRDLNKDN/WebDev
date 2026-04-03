@@ -14,14 +14,8 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { supabase } from '../../../lib/auth/supabaseClient';
-import {
-  loadEligibleChatConnections,
-  type EligibleChatConnection,
-} from '../../../lib/chat/loadEligibleChatConnections';
-
-type ConnectionProfile = EligibleChatConnection;
+import { useEffect, useState } from 'react';
+import { useEligibleChatConnectionPicker } from '../../../lib/chat/useEligibleChatConnectionPicker';
 
 type StartDmDialogProps = {
   open: boolean;
@@ -37,68 +31,22 @@ export const StartDmDialog = ({
   onSelect,
   startError,
 }: StartDmDialogProps) => {
-  const searchInputRef = useRef<HTMLInputElement | null>(null);
-  const [connections, setConnections] = useState<ConnectionProfile[]>([]);
   const [loading, setLoading] = useState(false);
-  const [loadingList, setLoadingList] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
-
-  const filteredConnections = useMemo(() => {
-    if (!searchQuery.trim()) return connections;
-    const q = searchQuery.trim().toLowerCase();
-    return connections.filter(
-      (c) =>
-        (c.display_name ?? '').toLowerCase().includes(q) ||
-        (c.handle ?? '').toLowerCase().includes(q) ||
-        (c.email ?? '').toLowerCase().includes(q),
-    );
-  }, [connections, searchQuery]);
+  const {
+    connections,
+    filteredConnections,
+    loadingConnections,
+    loadError,
+    searchInputRef,
+    searchQuery,
+    setSearchQuery,
+  } = useEligibleChatConnectionPicker(open);
 
   useEffect(() => {
     if (!open) return;
-    setSearchQuery('');
     setError(null);
-    let cancelled = false;
-    setLoadingList(true);
-
-    const load = async () => {
-      try {
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
-        if (!session?.user || cancelled) {
-          setConnections([]);
-          return;
-        }
-        const profileData = await loadEligibleChatConnections(session.user.id);
-        if (cancelled) return;
-        setConnections(profileData);
-      } catch {
-        if (!cancelled) {
-          setError('Could not load connections. Try again.');
-          setConnections([]);
-        }
-      } finally {
-        if (!cancelled) setLoadingList(false);
-      }
-    };
-
-    void load();
-
-    return () => {
-      cancelled = true;
-      setLoadingList(false);
-    };
   }, [open]);
-
-  useEffect(() => {
-    if (!open || connections.length === 0) return;
-    const focusHandle = window.setTimeout(() => {
-      searchInputRef.current?.focus();
-    }, 0);
-    return () => window.clearTimeout(focusHandle);
-  }, [connections.length, open]);
 
   const handleSelect = async (userId: string) => {
     setLoading(true);
@@ -146,9 +94,9 @@ export const StartDmDialog = ({
         <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
           Only your connections can receive 1:1 messages.
         </Typography>
-        {(error || startError) && (
+        {(error || loadError || startError) && (
           <Typography color="error" variant="body2" sx={{ mb: 1 }}>
-            {error || startError}
+            {error || loadError || startError}
           </Typography>
         )}
         {connections.length > 0 && (
@@ -184,7 +132,7 @@ export const StartDmDialog = ({
             }}
           />
         )}
-        {loadingList ? (
+        {loadingConnections ? (
           <Typography variant="body2" color="text.secondary">
             Loading connections…
           </Typography>
@@ -213,19 +161,19 @@ export const StartDmDialog = ({
             ))}
           </List>
         )}
-        {!loadingList && connections.length === 0 && (
+        {!loadingConnections && connections.length === 0 && (
           <Typography variant="body2" color="text.secondary">
             No connections yet. Connect with people from the Directory or Feed.
           </Typography>
         )}
-        {!loadingList &&
+        {!loadingConnections &&
           connections.length > 0 &&
           filteredConnections.length === 0 && (
             <Typography variant="body2" color="text.secondary">
               No connections match &quot;{searchQuery.trim()}&quot;.
             </Typography>
           )}
-        {!loadingList && filteredConnections.length > 0 && (
+        {!loadingConnections && filteredConnections.length > 0 && (
           <Typography variant="caption" color="text.secondary" sx={{ mt: 1 }}>
             Press Enter to start a chat with the first result.
           </Typography>

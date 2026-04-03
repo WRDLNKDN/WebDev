@@ -1,21 +1,19 @@
 import { authedFetch } from '../../lib/api/authFetch';
 import { supabase } from '../../lib/auth/supabaseClient';
-import { processAvatarForUpload } from '../../lib/utils/avatarResize';
 import { messageFromApiPayload, toMessage } from '../../lib/utils/errors';
 import type { DashboardProfile } from '../../types/profile';
-import { processResumeThumbnailImageForUpload } from '../../lib/portfolio/processResumeThumbnailImage';
 import { getResumeStoragePathFromPublicUrl } from '../../lib/portfolio/resumeStorage';
 import {
   API_BASE,
   RESUME_THUMBNAIL_REQUEST_TIMEOUT_MS,
 } from './useProfileHelpers';
-import { tryOptimizePdfForUpload } from '../../lib/portfolio/optimizePdfForUpload';
 import { resumeSupportsServerThumbnailGeneration } from '../../lib/portfolio/resumePreviewSupport';
 import {
   formatResumeOversizeMessage,
   getResumeSoftSizeNote,
   RESUME_MAX_FILE_BYTES,
 } from '../../lib/portfolio/resumeUploadLimits';
+import { runSharedUploadIntake } from '../../lib/media/uploadIntake';
 
 /** Parse JSON error/success bodies; non-JSON (e.g. HTML proxy error) surfaces as `detail` text. */
 async function readApiJsonBody(response: Response): Promise<unknown> {
@@ -52,26 +50,33 @@ export const uploadAvatarAsset = async ({
   if (!session?.user)
     throw new Error('You need to sign in to upload an avatar.');
 
-  const { blob } = await processAvatarForUpload(file);
-  const ext =
-    blob.type === 'image/png' ? 'png' : (file.name.split('.').pop() ?? 'jpg');
-  const fileName = `${session.user.id}-${Date.now()}.${ext}`;
+  return runSharedUploadIntake({
+    surface: 'profile_avatar',
+    file,
+    executeUpload: async ({ file: preparedFile, detectedMimeType }) => {
+      const ext =
+        detectedMimeType === 'image/png'
+          ? 'png'
+          : (preparedFile.name.split('.').pop() ?? 'jpg');
+      const fileName = `${session.user.id}-${Date.now()}.${ext}`;
 
-  const { error } = await supabase.storage
-    .from('avatars')
-    .upload(fileName, blob, { contentType: blob.type });
-  if (error) throw error;
+      const { error } = await supabase.storage
+        .from('avatars')
+        .upload(fileName, preparedFile, { contentType: detectedMimeType });
+      if (error) throw error;
 
-  const {
-    data: { publicUrl },
-  } = supabase.storage.from('avatars').getPublicUrl(fileName);
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from('avatars').getPublicUrl(fileName);
 
-  await updateProfile({
-    avatar: publicUrl,
-    avatar_type: 'photo',
-    use_weirdling_avatar: false,
-  } as Partial<DashboardProfile>);
-  return publicUrl;
+      await updateProfile({
+        avatar: publicUrl,
+        avatar_type: 'photo',
+        use_weirdling_avatar: false,
+      } as Partial<DashboardProfile>);
+      return publicUrl;
+    },
+  });
 };
 
 export const uploadResumeAsset = async ({
@@ -98,165 +103,169 @@ export const uploadResumeAsset = async ({
       'Resume must be a PDF or Word document (.pdf, .doc, or .docx only)',
     );
   }
-
-  const fileToUpload =
-    ext === '.pdf' ? await tryOptimizePdfForUpload(file) : file;
-
-  if (fileToUpload.size > RESUME_MAX_FILE_BYTES) {
-    throw new Error(formatResumeOversizeMessage(fileToUpload.size));
-  }
-
-  const sizeNote = getResumeSoftSizeNote(fileToUpload.size) ?? undefined;
-
-  const normalizedExt = ext.slice(1);
-  const isWord = ext === '.doc' || ext === '.docx';
-  const fileName = isWord
-    ? `${session.user.id}/resume-original.${normalizedExt}`
-    : `${session.user.id}/resume.pdf`;
-  const originalResumeFileName = file.name?.trim()
-    ? file.name.trim()
-    : `Resume.${normalizedExt}`;
-  const contentType =
-    ext === '.pdf'
-      ? 'application/pdf'
-      : ext === '.doc'
-        ? 'application/msword'
-        : 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-
-  const uid = session.user.id;
-  const previousUrl =
-    typeof profile?.resume_url === 'string' ? profile.resume_url : '';
-  const previousPath = previousUrl
-    ? getResumeStoragePathFromPublicUrl(previousUrl)
-    : null;
-
-  const pathsToRemove = new Set<string>();
-  if (
-    previousPath &&
-    previousPath !== fileName &&
-    previousPath.startsWith(`${uid}/`)
-  ) {
-    pathsToRemove.add(previousPath);
-  }
-  pathsToRemove.add(`${uid}/resume.doc`);
-  pathsToRemove.add(`${uid}/resume.docx`);
-  if (ext === '.pdf') {
-    pathsToRemove.add(`${uid}/resume-original.doc`);
-    pathsToRemove.add(`${uid}/resume-original.docx`);
-  }
-  if (isWord) {
-    pathsToRemove.add(`${uid}/resume.pdf`);
-  }
-  pathsToRemove.delete(fileName);
-
-  if (pathsToRemove.size > 0) {
-    const { error: removeError } = await supabase.storage
-      .from('resumes')
-      .remove([...pathsToRemove]);
-    if (removeError) {
-      console.warn('[uploadResume] could not remove prior resume objects', {
-        paths: [...pathsToRemove],
-        message: removeError.message,
-      });
-    }
-  }
-
-  const { error } = await supabase.storage
-    .from('resumes')
-    .upload(fileName, fileToUpload, { upsert: true, contentType });
-  if (error) throw error;
-
-  const {
-    data: { publicUrl },
-  } = supabase.storage.from('resumes').getPublicUrl(fileName);
-
-  const thumbTargetPending = resumeSupportsServerThumbnailGeneration(
-    originalResumeFileName,
-    publicUrl,
-  );
-
-  await updateProfile({
-    ...(isWord ? { resume_url: null } : { resume_url: publicUrl }),
-    nerd_creds: {
-      resume_file_name: originalResumeFileName,
-      resume_original_url: null,
-      resume_thumbnail_url: undefined,
-      resume_thumbnail_error: null,
-      resume_thumbnail_updated_at: undefined,
-      resume_thumbnail_source_extension: undefined,
-      ...(thumbTargetPending
-        ? { resume_thumbnail_status: 'pending' as const }
-        : {
-            resume_thumbnail_status: 'complete' as const,
-          }),
-    },
-  } as Partial<DashboardProfile>);
-
-  if (thumbTargetPending) {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(
-      () => controller.abort(),
-      RESUME_THUMBNAIL_REQUEST_TIMEOUT_MS,
-    );
-    try {
-      const response = await authedFetch(
-        `${API_BASE}/api/resumes/generate-thumbnail`,
-        {
-          method: 'POST',
-          body: JSON.stringify({ storagePath: fileName }),
-          signal: controller.signal,
-        },
-        {
-          includeJsonContentType: true,
-          credentials: API_BASE ? 'omit' : 'include',
-        },
-      );
-      clearTimeout(timeoutId);
-      const payload = (await readApiJsonBody(response)) as
-        | {
-            ok?: boolean;
-            data?: {
-              status?: string;
-              thumbnailUrl?: string;
-              resumePublicUrl?: string;
-            };
-            error?: string;
-            message?: string;
-          }
-        | undefined;
-      if (!response.ok) {
-        throw new Error(messageFromApiPayload(response.status, payload));
-      }
-      await fetchData();
-      const resolvedResumeUrl =
-        typeof payload?.data?.resumePublicUrl === 'string' &&
-        payload.data.resumePublicUrl.length > 0
-          ? payload.data.resumePublicUrl
-          : publicUrl;
-      return { publicUrl: resolvedResumeUrl, sizeNote };
-    } catch (thumbnailError) {
-      clearTimeout(timeoutId);
-      console.warn('Resume thumbnail generation failed:', thumbnailError);
-      await fetchData();
-      if (
-        thumbnailError instanceof Error &&
-        thumbnailError.name === 'AbortError'
-      ) {
+  return runSharedUploadIntake({
+    surface: 'profile_resume',
+    file,
+    executeUpload: async ({ file: fileToUpload, detectedMimeType }) => {
+      if (fileToUpload.size > RESUME_MAX_FILE_BYTES) {
         throw new Error(
-          'Preview generation timed out. You can try again from the resume card.',
-          { cause: thumbnailError },
+          formatResumeOversizeMessage(fileToUpload.size, detectedMimeType),
         );
       }
-      const thumbMsg = toMessage(thumbnailError);
-      return {
-        publicUrl: isWord ? '' : publicUrl,
-        thumbnailWarning: `Preview was not generated (${thumbMsg}). Open the resume card and tap Retry preview, or upload a custom preview image.`,
-        sizeNote,
-      };
-    }
-  }
 
-  return { publicUrl, sizeNote };
+      const sizeNote = getResumeSoftSizeNote(fileToUpload.size) ?? undefined;
+      const normalizedExt = ext.slice(1);
+      const isWord = ext === '.doc' || ext === '.docx';
+      const fileName = isWord
+        ? `${session.user.id}/resume-original.${normalizedExt}`
+        : `${session.user.id}/resume.pdf`;
+      const originalResumeFileName = file.name?.trim()
+        ? file.name.trim()
+        : `Resume.${normalizedExt}`;
+      const contentType =
+        detectedMimeType ||
+        (ext === '.pdf'
+          ? 'application/pdf'
+          : ext === '.doc'
+            ? 'application/msword'
+            : 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+
+      const uid = session.user.id;
+      const previousUrl =
+        typeof profile?.resume_url === 'string' ? profile.resume_url : '';
+      const previousPath = previousUrl
+        ? getResumeStoragePathFromPublicUrl(previousUrl)
+        : null;
+
+      const pathsToRemove = new Set<string>();
+      if (
+        previousPath &&
+        previousPath !== fileName &&
+        previousPath.startsWith(`${uid}/`)
+      ) {
+        pathsToRemove.add(previousPath);
+      }
+      pathsToRemove.add(`${uid}/resume.doc`);
+      pathsToRemove.add(`${uid}/resume.docx`);
+      if (ext === '.pdf') {
+        pathsToRemove.add(`${uid}/resume-original.doc`);
+        pathsToRemove.add(`${uid}/resume-original.docx`);
+      }
+      if (isWord) {
+        pathsToRemove.add(`${uid}/resume.pdf`);
+      }
+      pathsToRemove.delete(fileName);
+
+      if (pathsToRemove.size > 0) {
+        const { error: removeError } = await supabase.storage
+          .from('resumes')
+          .remove([...pathsToRemove]);
+        if (removeError) {
+          console.warn('[uploadResume] could not remove prior resume objects', {
+            paths: [...pathsToRemove],
+            message: removeError.message,
+          });
+        }
+      }
+
+      const { error } = await supabase.storage
+        .from('resumes')
+        .upload(fileName, fileToUpload, { upsert: true, contentType });
+      if (error) throw error;
+
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from('resumes').getPublicUrl(fileName);
+
+      const thumbTargetPending = resumeSupportsServerThumbnailGeneration(
+        originalResumeFileName,
+        publicUrl,
+      );
+
+      await updateProfile({
+        ...(isWord ? { resume_url: null } : { resume_url: publicUrl }),
+        nerd_creds: {
+          resume_file_name: originalResumeFileName,
+          resume_original_url: null,
+          resume_thumbnail_url: undefined,
+          resume_thumbnail_error: null,
+          resume_thumbnail_updated_at: undefined,
+          resume_thumbnail_source_extension: undefined,
+          ...(thumbTargetPending
+            ? { resume_thumbnail_status: 'pending' as const }
+            : {
+                resume_thumbnail_status: 'complete' as const,
+              }),
+        },
+      } as Partial<DashboardProfile>);
+
+      if (thumbTargetPending) {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(
+          () => controller.abort(),
+          RESUME_THUMBNAIL_REQUEST_TIMEOUT_MS,
+        );
+        try {
+          const response = await authedFetch(
+            `${API_BASE}/api/resumes/generate-thumbnail`,
+            {
+              method: 'POST',
+              body: JSON.stringify({ storagePath: fileName }),
+              signal: controller.signal,
+            },
+            {
+              includeJsonContentType: true,
+              credentials: API_BASE ? 'omit' : 'include',
+            },
+          );
+          clearTimeout(timeoutId);
+          const payload = (await readApiJsonBody(response)) as
+            | {
+                ok?: boolean;
+                data?: {
+                  status?: string;
+                  thumbnailUrl?: string;
+                  resumePublicUrl?: string;
+                };
+                error?: string;
+                message?: string;
+              }
+            | undefined;
+          if (!response.ok) {
+            throw new Error(messageFromApiPayload(response.status, payload));
+          }
+          await fetchData();
+          const resolvedResumeUrl =
+            typeof payload?.data?.resumePublicUrl === 'string' &&
+            payload.data.resumePublicUrl.length > 0
+              ? payload.data.resumePublicUrl
+              : publicUrl;
+          return { publicUrl: resolvedResumeUrl, sizeNote };
+        } catch (thumbnailError) {
+          clearTimeout(timeoutId);
+          console.warn('Resume thumbnail generation failed:', thumbnailError);
+          await fetchData();
+          if (
+            thumbnailError instanceof Error &&
+            thumbnailError.name === 'AbortError'
+          ) {
+            throw new Error(
+              'Preview generation timed out. You can try again from the resume card.',
+              { cause: thumbnailError },
+            );
+          }
+          const thumbMsg = toMessage(thumbnailError);
+          return {
+            publicUrl: isWord ? '' : publicUrl,
+            thumbnailWarning: `Preview was not generated (${thumbMsg}). Open the resume card and tap Retry preview, or upload a custom preview image.`,
+            sizeNote,
+          };
+        }
+      }
+
+      return { publicUrl, sizeNote };
+    },
+  });
 };
 
 const resumeCustomThumbPath = (userId: string) =>
@@ -277,31 +286,36 @@ export const uploadResumeThumbnailImageAsset = async ({
   if (!session?.user)
     throw new Error('You need to sign in to update your resume preview.');
 
-  const blob = await processResumeThumbnailImageForUpload(file);
-  const thumbPath = resumeCustomThumbPath(session.user.id);
-  const { error } = await supabase.storage
-    .from('resumes')
-    .upload(thumbPath, blob, {
-      contentType: 'image/jpeg',
-      upsert: true,
-    });
-  if (error) throw error;
+  await runSharedUploadIntake({
+    surface: 'profile_resume_thumbnail',
+    file,
+    executeUpload: async ({ file: preparedFile, detectedMimeType }) => {
+      const thumbPath = resumeCustomThumbPath(session.user.id);
+      const { error } = await supabase.storage
+        .from('resumes')
+        .upload(thumbPath, preparedFile, {
+          contentType: detectedMimeType,
+          upsert: true,
+        });
+      if (error) throw error;
 
-  const {
-    data: { publicUrl },
-  } = supabase.storage.from('resumes').getPublicUrl(thumbPath);
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from('resumes').getPublicUrl(thumbPath);
 
-  const creds = profile?.nerd_creds ?? {};
-  await updateProfile({
-    nerd_creds: {
-      ...creds,
-      resume_thumbnail_url: publicUrl,
-      resume_thumbnail_status: 'complete',
-      resume_thumbnail_error: null,
-      resume_thumbnail_updated_at: new Date().toISOString(),
-      resume_thumbnail_source_extension: 'custom',
+      const creds = profile?.nerd_creds ?? {};
+      await updateProfile({
+        nerd_creds: {
+          ...creds,
+          resume_thumbnail_url: publicUrl,
+          resume_thumbnail_status: 'complete',
+          resume_thumbnail_error: null,
+          resume_thumbnail_updated_at: new Date().toISOString(),
+          resume_thumbnail_source_extension: 'custom',
+        },
+      } as Partial<DashboardProfile>);
     },
-  } as Partial<DashboardProfile>);
+  });
 };
 
 export const deleteResumeAsset = async ({

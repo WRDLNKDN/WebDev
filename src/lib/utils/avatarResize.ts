@@ -3,8 +3,10 @@
  * Used before upload to Supabase avatars bucket.
  */
 
+import { PROFILE_AVATAR_OUTPUT_MAX_FILE_BYTES } from '../media/mediaSizePolicy';
+
 const MAX_SIZE = 512;
-const MAX_BYTES = 1_048_576; // 1MB
+const MAX_BYTES = PROFILE_AVATAR_OUTPUT_MAX_FILE_BYTES;
 const JPEG_QUALITY_START = 0.9;
 const JPEG_QUALITY_MIN = 0.5;
 

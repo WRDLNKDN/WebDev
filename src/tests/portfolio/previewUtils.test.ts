@@ -40,6 +40,8 @@ describe('getPortfolioPreviewModel', () => {
     expect(model.previewable).toBe(false);
     expect(model.typeLabel).toBe('Document');
     expect(model.openUrl).toBe(url);
+    expect(model.preferDownload).toBe(true);
+    expect(model.fallbackMessage).toContain('Download');
   });
 
   it('still allows Office embed preview for docx hosted outside the resumes bucket', () => {
@@ -53,6 +55,7 @@ describe('getPortfolioPreviewModel', () => {
     expect(model.previewUrl).toBe(
       `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(url)}`,
     );
+    expect(model.preferDownload).toBe(false);
   });
 
   it('normalizes Google Docs links to preview URLs', () => {
@@ -79,5 +82,17 @@ describe('getPortfolioPreviewModel', () => {
     expect(model.previewable).toBe(false);
     expect(model.openUrl).toBe('https://example.com/archive.zip');
     expect(model.downloadUrl).toBe('https://example.com/archive.zip');
+  });
+
+  it('treats text documents as open-in-tab instead of Office embeds', () => {
+    const model = getPortfolioPreviewModel(
+      makeProject({ project_url: 'https://example.com/notes.txt' }),
+    );
+
+    expect(model.kind).toBe('none');
+    expect(model.previewable).toBe(false);
+    expect(model.typeLabel).toBe('Text');
+    expect(model.preferDownload).toBe(false);
+    expect(model.fallbackMessage).toContain('new tab');
   });
 });

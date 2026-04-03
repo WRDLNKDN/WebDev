@@ -17,10 +17,6 @@ import { useEffect, useMemo, useState } from 'react';
 import { PortfolioPreviewDialogHeader } from '../preview/PortfolioPreviewDialogHeader';
 import { PortfolioPreviewMeta } from '../preview/PortfolioPreviewMeta';
 import { getPortfolioPreviewModel } from '../../../lib/portfolio/previewUtils';
-import {
-  RESUME_PREVIEW_UNSUPPORTED_MESSAGE,
-  isSupabasePublicResumeUrl,
-} from '../../../lib/portfolio/resumePreviewSupport';
 import type { PortfolioItem } from '../../../types/portfolio';
 
 type PreviewError =
@@ -57,7 +53,7 @@ export const PortfolioPreviewModal = ({
     openUrl,
     downloadUrl,
     previewUrl,
-    previewable,
+    fallbackMessage,
   } = model;
 
   const paperSx = useMemo(
@@ -82,14 +78,6 @@ export const PortfolioPreviewModal = ({
     }),
     [theme],
   );
-
-  const resumeInlineBlockedCopy =
-    !previewable &&
-    linkType === 'document' &&
-    Boolean(openUrl) &&
-    isSupabasePublicResumeUrl(openUrl)
-      ? RESUME_PREVIEW_UNSUPPORTED_MESSAGE
-      : null;
 
   useEffect(() => {
     if (open) setPreviewError(null);
@@ -317,7 +305,7 @@ export const PortfolioPreviewModal = ({
             }}
           >
             <Typography color="text.secondary" gutterBottom>
-              {resumeInlineBlockedCopy ??
+              {fallbackMessage ??
                 'This artifact cannot be previewed in-browser. Download to open it.'}
             </Typography>
             {openUrl ? (

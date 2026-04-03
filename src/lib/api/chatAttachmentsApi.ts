@@ -1,6 +1,4 @@
-import { messageFromApiResponse } from '../utils/errors';
-import { authedFetch } from './authFetch';
-import { API_BASE, parseJsonResponse } from './feedsApiCore';
+import { API_BASE, requestAuthedJson } from './feedsApiCore';
 
 export type ProcessedChatAttachment = {
   path: string;
@@ -16,7 +14,9 @@ export async function processChatGifUpload(params: {
   const formData = new FormData();
   formData.append('file', params.file);
 
-  const res = await authedFetch(
+  const payload = await requestAuthedJson<{
+    data?: ProcessedChatAttachment;
+  }>(
     url,
     {
       method: 'POST',
@@ -25,28 +25,8 @@ export async function processChatGifUpload(params: {
     {
       accessToken: params.accessToken ?? null,
       includeJsonContentType: false,
-      credentials: API_BASE ? 'omit' : 'include',
     },
   );
-
-  if (!res.ok) {
-    let body: { error?: string; message?: string } = {};
-    try {
-      body = await parseJsonResponse<{ error?: string; message?: string }>(
-        res,
-        url,
-      );
-    } catch (e) {
-      if (e instanceof Error && e.message.includes('returned HTML')) throw e;
-    }
-    throw new Error(
-      messageFromApiResponse(res.status, body.error, body.message),
-    );
-  }
-
-  const payload = await parseJsonResponse<{
-    data?: ProcessedChatAttachment;
-  }>(res, url);
   if (!payload.data?.path || !payload.data?.mime) {
     throw new Error('GIF processing failed');
   }

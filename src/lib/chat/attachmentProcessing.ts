@@ -1,8 +1,4 @@
-import {
-  CHAT_DIRECT_UPLOAD_MAX_FILE_BYTES,
-  CHAT_GIF_DIRECT_UPLOAD_MAX_FILE_BYTES,
-  CHAT_PROCESSED_MEDIA_MAX_FILE_BYTES,
-} from '../../types/chat';
+import { getSharedUploadPlanFromDescriptor } from '../media/uploadIntake';
 
 export { CHAT_GIF_PROCESSING_MAX_FILE_BYTES } from '../../types/chat';
 export { CHAT_PROCESSED_MEDIA_MAX_FILE_BYTES } from '../../types/chat';
@@ -35,75 +31,41 @@ export function getChatAttachmentProcessingPlan(file: {
   size: number;
   type?: string | null;
 }): ChatAttachmentProcessingPlan {
-  const normalizedType = file.type?.toLowerCase().trim() ?? '';
-  const isGif = normalizedType === 'image/gif';
-  const isProcessedGifVideo =
-    normalizedType === 'video/mp4' || normalizedType === 'video/webm';
-  const isImage = normalizedType.startsWith('image/');
-
-  if (isProcessedGifVideo) {
-    if (file.size > CHAT_PROCESSED_MEDIA_MAX_FILE_BYTES) {
-      return {
-        accepted: false,
-        reason: 'This GIF is too large to process. Try a smaller file.',
-      };
-    }
-
+  const plan = getSharedUploadPlanFromDescriptor('chat_attachment', {
+    name: 'attachment',
+    size: file.size,
+    type: file.type ?? null,
+  });
+  if (!plan.accepted) {
     return {
-      accepted: true,
-      mode: 'direct',
-      uploadLabel: 'Attaching optimized GIF...',
-      helperText: null,
+      accepted: false,
+      reason: plan.reason,
     };
   }
 
-  if (!isGif) {
-    if (file.size > CHAT_PROCESSED_MEDIA_MAX_FILE_BYTES) {
-      return {
-        accepted: false,
-        reason: 'This file is too large to process. Try a file under 6 MB.',
-      };
-    }
-
-    if (file.size > CHAT_DIRECT_UPLOAD_MAX_FILE_BYTES || isImage) {
-      return {
-        accepted: true,
-        mode: 'optimize',
-        uploadLabel: 'Optimizing attachment...',
-        helperText: isImage
-          ? 'Optimizing image and generating preview...'
-          : 'Preparing attachment preview...',
-      };
-    }
-
+  if (plan.mode === 'direct') {
     return {
       accepted: true,
       mode: 'direct',
-      uploadLabel: 'Uploading attachment...',
-      helperText: null,
+      uploadLabel: plan.uploadLabel,
+      helperText: plan.helperText,
     };
   }
 
-  if (file.size <= CHAT_DIRECT_UPLOAD_MAX_FILE_BYTES) {
+  if (plan.mode === 'optimize') {
     return {
       accepted: true,
-      mode: 'direct',
-      uploadLabel: 'Uploading GIF...',
-      helperText: null,
-    };
-  }
-
-  if (file.size <= CHAT_GIF_DIRECT_UPLOAD_MAX_FILE_BYTES) {
-    return {
-      accepted: true,
-      mode: 'gif_processing',
-      uploadLabel: 'Converting GIF...',
-      helperText: 'Converting GIF into lightweight looping playback...',
+      mode: 'optimize',
+      uploadLabel: plan.uploadLabel,
+      helperText: plan.helperText ?? 'Preparing attachment preview...',
     };
   }
 
   return {
-    accepted: false,
-    reason: 'This GIF is too large to process. Try a smaller file.',
+    accepted: true,
+    mode: 'gif_processing',
+    uploadLabel: plan.uploadLabel,
+    helperText:
+      plan.helperText ?? 'Converting GIF into lightweight looping playback...',
   };
 }

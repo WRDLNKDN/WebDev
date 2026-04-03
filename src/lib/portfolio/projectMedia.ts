@@ -1,6 +1,17 @@
 import { supabase } from '../auth/supabaseClient';
 import { uploadStructuredPublicAsset } from '../media/ingestion';
 import {
+  getUploadSurfaceGuidance,
+  PROJECT_SOURCE_HARD_MAX_BYTES,
+  PROJECT_SOURCE_MAX_BYTES,
+  PROJECT_THUMBNAIL_HARD_MAX_BYTES,
+  PROJECT_THUMBNAIL_MAX_BYTES,
+} from '../media/mediaSizePolicy';
+import {
+  getSharedUploadRejectionReason,
+  runSharedUploadIntake,
+} from '../media/uploadIntake';
+import {
   SUPPORTED_DOCUMENT_EXTENSIONS,
   SUPPORTED_IMAGE_EXTENSIONS,
   SUPPORTED_PRESENTATION_EXTENSIONS,
@@ -8,12 +19,47 @@ import {
   SUPPORTED_TEXT_EXTENSIONS,
   SUPPORTED_VIDEO_EXTENSIONS,
 } from './linkUtils';
+import { toMessage } from '../utils/errors';
 
 export const PROJECT_SOURCE_BUCKET = 'project-sources';
 export const PROJECT_THUMBNAIL_BUCKET = 'project-images';
+export {
+  PROJECT_SOURCE_HARD_MAX_BYTES,
+  PROJECT_SOURCE_MAX_BYTES,
+  PROJECT_THUMBNAIL_HARD_MAX_BYTES,
+  PROJECT_THUMBNAIL_MAX_BYTES,
+};
 
-export const PROJECT_THUMBNAIL_MAX_BYTES = 6 * 1024 * 1024;
-export const PROJECT_SOURCE_MAX_BYTES = 6 * 1024 * 1024;
+export type ProjectUploadField = 'source' | 'thumbnail';
+
+export class ProjectUploadFieldError extends Error {
+  readonly field: ProjectUploadField;
+
+  constructor(field: ProjectUploadField, message: string) {
+    super(message);
+    this.name = 'ProjectUploadFieldError';
+    this.field = field;
+  }
+}
+
+export function isProjectUploadFieldError(
+  error: unknown,
+  field?: ProjectUploadField,
+): error is ProjectUploadFieldError {
+  return (
+    error instanceof ProjectUploadFieldError &&
+    (field == null || error.field === field)
+  );
+}
+
+export function toProjectUploadFieldError(
+  field: ProjectUploadField,
+  error: unknown,
+): ProjectUploadFieldError {
+  return error instanceof ProjectUploadFieldError
+    ? error
+    : new ProjectUploadFieldError(field, toMessage(error));
+}
 
 const PROJECT_THUMBNAIL_ALLOWED_MIME_TYPES = new Set([
   'image/jpeg',
@@ -47,9 +93,13 @@ const formatSizeMb = (bytes: number) =>
   `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 
 const THUMBNAIL_SIZE_GUIDANCE =
-  'Optional thumbnails can be optimized automatically up to about 6 MB. Resize extra-large images when possible, or export as JPG or WEBP for faster uploads.';
+  getUploadSurfaceGuidance('portfolio_thumbnail') ??
+  'Optional thumbnails are optimized automatically.';
 const SOURCE_SIZE_GUIDANCE =
-  'Project files can be optimized automatically up to about 6 MB. Resize large images, export PDFs with reduced-size settings, convert images to JPG or WEBP, or compress the file before uploading.';
+  getUploadSurfaceGuidance('portfolio_source') ??
+  'Project files are optimized automatically.';
+const PROJECT_THUMBNAIL_LIMIT_FAILURE_MESSAGE =
+  'Optional thumbnail is still too large after optimization. Try a smaller or simpler image.';
 
 export function isProjectSourceStorageUrl(url: string): boolean {
   return url.includes(`/storage/v1/object/public/${PROJECT_SOURCE_BUCKET}/`);
@@ -65,42 +115,48 @@ function isAllowedFile(
 }
 
 export function getProjectThumbnailFileError(file: File): string | null {
-  if (
-    !isAllowedFile(
-      file,
-      PROJECT_THUMBNAIL_ALLOWED_MIME_TYPES,
-      new Set(['jpg', 'jpeg', 'png', 'gif', 'webp']),
-    )
-  ) {
-    return 'Optional thumbnails must be PNG, JPG, GIF, or WEBP images.';
+  const sharedRejection = getSharedUploadRejectionReason(
+    'portfolio_thumbnail',
+    file,
+  );
+  if (sharedRejection) {
+    return file.size > PROJECT_THUMBNAIL_HARD_MAX_BYTES
+      ? `${file.name} is ${formatSizeMb(file.size)}. ${THUMBNAIL_SIZE_GUIDANCE}`
+      : sharedRejection;
   }
-  if (file.size > PROJECT_THUMBNAIL_MAX_BYTES) {
-    return `${file.name} is ${formatSizeMb(file.size)}. ${THUMBNAIL_SIZE_GUIDANCE}`;
-  }
-  return null;
+  return isAllowedFile(
+    file,
+    PROJECT_THUMBNAIL_ALLOWED_MIME_TYPES,
+    new Set(['jpg', 'jpeg', 'png', 'gif', 'webp']),
+  )
+    ? null
+    : 'Optional thumbnails must be PNG, JPG, GIF, or WEBP images.';
 }
 
 export function getProjectSourceFileError(file: File): string | null {
-  if (
-    !isAllowedFile(
-      file,
-      PROJECT_SOURCE_ALLOWED_MIME_TYPES,
-      new Set([
-        ...SUPPORTED_IMAGE_EXTENSIONS,
-        ...SUPPORTED_DOCUMENT_EXTENSIONS,
-        ...SUPPORTED_PRESENTATION_EXTENSIONS,
-        ...SUPPORTED_SPREADSHEET_EXTENSIONS,
-        ...SUPPORTED_TEXT_EXTENSIONS,
-        ...SUPPORTED_VIDEO_EXTENSIONS,
-      ]),
-    )
-  ) {
-    return 'Project files must be JPG, PNG, GIF, WEBP, PDF, DOC, DOCX, PPT, PPTX, XLS, XLSX, TXT, MP4, WEBM, or MOV.';
+  const sharedRejection = getSharedUploadRejectionReason(
+    'portfolio_source',
+    file,
+  );
+  if (sharedRejection) {
+    return file.size > PROJECT_SOURCE_HARD_MAX_BYTES
+      ? `${file.name} is ${formatSizeMb(file.size)}. ${SOURCE_SIZE_GUIDANCE}`
+      : sharedRejection;
   }
-  if (file.size > PROJECT_SOURCE_MAX_BYTES) {
-    return `${file.name} is ${formatSizeMb(file.size)}. ${SOURCE_SIZE_GUIDANCE}`;
-  }
-  return null;
+  return isAllowedFile(
+    file,
+    PROJECT_SOURCE_ALLOWED_MIME_TYPES,
+    new Set([
+      ...SUPPORTED_IMAGE_EXTENSIONS,
+      ...SUPPORTED_DOCUMENT_EXTENSIONS,
+      ...SUPPORTED_PRESENTATION_EXTENSIONS,
+      ...SUPPORTED_SPREADSHEET_EXTENSIONS,
+      ...SUPPORTED_TEXT_EXTENSIONS,
+      ...SUPPORTED_VIDEO_EXTENSIONS,
+    ]),
+  )
+    ? null
+    : 'Project files must be JPG, PNG, GIF, WEBP, PDF, DOC, DOCX, PPT, PPTX, XLS, XLSX, TXT, MP4, WEBM, or MOV.';
 }
 
 export async function uploadPublicProjectAsset(params: {
@@ -111,39 +167,59 @@ export async function uploadPublicProjectAsset(params: {
   returnVariant?: 'display' | 'original';
 }): Promise<string> {
   const returnVariant = params.returnVariant ?? 'display';
-  const extension = getExtension(params.file.name);
-  const isImageUpload =
-    params.file.type.toLowerCase().startsWith('image/') ||
-    SUPPORTED_IMAGE_EXTENSIONS.includes(
-      extension as (typeof SUPPORTED_IMAGE_EXTENSIONS)[number],
-    );
-  if (isImageUpload) {
-    const asset = await uploadStructuredPublicAsset({
-      bucket: params.bucket,
-      ownerId: params.userId,
-      scope: params.prefix,
-      file: params.file,
-      retainOriginal: true,
-    });
-    return returnVariant === 'original'
-      ? (asset.originalUrl ?? asset.displayUrl)
-      : asset.displayUrl;
-  }
+  const surface =
+    params.bucket === PROJECT_SOURCE_BUCKET
+      ? 'portfolio_source'
+      : 'portfolio_thumbnail';
 
-  const uploadExtension = extension || 'bin';
-  const path = `${params.userId}/${params.prefix}-${Date.now()}.${uploadExtension}`;
-  const { error } = await supabase.storage
-    .from(params.bucket)
-    .upload(path, params.file, {
-      upsert: true,
-      contentType: params.file.type || undefined,
-    });
-  if (error) throw error;
-  const {
-    data: { publicUrl },
-  } = supabase.storage.from(params.bucket).getPublicUrl(path);
-  if (!publicUrl) throw new Error('Storage URL not returned');
-  return publicUrl;
+  return runSharedUploadIntake({
+    surface,
+    file: params.file,
+    executeUpload: async ({ file, detectedMimeType }) => {
+      const extension = getExtension(file.name);
+      const isImageUpload =
+        detectedMimeType.startsWith('image/') ||
+        SUPPORTED_IMAGE_EXTENSIONS.includes(
+          extension as (typeof SUPPORTED_IMAGE_EXTENSIONS)[number],
+        );
+
+      if (isImageUpload) {
+        const asset = await uploadStructuredPublicAsset({
+          bucket: params.bucket,
+          ownerId: params.userId,
+          scope: params.prefix,
+          file,
+          retainOriginal: true,
+          maxDisplayBytes:
+            params.bucket === PROJECT_THUMBNAIL_BUCKET
+              ? PROJECT_THUMBNAIL_MAX_BYTES
+              : null,
+          displayLimitFailureMessage:
+            params.bucket === PROJECT_THUMBNAIL_BUCKET
+              ? PROJECT_THUMBNAIL_LIMIT_FAILURE_MESSAGE
+              : null,
+        });
+        return returnVariant === 'original'
+          ? (asset.originalUrl ?? asset.displayUrl)
+          : asset.displayUrl;
+      }
+
+      const uploadExtension = extension || 'bin';
+      const path = `${params.userId}/${params.prefix}-${Date.now()}.${uploadExtension}`;
+      const { error } = await supabase.storage
+        .from(params.bucket)
+        .upload(path, file, {
+          upsert: true,
+          contentType: detectedMimeType || file.type || undefined,
+        });
+      if (error) throw error;
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from(params.bucket).getPublicUrl(path);
+      if (!publicUrl) throw new Error('Storage URL not returned');
+      return publicUrl;
+    },
+  });
 }
 
 export async function invokePortfolioThumbnailGeneration(): Promise<void> {

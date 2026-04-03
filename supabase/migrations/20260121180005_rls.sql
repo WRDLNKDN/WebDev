@@ -1,27 +1,11 @@
--- supabase/migrations/20260121180005_rls.sql
--- All RLS policies, grants, and security hardening (tables/functions defined in 20260121180000_tables.sql).
+-- rls.sql
+-- Canonical consolidated RLS file.
+-- Merges: 20260121180005_rls.sql + 20260401123100_rls.sql (media_assets, media_asset_events).
 -- Additive/safe only: no TRUNCATE, no DELETE without WHERE, no DROP TABLE; table data never cleared.
 -- This file contains ONLY RLS policies, grants, and security settings/hardening - no schema or data modifications.
 --
 -- Idempotent: `alter table if exists ... enable row level security`; each `create policy` is preceded by
 -- `drop policy if exists` (or cleared by the managed_tables replay block). Safe to re-run in SQL Editor.
---
--- If you see "duplicate key" or migration repair needed for 20260214140000, 20260214160000, 20260214170000:
---   supabase migration repair <id> --status reverted
--- Then run db push again. (Those were consolidated into these two files only.)
---
--- HOW TO FORCE RLS / SECURITY RECONFIGURE (when db push says "up to date" but security config is wrong):
---
--- OPTION A: Run manually in Supabase Dashboard → SQL Editor
--- 1. Open project (UAT: lgxwseyzoefxggxijatp, PROD: rpcaazmxymymqdejevtb)
--- 2. SQL Editor → New query
--- 3. Run 20260121180000_tables.sql first (if tables are missing)
--- 4. Paste this ENTIRE file and Run
---
--- OPTION B: CLI repair + push (re-applies this migration)
---   supabase link --project-ref lgxwseyzoefxggxijatp
---   supabase migration repair 20260121180005 --status reverted
---   supabase db push --linked --include-all --include-seed
 
 -- -----------------------------
 -- Consolidated follow-up migrations
@@ -142,7 +126,9 @@ declare
     'content_submissions',
     'playlists',
     'playlist_items',
-    'audit_log'
+    'audit_log',
+    'media_assets',
+    'media_asset_events'
   ];
 begin
   for p in
@@ -1675,7 +1661,9 @@ declare
     'content_submissions',
     'playlists',
     'playlist_items',
-    'audit_log'
+    'audit_log',
+    'media_assets',
+    'media_asset_events'
   ];
 begin
   for t in
@@ -1732,3 +1720,78 @@ begin
     end;
   end loop;
 end $$;
+
+-- ============================================================
+-- media_assets + media_asset_events: RLS
+-- (from 20260401123100_rls.sql — merged into canonical RLS file)
+-- ============================================================
+
+alter table if exists public.media_assets enable row level security;
+revoke all on table public.media_assets from anon, authenticated;
+
+-- Owners can read and manage their own assets; service_role bypasses RLS entirely.
+-- Admins can read all assets (e.g. for moderation dashboard).
+drop policy if exists media_assets_owner_select on public.media_assets;
+create policy media_assets_owner_select
+  on public.media_assets for select
+  to authenticated
+  using (
+    (select auth.uid()) = owner_id
+    or (select public.is_admin())
+  );
+
+drop policy if exists media_assets_owner_insert on public.media_assets;
+create policy media_assets_owner_insert
+  on public.media_assets for insert
+  to authenticated
+  with check ((select auth.uid()) = owner_id);
+
+drop policy if exists media_assets_owner_update on public.media_assets;
+create policy media_assets_owner_update
+  on public.media_assets for update
+  to authenticated
+  using (
+    (select auth.uid()) = owner_id
+    or (select public.is_admin())
+  )
+  with check (
+    (select auth.uid()) = owner_id
+    or (select public.is_admin())
+  );
+
+-- Hard-delete is intentionally blocked for authenticated users; use processing_state='deleted' instead.
+-- service_role may hard-delete via lifecycle cleanup.
+
+grant select, insert, update on table public.media_assets to authenticated;
+
+-- -----------------------------
+-- media_asset_events: RLS (owners read their asset events; admins read all; insert via service_role or owner)
+-- -----------------------------
+alter table if exists public.media_asset_events enable row level security;
+revoke all on table public.media_asset_events from anon, authenticated;
+
+drop policy if exists media_asset_events_owner_select on public.media_asset_events;
+create policy media_asset_events_owner_select
+  on public.media_asset_events for select
+  to authenticated
+  using (
+    exists (
+      select 1 from public.media_assets a
+      where a.id = media_asset_events.asset_id
+        and (a.owner_id = (select auth.uid()) or (select public.is_admin()))
+    )
+  );
+
+drop policy if exists media_asset_events_owner_insert on public.media_asset_events;
+create policy media_asset_events_owner_insert
+  on public.media_asset_events for insert
+  to authenticated
+  with check (
+    exists (
+      select 1 from public.media_assets a
+      where a.id = media_asset_events.asset_id
+        and a.owner_id = (select auth.uid())
+    )
+  );
+
+grant select, insert on table public.media_asset_events to authenticated;

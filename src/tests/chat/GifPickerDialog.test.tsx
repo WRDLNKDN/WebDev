@@ -24,12 +24,17 @@ const gifApiMocks = vi.hoisted(() => ({
   searchChatGifs: vi.fn(),
   getTrendingChatGifs: vi.fn(),
   normalizeGifErrorMessage: vi.fn((message: string) => message),
+  reportMediaTelemetryAsync: vi.fn(),
 }));
 
 vi.mock('../../lib/chat/gifApi', () => ({
   searchChatGifs: gifApiMocks.searchChatGifs,
   getTrendingChatGifs: gifApiMocks.getTrendingChatGifs,
   normalizeGifErrorMessage: gifApiMocks.normalizeGifErrorMessage,
+}));
+
+vi.mock('../../lib/media/telemetry', () => ({
+  reportMediaTelemetryAsync: gifApiMocks.reportMediaTelemetryAsync,
 }));
 
 describe('GifPickerDialog', () => {
@@ -44,6 +49,7 @@ describe('GifPickerDialog', () => {
     gifApiMocks.searchChatGifs.mockReset();
     gifApiMocks.getTrendingChatGifs.mockReset();
     gifApiMocks.normalizeGifErrorMessage.mockClear();
+    gifApiMocks.reportMediaTelemetryAsync.mockReset();
 
     vi.stubGlobal(
       'matchMedia',
@@ -68,19 +74,10 @@ describe('GifPickerDialog', () => {
     vi.unstubAllGlobals();
   });
 
-  it('retries the failed request and recovers results', async () => {
-    gifApiMocks.getTrendingChatGifs
-      .mockRejectedValueOnce(
-        new Error('GIF search failed. Check your connection or try again.'),
-      )
-      .mockResolvedValueOnce([
-        {
-          id: 'gif-1',
-          title: 'Recovered GIF',
-          previewUrl: 'https://example.com/preview.gif',
-          gifUrl: 'https://example.com/original.gif',
-        },
-      ]);
+  it('keeps the initial trending failure in a neutral state and hides rating controls by default', async () => {
+    gifApiMocks.getTrendingChatGifs.mockRejectedValueOnce(
+      new Error('GIF search failed. Check your connection or try again.'),
+    );
 
     await act(async () => {
       root.render(
@@ -93,23 +90,22 @@ describe('GifPickerDialog', () => {
     });
 
     expect(document.body.textContent).toContain(
+      'Trending GIFs are unavailable right now. Try searching above.',
+    );
+    expect(document.body.textContent).not.toContain(
       'GIF search failed. Check your connection or try again.',
     );
-
-    const retryButton = Array.from(
-      document.body.querySelectorAll('button'),
-    ).find((button) => button.textContent?.includes('Try again'));
-    expect(retryButton).toBeTruthy();
-
-    await act(async () => {
-      retryButton?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-      await Promise.resolve();
-    });
-
-    expect(
-      document.body.querySelector('img[alt="Recovered GIF"]'),
-    ).toBeTruthy();
-    expect(gifApiMocks.getTrendingChatGifs).toHaveBeenCalledTimes(2);
+    expect(document.body.textContent).not.toContain('PG-13');
+    expect(document.body.textContent).not.toContain('Strict');
+    expect(document.body.textContent).not.toContain('Content:');
+    expect(gifApiMocks.reportMediaTelemetryAsync).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventName: 'gif_picker_trending_failed',
+        failureCode: 'gif_trending_failed',
+        pipeline: 'gif_picker',
+        stage: 'preview',
+      }),
+    );
   });
 
   it('runs a fresh search after a failure and shows recovered results', async () => {
@@ -164,6 +160,14 @@ describe('GifPickerDialog', () => {
       'cats',
       24,
       'medium',
+    );
+    expect(gifApiMocks.reportMediaTelemetryAsync).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventName: 'gif_picker_search_loaded',
+        pipeline: 'gif_picker',
+        stage: 'preview',
+        status: 'ready',
+      }),
     );
   });
 });

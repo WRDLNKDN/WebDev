@@ -205,7 +205,6 @@ export const FeedCardCommentsComposer = ({
         open={commentGifPickerOpen}
         onClose={() => setCommentGifPickerOpen(false)}
         onPick={(url) => setCommentSelectedGif(url)}
-        showContentFilter={false}
         maxHeight={280}
         cellHeight={90}
       />

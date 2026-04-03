@@ -1,35 +1,27 @@
 import { CHAT_ALLOWED_EXTENSIONS, CHAT_ALLOWED_MIME } from '../../types/chat';
 import { getChatAttachmentProcessingPlan } from './attachmentProcessing';
-
-const EXTENSION_TO_MIME: Record<string, (typeof CHAT_ALLOWED_MIME)[number]> = {
-  '.jpg': 'image/jpeg',
-  '.jpeg': 'image/jpeg',
-  '.png': 'image/png',
-  '.webp': 'image/webp',
-  '.gif': 'image/gif',
-  '.pdf': 'application/pdf',
-  '.doc': 'application/msword',
-  '.docx':
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-  '.txt': 'text/plain',
-};
+import {
+  getSharedUploadRejectionReason,
+  normalizeUploadMimeFromMetadata,
+} from '../media/uploadIntake';
 
 export function normalizeChatAttachmentMime(file: {
   type?: string | null;
   name: string;
 }): string | null {
-  const rawType = file.type?.toLowerCase().trim();
+  const normalized = normalizeUploadMimeFromMetadata(file);
   if (
-    rawType &&
-    CHAT_ALLOWED_MIME.includes(rawType as (typeof CHAT_ALLOWED_MIME)[number])
+    normalized &&
+    CHAT_ALLOWED_MIME.includes(normalized as (typeof CHAT_ALLOWED_MIME)[number])
   ) {
-    return rawType;
+    return normalized;
   }
   const lowerName = file.name.toLowerCase();
-  const ext = CHAT_ALLOWED_EXTENSIONS.find((allowedExt) =>
+  return CHAT_ALLOWED_EXTENSIONS.find((allowedExt) =>
     lowerName.endsWith(allowedExt),
-  );
-  return ext ? EXTENSION_TO_MIME[ext] : null;
+  )
+    ? normalized
+    : null;
 }
 
 export function getChatAttachmentRejectionReason(file: {
@@ -38,15 +30,18 @@ export function getChatAttachmentRejectionReason(file: {
   name: string;
 }): string | null {
   const normalized = normalizeChatAttachmentMime(file);
-  if (!normalized) {
+  if (!normalized)
     return 'Unsupported type. Allowed: JPG, PNG, WEBP, GIF, PDF, DOC, DOCX, TXT.';
-  }
+
+  const sharedRejection = getSharedUploadRejectionReason('chat_attachment', {
+    ...file,
+    type: normalized,
+  });
+  if (sharedRejection) return sharedRejection;
+
   const plan = getChatAttachmentProcessingPlan({
     size: file.size,
     type: normalized,
   });
-  if (!plan.accepted) {
-    return plan.reason;
-  }
-  return null;
+  return plan.accepted ? null : plan.reason;
 }

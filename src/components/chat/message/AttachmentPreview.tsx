@@ -2,16 +2,17 @@ import { Box } from '@mui/material';
 import { alpha, type Theme } from '@mui/material/styles';
 import { useEffect, useState } from 'react';
 import { supabase } from '../../../lib/auth/supabaseClient';
-import { AssetThumbnail } from '../../media/AssetThumbnail';
+import { AssetInlinePreview } from '../../media/AssetThumbnail';
 import {
   createChatAttachmentStorageDescriptor,
   deriveSiblingStoragePath,
-  getNormalizedAssetDisplayUrl,
-  getNormalizedAssetThumbnailUrl,
+  getStructuredMediaDerivativeExtensions,
   MEDIA_DISPLAY_FILE_STEM,
   MEDIA_THUMBNAIL_FILE_STEM,
   type ResolvedChatAttachmentAsset,
 } from '../../../lib/media/assets';
+import { getDocumentInteractionPolicy } from '../../../lib/media/documents';
+import { reportMediaTelemetryAsync } from '../../../lib/media/telemetry';
 
 type AttachmentPreviewProps = {
   path: string;
@@ -30,12 +31,6 @@ const CHAT_ATTACHMENT_FRAME_SX = {
   overflow: 'hidden',
   boxShadow: (theme: Theme) =>
     `0 0 0 1px ${alpha(theme.palette.divider, theme.palette.mode === 'light' ? 0.1 : 0.12)} inset`,
-} as const;
-
-const CHAT_ATTACHMENT_VISUAL_MAX_HEIGHT_SX = {
-  xs: 280,
-  sm: 420,
-  md: 520,
 } as const;
 
 async function createSignedUrl(path: string | null): Promise<string | null> {
@@ -72,37 +67,27 @@ function getStructuredDerivativePaths(
 } {
   const lowerMime = mimeType.toLowerCase();
   const structuredOriginal = /\/original\./.test(storagePath);
-  const isVisualMime =
-    lowerMime.startsWith('video/') || lowerMime.startsWith('image/');
+  const mediaType = lowerMime.startsWith('image/')
+    ? 'image'
+    : lowerMime.startsWith('video/')
+      ? 'video'
+      : 'doc';
+  const { displayExtension, thumbnailExtension } =
+    getStructuredMediaDerivativeExtensions({
+      mediaType,
+      mimeType,
+    });
   if (!structuredOriginal) {
-    const thumbExtension = isVisualMime ? 'jpg' : 'svg';
     return {
       originalPath: storagePath,
       displayPath: storagePath,
       thumbnailPath: deriveSiblingStoragePath(
         storagePath,
         MEDIA_THUMBNAIL_FILE_STEM,
-        thumbExtension,
+        thumbnailExtension,
       ),
     };
   }
-
-  let displayExtension = 'svg';
-  if (lowerMime.startsWith('image/gif')) {
-    displayExtension = 'gif';
-  } else if (lowerMime.startsWith('image/png')) {
-    displayExtension = 'png';
-  } else if (lowerMime.startsWith('image/')) {
-    displayExtension = 'webp';
-  }
-  const usesDocumentThumbnail =
-    lowerMime.includes('pdf') ||
-    lowerMime.includes('word') ||
-    lowerMime.includes('document') ||
-    lowerMime.includes('presentation') ||
-    lowerMime.includes('sheet') ||
-    lowerMime.startsWith('text/');
-  const thumbnailExtension = usesDocumentThumbnail ? 'svg' : 'jpg';
 
   return {
     originalPath: storagePath,
@@ -185,9 +170,39 @@ export const AttachmentPreview = ({
         await resolveAttachmentUrls(derivatives, mimeType);
       if (cancelled) return;
       if (!originalUrl && !displayUrl && !thumbnailUrl) {
+        reportMediaTelemetryAsync({
+          eventName: 'chat_attachment_preview_resolution_failed',
+          stage: 'preview',
+          surface: 'chat_attachment',
+          assetId: attachmentId,
+          requestId: path,
+          pipeline: 'chat_attachment_preview',
+          status: 'failed',
+          failureCode: 'signed_url_unavailable',
+          failureReason: 'Signed URL generation returned no renderable media.',
+          meta: {
+            mimeType,
+            storagePath: path,
+          },
+        });
         setLoadFailed(true);
         return;
       }
+      reportMediaTelemetryAsync({
+        eventName: 'chat_attachment_preview_resolved',
+        stage: 'preview',
+        surface: 'chat_attachment',
+        assetId: attachmentId,
+        requestId: path,
+        pipeline: 'chat_attachment_preview',
+        status: 'ready',
+        meta: {
+          mimeType,
+          hasOriginal: Boolean(originalUrl),
+          hasDisplay: Boolean(displayUrl),
+          hasThumbnail: Boolean(thumbnailUrl),
+        },
+      });
       setAsset(
         createChatAttachmentStorageDescriptor(
           {
@@ -237,97 +252,58 @@ export const AttachmentPreview = ({
     );
   }
 
-  const isInlineVisual =
-    asset.mediaType === 'image' || asset.mediaType === 'video';
-  const displayUrl = getNormalizedAssetDisplayUrl(asset);
-  const thumbnailUrl = getNormalizedAssetThumbnailUrl(asset);
+  const documentPolicy =
+    asset.mediaType === 'doc'
+      ? getDocumentInteractionPolicy({
+          url: asset.originalUrl ?? asset.displayUrl ?? null,
+          mimeType,
+          fileName: asset.originalFilename,
+        })
+      : null;
   const altText =
     mimeType.toLowerCase() === 'image/gif'
       ? 'GIF attachment'
       : 'Attachment preview';
+  const href =
+    documentPolicy?.openUrl ||
+    asset.originalUrl ||
+    asset.displayUrl ||
+    undefined;
+  const ariaLabel = documentPolicy
+    ? documentPolicy.preferDownload
+      ? 'Download document attachment'
+      : 'Open document attachment'
+    : 'Open attachment';
 
   return (
     <Box
       component="a"
-      href={asset.originalUrl ?? asset.displayUrl ?? undefined}
+      href={href}
       target="_blank"
       rel="noopener noreferrer"
-      aria-label={
-        asset.mediaType === 'doc'
-          ? 'Open document attachment'
-          : 'Open attachment'
-      }
+      download={documentPolicy?.preferDownload ? '' : undefined}
+      aria-label={ariaLabel}
       sx={{
         display: 'block',
         ...CHAT_ATTACHMENT_FRAME_SX,
         textDecoration: 'none',
-        cursor: 'zoom-in',
+        cursor: documentPolicy?.preferDownload ? 'pointer' : 'zoom-in',
       }}
     >
-      {isInlineVisual ? (
-        <Box
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            px: 1,
-            py: 1,
-            bgcolor: 'rgba(0,0,0,0.24)',
-          }}
-        >
-          {asset.mediaType === 'video' ? (
-            <Box
-              component="video"
-              src={displayUrl}
-              poster={thumbnailUrl}
-              autoPlay
-              muted
-              loop
-              playsInline
-              preload="metadata"
-              aria-label={altText}
-              sx={{
-                display: 'block',
-                width: 'auto',
-                maxWidth: '100%',
-                height: 'auto',
-                maxHeight: CHAT_ATTACHMENT_VISUAL_MAX_HEIGHT_SX,
-                objectFit: 'contain',
-                objectPosition: 'center',
-                bgcolor: 'black',
-              }}
-            />
-          ) : (
-            <Box
-              component="img"
-              src={displayUrl}
-              alt={altText}
-              loading="lazy"
-              sx={{
-                display: 'block',
-                width: 'auto',
-                maxWidth: '100%',
-                height: 'auto',
-                maxHeight: CHAT_ATTACHMENT_VISUAL_MAX_HEIGHT_SX,
-                objectFit: 'contain',
-                objectPosition: 'center',
-              }}
-            />
-          )}
-        </Box>
-      ) : (
-        <AssetThumbnail
-          asset={asset}
-          alt={altText}
-          compact
-          sx={{
-            minHeight: 0,
-            maxHeight: 280,
-            aspectRatio: '1 / 1',
-            borderBottom: 'none',
-          }}
-        />
-      )}
+      <AssetInlinePreview
+        asset={asset}
+        alt={altText}
+        surface="chat"
+        sx={{
+          border: 'none',
+          borderRadius: 0,
+          bgcolor:
+            asset.mediaType === 'image' || asset.mediaType === 'video'
+              ? 'rgba(0,0,0,0.24)'
+              : 'rgba(0,0,0,0.18)',
+        }}
+        mediaSx={{ objectPosition: 'center' }}
+      />
     </Box>
   );
 };

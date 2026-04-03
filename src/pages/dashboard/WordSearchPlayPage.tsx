@@ -3,18 +3,10 @@
  * only words from the approved dictionary count. Score = sum of valid word lengths.
  * State in game_sessions.state_payload; game ends when timer expires.
  */
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import ReplayIcon from '@mui/icons-material/Replay';
-import {
-  Box,
-  Button,
-  CircularProgress,
-  Paper,
-  Stack,
-  Typography,
-} from '@mui/material';
+import { Box, Button, Paper, Stack, Typography } from '@mui/material';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Link as RouterLink, useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import {
   completeSession,
   createWordSearchSession,
@@ -25,6 +17,13 @@ import {
 import { useAppToast } from '../../context/AppToastContext';
 import { toMessage } from '../../lib/utils/errors';
 import type { GameSession } from '../../types/games';
+import {
+  MiniGameGameOverPanel,
+  MiniGameIntroScreen,
+  MiniGameLoadingNotFound,
+  MiniGamePlayHeaderRow,
+  MiniGamePlayPageRoot,
+} from './games/MiniGamePlayChrome';
 
 function getState(session: GameSession): WordSearchStatePayload {
   const raw = session.state_payload as WordSearchStatePayload | undefined;
@@ -217,75 +216,24 @@ export const WordSearchPlayPage = () => {
   }, [navigate, showToast]);
 
   if (loading) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-        <CircularProgress aria-label="Loading game" />
-      </Box>
-    );
+    return <MiniGameLoadingNotFound loading notFound={false} />;
   }
 
   if (notFound || (!session && sessionId)) {
-    return (
-      <Box sx={{ py: 2, px: { xs: 2, sm: 3 } }}>
-        <Button
-          component={RouterLink}
-          to="/dashboard/games"
-          startIcon={<ArrowBackIcon />}
-          variant="outlined"
-          size="small"
-          sx={{ mb: 2 }}
-        >
-          Back to Games
-        </Button>
-        <Typography color="text.secondary" sx={{ mb: 2 }}>
-          Game not found.
-        </Typography>
-        <Button
-          component={RouterLink}
-          to="/dashboard/games"
-          variant="contained"
-        >
-          Back to Games
-        </Button>
-      </Box>
-    );
+    return <MiniGameLoadingNotFound loading={false} notFound />;
   }
 
   if (!sessionId && !session) {
     return (
-      <Box sx={{ py: 2, px: { xs: 2, sm: 3 } }}>
-        <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 3 }}>
-          <Button
-            component={RouterLink}
-            to="/dashboard/games"
-            startIcon={<ArrowBackIcon />}
-            variant="outlined"
-            size="small"
-          >
-            Back
-          </Button>
-          <Typography variant="h6" sx={{ fontWeight: 600 }}>
-            Word Search
-          </Typography>
-        </Stack>
-        <Paper variant="outlined" sx={{ p: 3, maxWidth: 360 }}>
-          <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
-            Find words by connecting adjacent letters (including diagonals).
-            Only words from the dictionary count. Score is the sum of valid word
-            lengths. Beat the clock!
-          </Typography>
-          <Button
-            variant="contained"
-            fullWidth
-            startIcon={<ReplayIcon />}
-            disabled={startingNew}
-            onClick={() => void handleStartNew()}
-            aria-label="Start new Word Search game"
-          >
-            {startingNew ? 'Starting…' : 'Start new game'}
-          </Button>
-        </Paper>
-      </Box>
+      <MiniGameIntroScreen
+        title="Word Search"
+        description="Find words by connecting adjacent letters, including diagonals. Only words from the dictionary count. Score is the sum of valid word lengths. Beat the clock!"
+        startingNew={startingNew}
+        onStartNew={() => {
+          void handleStartNew();
+        }}
+        startAriaLabel="Start new Word Search game"
+      />
     );
   }
 
@@ -293,42 +241,24 @@ export const WordSearchPlayPage = () => {
   const timeUp = timerSeconds === 0;
 
   return (
-    <Box sx={{ py: 2, px: { xs: 2, sm: 3 } }}>
-      <Stack
-        direction="row"
-        alignItems="center"
-        justifyContent="space-between"
-        flexWrap="wrap"
-        gap={2}
-        sx={{ mb: 3 }}
-      >
-        <Stack direction="row" alignItems="center" spacing={2}>
-          <Button
-            component={RouterLink}
-            to="/dashboard/games"
-            startIcon={<ArrowBackIcon />}
-            variant="outlined"
-            size="small"
-            aria-label="Back to Games"
-          >
-            Back
-          </Button>
-          <Typography variant="h6" sx={{ fontWeight: 600 }}>
-            Word Search
-          </Typography>
-        </Stack>
-        {!completed && (
-          <Button
-            variant="outlined"
-            size="small"
-            startIcon={<ReplayIcon />}
-            disabled={startingNew}
-            onClick={() => void handleStartNew()}
-          >
-            New game
-          </Button>
-        )}
-      </Stack>
+    <MiniGamePlayPageRoot>
+      <MiniGamePlayHeaderRow
+        title="Word Search"
+        showStats={false}
+        actions={
+          !completed ? (
+            <Button
+              variant="outlined"
+              size="small"
+              startIcon={<ReplayIcon />}
+              disabled={startingNew}
+              onClick={() => void handleStartNew()}
+            >
+              New game
+            </Button>
+          ) : null
+        }
+      />
 
       <Stack
         direction={{ xs: 'column', sm: 'row' }}
@@ -425,30 +355,15 @@ export const WordSearchPlayPage = () => {
       </Stack>
 
       {(completed || timeUp) && (
-        <Paper variant="outlined" sx={{ p: 2, mt: 2 }}>
-          <Typography variant="body1" sx={{ mb: 2 }}>
-            {completed ? 'Game over.' : 'Time is up.'} Final score:{' '}
-            {state?.score ?? 0}
-          </Typography>
-          <Stack direction="row" spacing={1}>
-            <Button
-              component={RouterLink}
-              to="/dashboard/games"
-              variant="outlined"
-            >
-              Back to Games
-            </Button>
-            <Button
-              variant="contained"
-              startIcon={<ReplayIcon />}
-              onClick={() => void handleStartNew()}
-              disabled={startingNew}
-            >
-              Play again
-            </Button>
-          </Stack>
-        </Paper>
+        <MiniGameGameOverPanel
+          title={completed ? 'Game over' : 'Time is up'}
+          summary={`Final score: ${state?.score ?? 0}`}
+          startingNew={startingNew}
+          onPlayAgain={() => {
+            void handleStartNew();
+          }}
+        />
       )}
-    </Box>
+    </MiniGamePlayPageRoot>
   );
 };

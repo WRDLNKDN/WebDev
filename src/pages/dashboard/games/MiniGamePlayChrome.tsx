@@ -174,50 +174,64 @@ export const MiniGamePlayHeaderRow = ({
   title,
   showStats,
   stats,
+  actions,
 }: {
   title: string;
   showStats: boolean;
   stats?: ReactNode;
+  actions?: ReactNode;
 }) => {
   return (
     <Stack
       direction="row"
       alignItems="center"
-      spacing={2}
+      justifyContent="space-between"
       sx={{ mb: 2 }}
       flexWrap="wrap"
+      gap={2}
     >
-      <Button
-        component={RouterLink}
-        to={DASHBOARD_GAMES_HUB}
-        startIcon={<ArrowBackIcon />}
-        variant="outlined"
-        size="small"
-        aria-label="Back to Games"
-      >
-        Back
-      </Button>
-      <Typography variant="h6" sx={{ fontWeight: 600 }}>
-        {title}
-      </Typography>
-      {showStats ? stats : null}
+      <Stack direction="row" alignItems="center" spacing={2}>
+        <Button
+          component={RouterLink}
+          to={DASHBOARD_GAMES_HUB}
+          startIcon={<ArrowBackIcon />}
+          variant="outlined"
+          size="small"
+          aria-label="Back to Games"
+        >
+          Back
+        </Button>
+        <Typography variant="h6" sx={{ fontWeight: 600 }}>
+          {title}
+        </Typography>
+      </Stack>
+      {showStats || actions ? (
+        <Stack direction="row" alignItems="center" spacing={2} flexWrap="wrap">
+          {showStats ? stats : null}
+          {actions ?? null}
+        </Stack>
+      ) : null}
     </Stack>
   );
 };
 
 export const MiniGameGameOverPanel = ({
+  title = 'Game over',
   summary,
   startingNew,
   onPlayAgain,
+  playAgainLabel = 'Play again',
 }: {
+  title?: ReactNode;
   summary: ReactNode;
   startingNew: boolean;
   onPlayAgain: () => void;
+  playAgainLabel?: string;
 }) => {
   return (
     <Paper variant="outlined" sx={{ p: 3, maxWidth: 360, mb: 2 }}>
       <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
-        Game over
+        {title}
       </Typography>
       <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
         {summary}
@@ -229,7 +243,7 @@ export const MiniGameGameOverPanel = ({
           onClick={onPlayAgain}
           disabled={startingNew}
         >
-          Play again
+          {playAgainLabel}
         </Button>
         <Button
           component={RouterLink}

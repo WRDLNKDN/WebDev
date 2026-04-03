@@ -18,6 +18,7 @@ import {
   reduceImagePreviewErrored,
   reduceImagePreviewLoaded,
 } from '../../lib/feed/imagePreviewState';
+import { InlineImageRenderer } from '../../components/media/AssetThumbnail';
 
 type PreviewableImage = { url: string; source: 'body_gif' | 'post_attachment' };
 
@@ -120,10 +121,18 @@ export const FeedCardImageDialog = ({
           ) : (
             <>
               {imagePreviewState.loading && <CircularProgress size={28} />}
-              <Box
-                component="img"
+              <InlineImageRenderer
                 src={imageLightboxUrl}
                 alt="Full-screen post image"
+                sizing="natural"
+                sx={{
+                  display: imagePreviewState.loading ? 'none' : 'block',
+                  width: '100%',
+                  maxWidth: '100%',
+                  maxHeight: '80vh',
+                  objectFit: 'contain',
+                  borderRadius: 1,
+                }}
                 onLoad={() =>
                   setImagePreviewState((prev) => reduceImagePreviewLoaded(prev))
                 }
@@ -132,13 +141,6 @@ export const FeedCardImageDialog = ({
                     reduceImagePreviewErrored(prev),
                   )
                 }
-                sx={{
-                  display: imagePreviewState.loading ? 'none' : 'block',
-                  maxWidth: '100%',
-                  maxHeight: '80vh',
-                  objectFit: 'contain',
-                  borderRadius: 1,
-                }}
               />
             </>
           )}

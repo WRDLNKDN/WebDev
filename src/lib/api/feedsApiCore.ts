@@ -6,6 +6,18 @@ export const API_BASE =
   (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, '') ??
   '';
 
+type RequestJsonOptions = {
+  accessToken?: string | null;
+  includeJsonContentType?: boolean;
+  credentials?: RequestCredentials;
+  statusMessages?: Partial<Record<number, string>>;
+};
+
+type ErrorResponseBody = {
+  error?: string;
+  message?: string;
+};
+
 export async function parseJsonResponse<T>(
   res: Response,
   requestUrl?: string,
@@ -33,33 +45,64 @@ export async function parseJsonResponse<T>(
   }
 }
 
+async function parseErrorResponseBody(
+  res: Response,
+  url: string,
+): Promise<ErrorResponseBody> {
+  try {
+    return await parseJsonResponse<ErrorResponseBody>(res, url);
+  } catch (e) {
+    if (e instanceof Error && e.message.includes('returned HTML')) throw e;
+    return {};
+  }
+}
+
+function throwResponseError(
+  status: number,
+  body: ErrorResponseBody,
+  statusMessages?: Partial<Record<number, string>>,
+): never {
+  const customMessage = statusMessages?.[status];
+  if (customMessage) throw new Error(customMessage);
+  throw new Error(messageFromApiResponse(status, body.error, body.message));
+}
+
+export async function requestAuthedResponse(
+  url: string,
+  options: RequestInit,
+  requestOptions: RequestJsonOptions = {},
+): Promise<Response> {
+  const res = await authedFetch(url, options, {
+    accessToken: requestOptions.accessToken ?? null,
+    includeJsonContentType: requestOptions.includeJsonContentType ?? true,
+    credentials: requestOptions.credentials ?? (API_BASE ? 'omit' : 'include'),
+  });
+
+  if (!res.ok) {
+    const body = await parseErrorResponseBody(res, url);
+    throwResponseError(res.status, body, requestOptions.statusMessages);
+  }
+
+  return res;
+}
+
+export async function requestAuthedJson<T>(
+  url: string,
+  options: RequestInit,
+  requestOptions: RequestJsonOptions = {},
+): Promise<T> {
+  const res = await requestAuthedResponse(url, options, requestOptions);
+  return parseJsonResponse<T>(res, url);
+}
+
 export async function requestJson<T>(
   url: string,
   options: RequestInit,
   accessToken?: string | null,
 ): Promise<T> {
-  const res = await authedFetch(url, options, {
+  return requestAuthedJson<T>(url, options, {
     accessToken: accessToken ?? null,
-    includeJsonContentType: true,
-    credentials: API_BASE ? 'omit' : 'include',
   });
-
-  if (!res.ok) {
-    let body: { error?: string; message?: string } = {};
-    try {
-      body = await parseJsonResponse<{ error?: string; message?: string }>(
-        res,
-        url,
-      );
-    } catch (e) {
-      if (e instanceof Error && e.message.includes('returned HTML')) throw e;
-    }
-    throw new Error(
-      messageFromApiResponse(res.status, body.error, body.message),
-    );
-  }
-
-  return parseJsonResponse<T>(res, url);
 }
 
 export async function requestNoContent(
@@ -67,21 +110,10 @@ export async function requestNoContent(
   options: RequestInit,
   accessToken?: string | null,
 ): Promise<void> {
-  const res = await authedFetch(url, options, {
+  await requestAuthedResponse(url, options, {
     accessToken: accessToken ?? null,
     includeJsonContentType: true,
-    credentials: API_BASE ? 'omit' : 'include',
   });
-
-  if (!res.ok && res.status !== 204) {
-    let body: { error?: string } = {};
-    try {
-      body = await parseJsonResponse<{ error?: string }>(res, url);
-    } catch (e) {
-      if (e instanceof Error && e.message.includes('returned HTML')) throw e;
-    }
-    throw new Error(messageFromApiResponse(res.status, body.error));
-  }
 }
 
 export async function postFeed(
@@ -89,28 +121,12 @@ export async function postFeed(
   accessToken?: string | null,
 ): Promise<void> {
   const postUrl = `${API_BASE}/api/feeds`;
-  const res = await authedFetch(
+  await requestAuthedResponse(
     postUrl,
     { method: 'POST', body: JSON.stringify(body) },
     {
       accessToken: accessToken ?? null,
       includeJsonContentType: true,
-      credentials: API_BASE ? 'omit' : 'include',
     },
   );
-
-  if (!res.ok) {
-    let payload: { error?: string; message?: string } = {};
-    try {
-      payload = await parseJsonResponse<{ error?: string; message?: string }>(
-        res,
-        postUrl,
-      );
-    } catch (e) {
-      if (e instanceof Error && e.message.includes('returned HTML')) throw e;
-    }
-    throw new Error(
-      messageFromApiResponse(res.status, payload.error, payload.message),
-    );
-  }
 }

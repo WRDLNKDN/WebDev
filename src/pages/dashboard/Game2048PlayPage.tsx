@@ -3,18 +3,10 @@
  * Tiles merge on collision; new tile spawns each move; game over when no moves remain.
  * State persists in game_sessions.state_payload.
  */
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import ReplayIcon from '@mui/icons-material/Replay';
-import {
-  Box,
-  Button,
-  CircularProgress,
-  Paper,
-  Stack,
-  Typography,
-} from '@mui/material';
+import { Box, Button, Paper, Stack, Typography } from '@mui/material';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Link as RouterLink, useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import {
   completeSession,
   create2048Session,
@@ -26,6 +18,13 @@ import {
 import { useAppToast } from '../../context/AppToastContext';
 import { toMessage } from '../../lib/utils/errors';
 import type { GameSession } from '../../types/games';
+import {
+  MiniGameGameOverPanel,
+  MiniGameIntroScreen,
+  MiniGameLoadingNotFound,
+  MiniGamePlayHeaderRow,
+  MiniGamePlayPageRoot,
+} from './games/MiniGamePlayChrome';
 
 const SIZE = 4;
 type Direction = 'up' | 'down' | 'left' | 'right';
@@ -271,41 +270,31 @@ export const Game2048PlayPage = () => {
   }, [navigate, showToast]);
 
   if (loading) {
+    return <MiniGameLoadingNotFound loading notFound={false} />;
+  }
+
+  if (notFound) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-        <CircularProgress aria-label="Loading game" />
-      </Box>
+      <MiniGameLoadingNotFound
+        loading={false}
+        notFound
+        notFoundMessage="Session not found or not a 2048 game."
+      />
     );
   }
 
-  if (notFound || (!sessionId?.trim() && !session)) {
+  if (!sessionId?.trim() && !session) {
     return (
-      <Box sx={{ p: 2 }}>
-        <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 2 }}>
-          <Button
-            component={RouterLink}
-            to="/dashboard/games"
-            startIcon={<ArrowBackIcon />}
-          >
-            Games
-          </Button>
-        </Stack>
-        <Paper variant="outlined" sx={{ p: 3, textAlign: 'center' }}>
-          <Typography color="text.secondary" sx={{ mb: 2 }}>
-            {notFound
-              ? 'Session not found or not a 2048 game.'
-              : 'Start a 2048 game.'}
-          </Typography>
-          <Button
-            variant="contained"
-            onClick={() => void handleStartNew()}
-            disabled={startingNew}
-            startIcon={<ReplayIcon />}
-          >
-            {startingNew ? 'Starting…' : 'New game'}
-          </Button>
-        </Paper>
-      </Box>
+      <MiniGameIntroScreen
+        title="2048"
+        description="Combine matching tiles to reach 2048. Use the arrow keys or swipe to move the board."
+        startingNew={startingNew}
+        onStartNew={() => {
+          void handleStartNew();
+        }}
+        startAriaLabel="Start new 2048 game"
+        startButtonLabel="New game"
+      />
     );
   }
 
@@ -314,33 +303,28 @@ export const Game2048PlayPage = () => {
   if (completed || noMoves) {
     const won = board.some((row) => row.some((v) => v === 2048));
     return (
-      <Box sx={{ p: 2 }}>
-        <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 2 }}>
-          <Button
-            component={RouterLink}
-            to="/dashboard/games"
-            startIcon={<ArrowBackIcon />}
-          >
-            Games
-          </Button>
-        </Stack>
-        <Paper variant="outlined" sx={{ p: 3, textAlign: 'center' }}>
-          <Typography variant="h6" sx={{ mb: 1 }}>
-            {won ? 'You reached 2048!' : 'No moves left'}
-          </Typography>
-          <Typography color="text.secondary" sx={{ mb: 2 }}>
-            Final score: {score}
-          </Typography>
-          <Button
-            variant="contained"
-            startIcon={<ReplayIcon />}
-            onClick={() => void handleStartNew()}
-            disabled={startingNew}
-          >
-            Play again
-          </Button>
-        </Paper>
-      </Box>
+      <MiniGamePlayPageRoot>
+        <MiniGamePlayHeaderRow
+          title="2048"
+          showStats
+          stats={
+            <Paper variant="outlined" sx={{ px: 2, py: 1 }}>
+              <Typography variant="body2" color="text.secondary">
+                Score
+              </Typography>
+              <Typography variant="h6">{score}</Typography>
+            </Paper>
+          }
+        />
+        <MiniGameGameOverPanel
+          title={won ? 'You reached 2048!' : 'No moves left'}
+          summary={`Final score: ${score}`}
+          startingNew={startingNew}
+          onPlayAgain={() => {
+            void handleStartNew();
+          }}
+        />
+      </MiniGamePlayPageRoot>
     );
   }
 
@@ -348,27 +332,19 @@ export const Game2048PlayPage = () => {
   const gap = 8;
 
   return (
-    <Box sx={{ p: 2 }}>
-      <Stack
-        direction="row"
-        alignItems="center"
-        justifyContent="space-between"
-        sx={{ mb: 2 }}
-      >
-        <Button
-          component={RouterLink}
-          to="/dashboard/games"
-          startIcon={<ArrowBackIcon />}
-        >
-          Games
-        </Button>
-        <Stack direction="row" alignItems="center" spacing={2}>
+    <MiniGamePlayPageRoot>
+      <MiniGamePlayHeaderRow
+        title="2048"
+        showStats
+        stats={
           <Paper variant="outlined" sx={{ px: 2, py: 1 }}>
             <Typography variant="body2" color="text.secondary">
               Score
             </Typography>
             <Typography variant="h6">{score}</Typography>
           </Paper>
+        }
+        actions={
           <Button
             size="small"
             startIcon={<ReplayIcon />}
@@ -377,8 +353,8 @@ export const Game2048PlayPage = () => {
           >
             New game
           </Button>
-        </Stack>
-      </Stack>
+        }
+      />
 
       <Paper
         variant="outlined"
@@ -446,6 +422,6 @@ export const Game2048PlayPage = () => {
           </Button>
         ))}
       </Stack>
-    </Box>
+    </MiniGamePlayPageRoot>
   );
 };

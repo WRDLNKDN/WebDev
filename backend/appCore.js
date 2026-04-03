@@ -36,6 +36,26 @@ import {
 } from './resumeThumbnail.js';
 import { wordBufferToPdf } from './resumeWordToPdf.js';
 import { registerAdvertiseRequestRoute } from './routes/advertiseRequest.js';
+import {
+  createMediaAsset,
+  deleteMediaAsset,
+  fetchMediaAsset,
+  reprocessMediaAsset,
+  retryMediaAsset,
+  toMediaServiceError,
+  updateMediaAssetModeration,
+} from './lib/mediaService.js';
+import { runMediaSafetyCheck } from './lib/mediaModeration.js';
+import {
+  buildLegacyMediaAssetCreateInput,
+  buildLegacyMediaBackfillPlan,
+  getLegacyMediaMigrationAudit,
+} from './lib/mediaMigration.js';
+import {
+  fetchAdminMediaHealthSnapshot,
+  normalizeClientMediaTelemetryPayload,
+  persistClientMediaTelemetry,
+} from './lib/mediaObservability.js';
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const ADMIN_TOKEN = process.env.ADMIN_TOKEN || '';
@@ -211,7 +231,8 @@ const errorMessage = (e, fallback) => {
   if (typeof e === 'string' && e.trim()) return e;
   return fallback;
 };
-// Keep in sync with WebDev `CHAT_GIF_PROCESSING_MAX_FILE_BYTES` (src/types/chat.ts).
+// Keep in sync with WebDev `CHAT_GIF_PROCESSING_MAX_FILE_BYTES`
+// in `src/lib/media/mediaSizePolicy.ts`.
 const CHAT_GIF_PROCESSING_MAX_BYTES = 6 * 1024 * 1024;
 const CHAT_PROCESSED_MEDIA_MAX_BYTES = 6 * 1024 * 1024;
 const FFMPEG_BINARY = process.env.FFMPEG_PATH || 'ffmpeg';
@@ -1936,6 +1957,195 @@ app.get('/api/link-preview', requireAuth, async (req, res) => {
   const preview = await fetchLinkPreview(rawUrl);
   return res.json({ ok: true, data: preview });
 });
+app.post('/api/media/assets', requireAuth, async (req, res) => {
+  const userId = req.userId;
+  if (!userId) return sendApiError(res, 401, 'Unauthorized');
+
+  try {
+    const asset = await createMediaAsset({
+      supabase: adminSupabase,
+      userId,
+      body: req.body ?? {},
+      fetchLinkPreview,
+      runMediaSafetyCheck,
+    });
+    return res.status(201).json({
+      ok: true,
+      data: asset,
+      error: null,
+      meta: {},
+    });
+  } catch (error) {
+    const serviceError = toMediaServiceError(error);
+    return sendApiError(
+      res,
+      serviceError.status,
+      serviceError.message,
+      serviceError.code ?? void 0,
+    );
+  }
+});
+app.get('/api/media/assets/:assetId', requireAuth, async (req, res) => {
+  const userId = req.userId;
+  if (!userId) return sendApiError(res, 401, 'Unauthorized');
+
+  try {
+    const asset = await fetchMediaAsset({
+      supabase: adminSupabase,
+      userId,
+      assetId: req.params.assetId,
+    });
+    return res.json({
+      ok: true,
+      data: asset,
+      error: null,
+      meta: {},
+    });
+  } catch (error) {
+    const serviceError = toMediaServiceError(error);
+    return sendApiError(
+      res,
+      serviceError.status,
+      serviceError.message,
+      serviceError.code ?? void 0,
+    );
+  }
+});
+app.post('/api/media/assets/:assetId/retry', requireAuth, async (req, res) => {
+  const userId = req.userId;
+  if (!userId) return sendApiError(res, 401, 'Unauthorized');
+
+  try {
+    const asset = await retryMediaAsset({
+      supabase: adminSupabase,
+      userId,
+      assetId: req.params.assetId,
+      body: req.body ?? {},
+    });
+    return res.json({
+      ok: true,
+      data: asset,
+      error: null,
+      meta: {},
+    });
+  } catch (error) {
+    const serviceError = toMediaServiceError(error);
+    return sendApiError(
+      res,
+      serviceError.status,
+      serviceError.message,
+      serviceError.code ?? void 0,
+    );
+  }
+});
+app.post(
+  '/api/media/assets/:assetId/reprocess',
+  requireAuth,
+  async (req, res) => {
+    const userId = req.userId;
+    if (!userId) return sendApiError(res, 401, 'Unauthorized');
+
+    try {
+      const asset = await reprocessMediaAsset({
+        supabase: adminSupabase,
+        userId,
+        assetId: req.params.assetId,
+        body: req.body ?? {},
+      });
+      return res.json({
+        ok: true,
+        data: asset,
+        error: null,
+        meta: {},
+      });
+    } catch (error) {
+      const serviceError = toMediaServiceError(error);
+      return sendApiError(
+        res,
+        serviceError.status,
+        serviceError.message,
+        serviceError.code ?? void 0,
+      );
+    }
+  },
+);
+app.delete('/api/media/assets/:assetId', requireAuth, async (req, res) => {
+  const userId = req.userId;
+  if (!userId) return sendApiError(res, 401, 'Unauthorized');
+
+  try {
+    await deleteMediaAsset({
+      supabase: adminSupabase,
+      userId,
+      assetId: req.params.assetId,
+      body: req.body ?? {},
+    });
+    return res.status(204).send();
+  } catch (error) {
+    const serviceError = toMediaServiceError(error);
+    return sendApiError(
+      res,
+      serviceError.status,
+      serviceError.message,
+      serviceError.code ?? void 0,
+    );
+  }
+});
+app.post('/api/media/telemetry', requireAuth, async (req, res) => {
+  const userId = req.userId;
+  if (!userId) return sendApiError(res, 401, 'Unauthorized');
+
+  try {
+    const events = normalizeClientMediaTelemetryPayload(req.body ?? {});
+    if (events.length === 0) {
+      return sendApiError(res, 400, 'Missing media telemetry event');
+    }
+    await persistClientMediaTelemetry(adminSupabase, {
+      actorId: userId,
+      events,
+    });
+    return res.status(202).json({
+      ok: true,
+      data: { accepted: events.length },
+      error: null,
+      meta: {},
+    });
+  } catch (error) {
+    return sendApiError(
+      res,
+      500,
+      errorMessage(error, 'Could not persist media telemetry'),
+    );
+  }
+});
+app.post(
+  '/api/admin/media-assets/:assetId/moderation',
+  requireAdmin,
+  async (req, res) => {
+    try {
+      const asset = await updateMediaAssetModeration({
+        supabase: adminSupabase,
+        actorId: req.userId ?? null,
+        assetId: req.params.assetId,
+        body: req.body ?? {},
+      });
+      return res.json({
+        ok: true,
+        data: asset,
+        error: null,
+        meta: {},
+      });
+    } catch (error) {
+      const serviceError = toMediaServiceError(error);
+      return sendApiError(
+        res,
+        serviceError.status,
+        serviceError.message,
+        serviceError.code ?? void 0,
+      );
+    }
+  },
+);
 const uploadChatGifFile = upload.single('file');
 app.post('/api/chat/attachments/process-gif', requireAuth, (req, res) => {
   uploadChatGifFile(req, res, async (uploadErr) => {
@@ -3371,6 +3581,62 @@ app.get('/api/admin/auth-callback-logs', requireAdmin, async (req, res) => {
     error: null,
     meta: { total: count ?? data.length },
   });
+});
+app.get('/api/admin/media-migration/audit', requireAdmin, async (_req, res) => {
+  return res.json({
+    ok: true,
+    data: getLegacyMediaMigrationAudit(),
+    error: null,
+    meta: {},
+  });
+});
+app.post('/api/admin/media-migration/plan', requireAdmin, async (req, res) => {
+  try {
+    const record = req.body ?? {};
+    const createInput = buildLegacyMediaAssetCreateInput(record);
+    const backfillPlan = buildLegacyMediaBackfillPlan(record);
+    return res.json({
+      ok: true,
+      data: {
+        createInput,
+        backfillPlan,
+      },
+      error: null,
+      meta: {},
+    });
+  } catch (error) {
+    return sendApiError(
+      res,
+      400,
+      error instanceof Error ? error.message : 'Invalid legacy media record',
+      'BAD_REQUEST',
+    );
+  }
+});
+app.get('/api/admin/media-health', requireAdmin, async (req, res) => {
+  try {
+    const windowHours =
+      typeof req.query.windowHours === 'string'
+        ? Number(req.query.windowHours)
+        : Array.isArray(req.query.windowHours)
+          ? Number(req.query.windowHours[0])
+          : void 0;
+    const data = await fetchAdminMediaHealthSnapshot(adminSupabase, {
+      windowHours,
+    });
+    return res.json({
+      ok: true,
+      data,
+      error: null,
+      meta: {},
+    });
+  } catch (error) {
+    return sendApiError(
+      res,
+      500,
+      errorMessage(error, 'Could not load media health'),
+    );
+  }
 });
 app.get('/api/admin/audit', requireAdmin, async (req, res) => {
   const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 50));

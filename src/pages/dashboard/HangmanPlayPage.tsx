@@ -2,18 +2,10 @@
  * Solo Hangman: word from approved list, guess letters, win by solving or lose by max wrong guesses.
  * State persists in game_sessions.state_payload; in-progress games survive refresh.
  */
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import ReplayIcon from '@mui/icons-material/Replay';
-import {
-  Box,
-  Button,
-  CircularProgress,
-  Paper,
-  Stack,
-  Typography,
-} from '@mui/material';
+import { Box, Button, Paper, Typography } from '@mui/material';
 import { useCallback, useEffect, useState } from 'react';
-import { Link as RouterLink, useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import {
   createHangmanSession,
   fetchSessionForGameType,
@@ -23,6 +15,13 @@ import type { HangmanStatePayload } from '../../lib/api/gamesApi';
 import { useAppToast } from '../../context/AppToastContext';
 import { toMessage } from '../../lib/utils/errors';
 import type { GameSession } from '../../types/games';
+import {
+  MiniGameGameOverPanel,
+  MiniGameIntroScreen,
+  MiniGameLoadingNotFound,
+  MiniGamePlayHeaderRow,
+  MiniGamePlayPageRoot,
+} from './games/MiniGamePlayChrome';
 
 const MAX_WRONG_DEFAULT = 6;
 const ALPHABET = 'abcdefghijklmnopqrstuvwxyz'.split('');
@@ -111,74 +110,24 @@ export const HangmanPlayPage = () => {
   }, [navigate, showToast]);
 
   if (loading) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-        <CircularProgress aria-label="Loading game" />
-      </Box>
-    );
+    return <MiniGameLoadingNotFound loading notFound={false} />;
   }
 
   if (notFound || (!session && sessionId)) {
-    return (
-      <Box sx={{ py: 2, px: { xs: 2, sm: 3 } }}>
-        <Button
-          component={RouterLink}
-          to="/dashboard/games"
-          startIcon={<ArrowBackIcon />}
-          variant="outlined"
-          size="small"
-          sx={{ mb: 2 }}
-        >
-          Back to Games
-        </Button>
-        <Typography color="text.secondary" sx={{ mb: 2 }}>
-          Game not found.
-        </Typography>
-        <Button
-          component={RouterLink}
-          to="/dashboard/games"
-          variant="contained"
-        >
-          Back to Games
-        </Button>
-      </Box>
-    );
+    return <MiniGameLoadingNotFound loading={false} notFound />;
   }
 
   if (!sessionId && !session) {
     return (
-      <Box sx={{ py: 2, px: { xs: 2, sm: 3 } }}>
-        <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 3 }}>
-          <Button
-            component={RouterLink}
-            to="/dashboard/games"
-            startIcon={<ArrowBackIcon />}
-            variant="outlined"
-            size="small"
-          >
-            Back
-          </Button>
-          <Typography variant="h6" sx={{ fontWeight: 600 }}>
-            Hangman
-          </Typography>
-        </Stack>
-        <Paper variant="outlined" sx={{ p: 3, maxWidth: 360 }}>
-          <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
-            Guess the word one letter at a time. You have 6 incorrect guesses
-            before you lose.
-          </Typography>
-          <Button
-            variant="contained"
-            fullWidth
-            startIcon={<ReplayIcon />}
-            disabled={startingNew}
-            onClick={() => void handleStartNew()}
-            aria-label="Start new Hangman game"
-          >
-            {startingNew ? 'Starting…' : 'Start new game'}
-          </Button>
-        </Paper>
-      </Box>
+      <MiniGameIntroScreen
+        title="Hangman"
+        description="Guess the word one letter at a time. You have 6 incorrect guesses before you lose."
+        startingNew={startingNew}
+        onStartNew={() => {
+          void handleStartNew();
+        }}
+        startAriaLabel="Start new Hangman game"
+      />
     );
   }
 
@@ -196,42 +145,24 @@ export const HangmanPlayPage = () => {
   const remaining = maxWrong - wrongCount;
 
   return (
-    <Box sx={{ py: 2, px: { xs: 2, sm: 3 } }}>
-      <Stack
-        direction="row"
-        alignItems="center"
-        justifyContent="space-between"
-        flexWrap="wrap"
-        gap={2}
-        sx={{ mb: 3 }}
-      >
-        <Stack direction="row" alignItems="center" spacing={2}>
-          <Button
-            component={RouterLink}
-            to="/dashboard/games"
-            startIcon={<ArrowBackIcon />}
-            variant="outlined"
-            size="small"
-            aria-label="Back to Games"
-          >
-            Back
-          </Button>
-          <Typography variant="h6" sx={{ fontWeight: 600 }}>
-            Hangman
-          </Typography>
-        </Stack>
-        {!completed && (
-          <Button
-            variant="outlined"
-            size="small"
-            startIcon={<ReplayIcon />}
-            disabled={startingNew}
-            onClick={() => void handleStartNew()}
-          >
-            New game
-          </Button>
-        )}
-      </Stack>
+    <MiniGamePlayPageRoot>
+      <MiniGamePlayHeaderRow
+        title="Hangman"
+        showStats={false}
+        actions={
+          !completed ? (
+            <Button
+              variant="outlined"
+              size="small"
+              startIcon={<ReplayIcon />}
+              disabled={startingNew}
+              onClick={() => void handleStartNew()}
+            >
+              New game
+            </Button>
+          ) : null
+        }
+      />
 
       <Paper variant="outlined" sx={{ p: 2, maxWidth: 520, mx: 'auto' }}>
         <Typography
@@ -264,16 +195,6 @@ export const HangmanPlayPage = () => {
         >
           {displayWord}
         </Typography>
-
-        {completed && (
-          <Typography
-            variant="body1"
-            color="text.secondary"
-            sx={{ textAlign: 'center', mb: 2 }}
-          >
-            The word was <strong>{word}</strong>.
-          </Typography>
-        )}
 
         {!completed && (
           <Box
@@ -311,30 +232,22 @@ export const HangmanPlayPage = () => {
         )}
 
         {completed && (
-          <Stack
-            direction="row"
-            justifyContent="center"
-            spacing={1}
-            sx={{ mt: 2 }}
-          >
-            <Button
-              component={RouterLink}
-              to="/dashboard/games"
-              variant="outlined"
-            >
-              Back to Games
-            </Button>
-            <Button
-              variant="contained"
-              startIcon={<ReplayIcon />}
-              onClick={() => void handleStartNew()}
-              disabled={startingNew}
-            >
-              Play again
-            </Button>
-          </Stack>
+          <MiniGameGameOverPanel
+            title={
+              won ? 'You solved it!' : lost ? 'Out of guesses.' : 'Game over'
+            }
+            summary={
+              <>
+                The word was <strong>{word}</strong>.
+              </>
+            }
+            startingNew={startingNew}
+            onPlayAgain={() => {
+              void handleStartNew();
+            }}
+          />
         )}
       </Paper>
-    </Box>
+    </MiniGamePlayPageRoot>
   );
 };

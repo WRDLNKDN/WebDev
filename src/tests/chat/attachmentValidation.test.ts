@@ -1,4 +1,9 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+
+vi.mock('../../lib/media/telemetry', () => ({
+  reportMediaTelemetryAsync: vi.fn(),
+}));
+
 import {
   getChatAttachmentRejectionReason,
   normalizeChatAttachmentMime,
@@ -46,6 +51,16 @@ describe('chat attachment validation', () => {
       accepted: true,
       mode: 'optimize',
     });
+  });
+
+  it('accepts larger transformable images within the 15MB input ceiling', () => {
+    expect(
+      getChatAttachmentRejectionReason({
+        name: 'screenshot.png',
+        type: 'image/png',
+        size: 10 * 1024 * 1024,
+      }),
+    ).toBeNull();
   });
 
   it('allows GIFs under the 6MB upload ceiling', () => {

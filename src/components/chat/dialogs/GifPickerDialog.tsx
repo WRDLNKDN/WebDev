@@ -26,26 +26,27 @@ import {
   searchChatGifs,
   type GifContentFilter,
 } from '../../../lib/chat/gifApi';
+import { reportMediaTelemetryAsync } from '../../../lib/media/telemetry';
 
 export type GifPickerDialogProps = {
   open: boolean;
   onClose: () => void;
   onPick: (gifUrl: string, title?: string) => void;
-  /** Show content filter buttons (G, PG-13, Strict). Default true. */
-  showContentFilter?: boolean;
   /** Max height for result grid (px). Default 360. */
   maxHeight?: number;
   /** Grid cell height (px). Default 110. */
   cellHeight?: number;
+  /** Surface using the shared picker. Defaults to `shared_gif_picker`. */
+  telemetrySurface?: string;
 };
 
 export const GifPickerDialog = ({
   open,
   onClose,
   onPick,
-  showContentFilter = true,
   maxHeight = 360,
   cellHeight = 110,
+  telemetrySurface = 'shared_gif_picker',
 }: GifPickerDialogProps) => {
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(false);
@@ -56,6 +57,7 @@ export const GifPickerDialog = ({
     Array<{ id: string; title: string; previewUrl: string; gifUrl: string }>
   >([]);
   const latestRequestIdRef = useRef(0);
+  const [trendingUnavailable, setTrendingUnavailable] = useState(false);
   const lastAttemptRef = useRef<{
     query: string;
     filter: GifContentFilter;
@@ -72,32 +74,90 @@ export const GifPickerDialog = ({
       lastAttemptRef.current = { query: trimmedQuery, filter };
       setLoading(true);
       setError(null);
+      setTrendingUnavailable(false);
       try {
         const gifs = trimmedQuery
           ? await searchChatGifs(trimmedQuery, 24, filter)
           : await getTrendingChatGifs(24, filter);
         if (latestRequestIdRef.current !== requestId) return;
         setResults(gifs);
+        reportMediaTelemetryAsync({
+          eventName: trimmedQuery
+            ? 'gif_picker_search_loaded'
+            : 'gif_picker_trending_loaded',
+          stage: 'preview',
+          surface: telemetrySurface,
+          requestId: `${filter}:${trimmedQuery || 'trending'}`,
+          pipeline: 'gif_picker',
+          status: 'ready',
+          meta: {
+            resultCount: gifs.length,
+            query: trimmedQuery || null,
+            filter,
+          },
+        });
       } catch (e) {
         if (latestRequestIdRef.current !== requestId) return;
         setResults([]);
         const raw =
           e instanceof Error ? e.message : 'Could not load GIFs. Try again.';
-        setError(normalizeGifErrorMessage(raw));
+        const normalized = normalizeGifErrorMessage(raw);
+        if (!trimmedQuery) {
+          setTrendingUnavailable(true);
+          setError(null);
+          reportMediaTelemetryAsync({
+            eventName: 'gif_picker_trending_failed',
+            stage: 'preview',
+            surface: telemetrySurface,
+            requestId: `${filter}:trending`,
+            pipeline: 'gif_picker',
+            status: 'failed',
+            failureCode: 'gif_trending_failed',
+            failureReason: normalized,
+            meta: {
+              query: null,
+              filter,
+            },
+          });
+        } else {
+          setError(normalized);
+          reportMediaTelemetryAsync({
+            eventName: 'gif_picker_search_failed',
+            stage: 'preview',
+            surface: telemetrySurface,
+            requestId: `${filter}:${trimmedQuery}`,
+            pipeline: 'gif_picker',
+            status: 'failed',
+            failureCode: 'gif_search_failed',
+            failureReason: normalized,
+            meta: {
+              query: trimmedQuery,
+              filter,
+            },
+          });
+        }
       } finally {
         if (latestRequestIdRef.current === requestId) {
           setLoading(false);
         }
       }
     },
-    [contentFilter],
+    [contentFilter, telemetrySurface],
   );
 
   useEffect(() => {
     if (open && results.length === 0) {
+      reportMediaTelemetryAsync({
+        eventName: 'gif_picker_opened',
+        stage: 'preview',
+        surface: telemetrySurface,
+        requestId: `open:${Date.now()}`,
+        pipeline: 'gif_picker',
+        status: 'started',
+      });
       void loadGifs('');
     }
-  }, [open, loadGifs, results.length]);
+  }, [open, loadGifs, results.length, telemetrySurface]);
 
   useEffect(() => {
     if (open) return;
@@ -107,6 +167,7 @@ export const GifPickerDialog = ({
     setError(null);
     setResults([]);
     setContentFilter('medium');
+    setTrendingUnavailable(false);
     lastAttemptRef.current = { query: '', filter: 'medium' };
   }, [open]);
 
@@ -219,43 +280,6 @@ export const GifPickerDialog = ({
           }}
           sx={{ mb: 1.5 }}
         />
-        {showContentFilter && (
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
-            <Typography variant="caption" color="text.secondary">
-              Content:
-            </Typography>
-            <Button
-              size="small"
-              variant={contentFilter === 'low' ? 'contained' : 'text'}
-              onClick={() => {
-                setContentFilter('low');
-                handleSearch(query, 'low');
-              }}
-            >
-              G
-            </Button>
-            <Button
-              size="small"
-              variant={contentFilter === 'medium' ? 'contained' : 'text'}
-              onClick={() => {
-                setContentFilter('medium');
-                handleSearch(query, 'medium');
-              }}
-            >
-              PG-13
-            </Button>
-            <Button
-              size="small"
-              variant={contentFilter === 'high' ? 'contained' : 'text'}
-              onClick={() => {
-                setContentFilter('high');
-                handleSearch(query, 'high');
-              }}
-            >
-              Strict
-            </Button>
-          </Box>
-        )}
         {loading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', py: 3 }}>
             <CircularProgress size={24} />
@@ -294,7 +318,9 @@ export const GifPickerDialog = ({
             <Typography variant="body2">
               {query.trim()
                 ? 'No results found. Try a different search.'
-                : 'No trending GIFs right now. Try searching above.'}
+                : trendingUnavailable
+                  ? 'Trending GIFs are unavailable right now. Try searching above.'
+                  : 'Search above to find a GIF.'}
             </Typography>
           </Box>
         ) : (
@@ -345,12 +371,12 @@ export const GifPickerDialog = ({
         >
           Powered by{' '}
           <Link
-            href="https://tenor.com"
+            href="https://giphy.com"
             target="_blank"
             rel="noopener noreferrer"
             sx={{ color: 'primary.main' }}
           >
-            Tenor
+            GIPHY
           </Link>
         </Typography>
       </DialogContent>

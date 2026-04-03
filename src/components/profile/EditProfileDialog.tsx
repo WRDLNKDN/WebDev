@@ -20,6 +20,7 @@ import { INTERESTS_MAX } from '../../constants/interestTaxonomy';
 import { useAppToast } from '../../context/AppToastContext';
 import { supabase } from '../../lib/auth/supabaseClient';
 import { validateIndustryGroups } from '../../lib/profile/validateIndustryGroups';
+import { getSharedUploadRejectionReason } from '../../lib/media/uploadIntake';
 import {
   parseNicheValues,
   serializeNicheValues,
@@ -345,8 +346,12 @@ export const EditProfileDialog = ({
   ) => {
     const file = event.target.files?.[0];
     if (!file) return;
-    if (file.size > 6 * 1024 * 1024) {
-      showToast({ message: 'File too large. Max 6MB.', severity: 'warning' });
+    const uploadRejection = getSharedUploadRejectionReason(
+      'profile_avatar',
+      file,
+    );
+    if (uploadRejection) {
+      showToast({ message: uploadRejection, severity: 'warning' });
       event.target.value = '';
       return;
     }

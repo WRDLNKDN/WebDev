@@ -2,8 +2,13 @@
  * Client-side resize/compress for user-uploaded resume preview images.
  */
 
-const MAX_INPUT_BYTES = 15 * 1024 * 1024;
-const MAX_OUTPUT_BYTES = 2 * 1024 * 1024;
+import {
+  PROFILE_RESUME_THUMBNAIL_INPUT_HARD_LIMIT_BYTES,
+  PROFILE_RESUME_THUMBNAIL_OUTPUT_MAX_FILE_BYTES,
+} from '../media/mediaSizePolicy';
+
+const MAX_INPUT_BYTES = PROFILE_RESUME_THUMBNAIL_INPUT_HARD_LIMIT_BYTES;
+const MAX_OUTPUT_BYTES = PROFILE_RESUME_THUMBNAIL_OUTPUT_MAX_FILE_BYTES;
 const MAX_LONG_EDGE_START = 1280;
 
 function loadImageElement(file: File): Promise<HTMLImageElement> {

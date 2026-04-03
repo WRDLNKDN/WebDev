@@ -4,6 +4,7 @@ import { getLinkType, normalizeGoogleUrl } from '../../lib/portfolio/linkUtils';
 import {
   getProjectSourceFileError,
   invokePortfolioThumbnailGeneration,
+  toProjectUploadFieldError,
   uploadPublicProjectAsset,
   PROJECT_SOURCE_BUCKET,
 } from '../../lib/portfolio/projectMedia';
@@ -89,13 +90,17 @@ export async function uploadProjectThumbnailUrl(params: {
   const { userId, imageUrl, thumbnailFile } = params;
   if (!thumbnailFile) return imageUrl;
 
-  return uploadPublicProjectAsset({
-    userId,
-    file: thumbnailFile,
-    bucket: 'project-images',
-    prefix: 'project-thumbnail',
-    returnVariant: 'display',
-  });
+  try {
+    return await uploadPublicProjectAsset({
+      userId,
+      file: thumbnailFile,
+      bucket: 'project-images',
+      prefix: 'project-thumbnail',
+      returnVariant: 'display',
+    });
+  } catch (error) {
+    throw toProjectUploadFieldError('thumbnail', error);
+  }
 }
 
 export function assertProjectUrlIsSafe(projectUrlTrimmed: string): void {

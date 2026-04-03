@@ -4,16 +4,36 @@
 
 import { messageFromApiResponse } from '../utils/errors';
 import { authedFetch } from './authFetch';
+import {
+  API_BASE,
+  requestAuthedJson,
+  requestAuthedResponse,
+} from './feedsApiCore';
 import type {
   WeirdlingPreview,
   WeirdlingWizardInputs,
   Weirdling,
 } from '../../types/weirdling';
 
-const API_BASE =
-  (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, '') ||
-  '';
 const WEIRDLING_API = `${API_BASE}/api/weirdling`;
+
+type WeirdlingJsonBody = Record<string, unknown>;
+type PreviewRemainingResponse = {
+  data?: {
+    remaining?: number;
+    limit?: number;
+  };
+};
+
+async function readWeirdlingJsonBody(
+  res: Response,
+): Promise<WeirdlingJsonBody> {
+  try {
+    return (await res.json()) as WeirdlingJsonBody;
+  } catch {
+    return {};
+  }
+}
 
 export type GenerateResult = {
   ok: boolean;
@@ -36,7 +56,7 @@ export async function generateWeirdling(
   };
   if (idempotencyKey) body.idempotency_key = idempotencyKey;
 
-  const res = await authedFetch(
+  return requestAuthedJson<GenerateResult>(
     `${WEIRDLING_API}/generate`,
     {
       method: 'POST',
@@ -44,23 +64,8 @@ export async function generateWeirdling(
     },
     {
       includeJsonContentType: true,
-      credentials: API_BASE ? 'omit' : 'include',
     },
   );
-
-  let data: Record<string, unknown>;
-  try {
-    data = (await res.json()) as Record<string, unknown>;
-  } catch {
-    data = {};
-  }
-  if (!res.ok) {
-    const msg = typeof data?.error === 'string' ? data.error : undefined;
-    const bodyMsg =
-      typeof data?.message === 'string' ? data.message : undefined;
-    throw new Error(messageFromApiResponse(res.status, msg, bodyMsg));
-  }
-  return data as GenerateResult;
 }
 
 /** Remaining AI Weirdling preview generations for today (daily limit 5). */
@@ -68,22 +73,13 @@ export async function getPreviewRemaining(): Promise<{
   remaining: number;
   limit: number;
 }> {
-  const res = await authedFetch(
+  const data = await requestAuthedJson<PreviewRemainingResponse>(
     `${WEIRDLING_API}/preview-remaining`,
     { method: 'GET' },
     {
       includeJsonContentType: false,
-      credentials: API_BASE ? 'omit' : 'include',
     },
   );
-  const data = (await res.json()) as {
-    ok?: boolean;
-    data?: { remaining?: number; limit?: number };
-    error?: string;
-  };
-  if (!res.ok) {
-    throw new Error(messageFromApiResponse(res.status, data?.error, undefined));
-  }
   return {
     remaining: data?.data?.remaining ?? 0,
     limit: data?.data?.limit ?? 5,
@@ -91,7 +87,7 @@ export async function getPreviewRemaining(): Promise<{
 }
 
 export async function saveWeirdlingByJobId(jobId: string): Promise<void> {
-  const res = await authedFetch(
+  await requestAuthedResponse(
     `${WEIRDLING_API}/save`,
     {
       method: 'POST',
@@ -99,27 +95,14 @@ export async function saveWeirdlingByJobId(jobId: string): Promise<void> {
     },
     {
       includeJsonContentType: true,
-      credentials: API_BASE ? 'omit' : 'include',
     },
   );
-  let data: Record<string, unknown>;
-  try {
-    data = (await res.json()) as Record<string, unknown>;
-  } catch {
-    data = {};
-  }
-  if (!res.ok) {
-    const msg = typeof data?.error === 'string' ? data.error : undefined;
-    const bodyMsg =
-      typeof data?.message === 'string' ? data.message : undefined;
-    throw new Error(messageFromApiResponse(res.status, msg, bodyMsg));
-  }
 }
 
 export async function saveWeirdlingPreview(
   preview: WeirdlingPreview,
 ): Promise<void> {
-  const res = await authedFetch(
+  await requestAuthedResponse(
     `${WEIRDLING_API}/save`,
     {
       method: 'POST',
@@ -127,21 +110,8 @@ export async function saveWeirdlingPreview(
     },
     {
       includeJsonContentType: true,
-      credentials: API_BASE ? 'omit' : 'include',
     },
   );
-  let data: Record<string, unknown>;
-  try {
-    data = (await res.json()) as Record<string, unknown>;
-  } catch {
-    data = {};
-  }
-  if (!res.ok) {
-    const msg = typeof data?.error === 'string' ? data.error : undefined;
-    const bodyMsg =
-      typeof data?.message === 'string' ? data.message : undefined;
-    throw new Error(messageFromApiResponse(res.status, msg, bodyMsg));
-  }
 }
 
 /** Returns all active Weirdlings for the current user (newest first). */
@@ -155,12 +125,7 @@ export async function getMyWeirdlings(): Promise<Weirdling[]> {
         credentials: API_BASE ? 'omit' : 'include',
       },
     );
-    let data: Record<string, unknown>;
-    try {
-      data = (await res.json()) as Record<string, unknown>;
-    } catch {
-      data = {};
-    }
+    const data = await readWeirdlingJsonBody(res);
     if (!res.ok) {
       if (res.status === 401) return [];
       const msg = typeof data?.error === 'string' ? data.error : undefined;
@@ -181,23 +146,11 @@ export async function getMyWeirdling(): Promise<Weirdling | null> {
 }
 
 export async function deleteWeirdling(id: string): Promise<void> {
-  const res = await authedFetch(
+  await requestAuthedResponse(
     `${WEIRDLING_API}/me/${encodeURIComponent(id)}`,
     {
       method: 'DELETE',
     },
     { includeJsonContentType: false, credentials: 'include' },
   );
-  let data: Record<string, unknown>;
-  try {
-    data = (await res.json()) as Record<string, unknown>;
-  } catch {
-    data = {};
-  }
-  if (!res.ok) {
-    const msg = typeof data?.error === 'string' ? data.error : undefined;
-    const bodyMsg =
-      typeof data?.message === 'string' ? data.message : undefined;
-    throw new Error(messageFromApiResponse(res.status, msg, bodyMsg));
-  }
 }

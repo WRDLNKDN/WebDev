@@ -7,7 +7,7 @@
 
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { WhyWrdlnkdnVideo } from '../../components/home/WhyWrdlnkdnVideo';
 
@@ -16,11 +16,45 @@ const MANUAL_PLAY_SRC =
 const AUTOPLAY_SRC =
   'https://www.youtube.com/embed/Qc4D5W2kuBI?playsinline=1&rel=0&autoplay=1&mute=1';
 
+let intersectionCallback:
+  | ((
+      entries: IntersectionObserverEntry[],
+      observer: IntersectionObserver,
+    ) => void)
+  | null = null;
+let disconnectSpy: ReturnType<typeof vi.fn>;
+
 describe('WhyWrdlnkdnVideo', () => {
   let container: HTMLDivElement;
   let root: Root;
 
   beforeEach(() => {
+    intersectionCallback = null;
+    disconnectSpy = vi.fn();
+
+    vi.stubGlobal(
+      'IntersectionObserver',
+      vi
+        .fn()
+        .mockImplementation(
+          (
+            cb: (
+              entries: IntersectionObserverEntry[],
+              observer: IntersectionObserver,
+            ) => void,
+          ) => {
+            // Only capture the callback when not on a coarse-pointer device
+            // (the component skips IntersectionObserver on mobile).
+            intersectionCallback = cb;
+            return {
+              observe: vi.fn(),
+              unobserve: vi.fn(),
+              disconnect: disconnectSpy,
+            };
+          },
+        ),
+    );
+
     container = document.createElement('div');
     document.body.appendChild(container);
     root = createRoot(container);
@@ -123,6 +157,18 @@ describe('WhyWrdlnkdnVideo', () => {
         dispatchEvent: vi.fn(),
       })),
     );
+
+    // On coarse-pointer devices the component does not create an
+    // IntersectionObserver, so override the stub so it does not capture.
+    vi.stubGlobal(
+      'IntersectionObserver',
+      vi.fn().mockImplementation(() => ({
+        observe: vi.fn(),
+        unobserve: vi.fn(),
+        disconnect: vi.fn(),
+      })),
+    );
+    intersectionCallback = null;
 
     await renderVideo();
 

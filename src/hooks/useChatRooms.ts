@@ -16,7 +16,6 @@ import { useAppToast } from '../context/AppToastContext';
 import { sanitizeChatRoomPreview } from '../lib/chat/roomPreview';
 import { toMessage } from '../lib/utils/errors';
 import {
-  isChatGroupOptionalDetailsUnsupportedError,
   normalizeChatGroupDescription,
   type ChatGroupDetailsInput,
 } from '../lib/chat/groupDetails';
@@ -657,10 +656,8 @@ function useChatRoomsState() {
 
       await fetchRooms();
       showToast({
-        message: skippedOptionalDetails
-          ? 'Group created. Some optional details could not be saved yet.'
-          : 'Group created.',
-        severity: skippedOptionalDetails ? 'info' : 'success',
+        message: 'Group created.',
+        severity: 'success',
       });
       return id;
     },

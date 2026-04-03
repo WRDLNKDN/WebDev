@@ -1,13 +1,9 @@
 import CloseIcon from '@mui/icons-material/Close';
-import GroupOutlinedIcon from '@mui/icons-material/GroupOutlined';
-import ImageOutlinedIcon from '@mui/icons-material/ImageOutlined';
 import SearchIcon from '@mui/icons-material/Search';
 import {
-  Alert,
   Box,
   Button,
   Checkbox,
-  Chip,
   Dialog,
   DialogActions,
   DialogContent,
@@ -18,12 +14,9 @@ import {
   ListItemButton,
   ListItemIcon,
   ListItemText,
-  Skeleton,
-  Stack,
   TextField,
   Tooltip,
   Typography,
-  useTheme,
 } from '@mui/material';
 import {
   useEffect,
@@ -107,16 +100,6 @@ function formatCreateGroupSubmitError(cause: unknown): string {
   }
 
   return message.length > 200 ? CREATE_GROUP_FALLBACK_ERROR : message;
-}
-
-function buildProfileSecondaryText(
-  profile: EligibleChatConnection,
-): string | null {
-  const parts = [
-    profile.handle ? `@${profile.handle}` : null,
-    profile.email ?? null,
-  ].filter(Boolean);
-  return parts.length > 0 ? parts.join(' • ') : null;
 }
 
 function filterProfilesByQuery(
@@ -314,7 +297,6 @@ export const CreateGroupDialog = ({
   onCreate,
   currentUserId,
 }: CreateGroupDialogProps) => {
-  const theme = useTheme();
   const nameInputRef = useRef<HTMLInputElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [name, setName] = useState('');

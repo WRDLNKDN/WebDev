@@ -1,4 +1,6 @@
 import AddCommentOutlinedIcon from '@mui/icons-material/AddCommentOutlined';
+import CloseIcon from '@mui/icons-material/Close';
+import ForumOutlinedIcon from '@mui/icons-material/ForumOutlined';
 import GroupOutlinedIcon from '@mui/icons-material/GroupOutlined';
 import SearchIcon from '@mui/icons-material/Search';
 import {
@@ -379,6 +381,82 @@ export const ChatRoomList = ({
       return label.includes(q) || preview.includes(q);
     });
   }, [visibleRooms, searchQuery, currentUserId]);
+
+  const inboxMetaLabel =
+    rooms.length === 0
+      ? 'Ready for your first conversation'
+      : `${rooms.length} conversation${rooms.length === 1 ? '' : 's'}`;
+
+  const renderStatePanel = ({
+    body,
+    dataTestId,
+    icon,
+    title,
+  }: {
+    body: string;
+    dataTestId: string;
+    icon: ReactNode;
+    title: string;
+  }) => (
+    <Box data-testid={dataTestId} sx={{ mt: 1, px: 0.25 }}>
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'flex-start',
+          gap: 1.4,
+          px: 1.5,
+          py: 1.6,
+          borderRadius: 2.75,
+          border: `1px solid ${alpha(theme.palette.divider, isLightChrome ? 0.18 : 0.14)}`,
+          bgcolor: isLightChrome
+            ? alpha(theme.palette.background.paper, 0.9)
+            : 'linear-gradient(180deg, rgba(15,24,43,0.92) 0%, rgba(11,17,31,0.9) 100%)',
+          boxShadow: isLightChrome
+            ? '0 10px 28px rgba(15,23,42,0.08)'
+            : '0 16px 34px rgba(0,0,0,0.18)',
+        }}
+      >
+        <Box
+          sx={{
+            width: 38,
+            height: 38,
+            borderRadius: 2.2,
+            display: 'grid',
+            placeItems: 'center',
+            flexShrink: 0,
+            color: isLightChrome
+              ? theme.palette.primary.main
+              : 'rgba(141,188,229,0.92)',
+            bgcolor: isLightChrome
+              ? alpha(theme.palette.primary.main, 0.12)
+              : 'rgba(56,132,210,0.16)',
+            border: `1px solid ${alpha(theme.palette.primary.main, isLightChrome ? 0.16 : 0.24)}`,
+          }}
+        >
+          {icon}
+        </Box>
+        <Box sx={{ minWidth: 0 }}>
+          <Typography
+            variant="subtitle2"
+            fontWeight={700}
+            sx={{ color: panelPrimaryText, mb: 0.4, letterSpacing: '-0.01em' }}
+          >
+            {title}
+          </Typography>
+          <Typography
+            variant="body2"
+            sx={{
+              color: panelSecondaryText,
+              lineHeight: 1.58,
+              maxWidth: 320,
+            }}
+          >
+            {body}
+          </Typography>
+        </Box>
+      </Box>
+    </Box>
+  );
 
   return (
     <Box

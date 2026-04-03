@@ -1,73 +1,25 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useState } from 'react';
 import ButtonBase from '@mui/material/ButtonBase';
+import PlayArrow from '@mui/icons-material/PlayArrow';
 
 const VIDEO_EMBED_BASE = 'https://www.youtube.com/embed/Qc4D5W2kuBI';
-const VIDEO_POSTER =
-  'https://i.ytimg.com/vi_webp/Qc4D5W2kuBI/maxresdefault.webp';
-const MOBILE_MANUAL_PLAY_QUERY =
-  '(hover: none), (pointer: coarse), (max-width: 767.98px)';
+/** Local 1280×720 frame — YouTube only exposes ~480×360 for this ID (hq/mq), which looks pixelated scaled up. */
+const VIDEO_POSTER_URLS = [
+  '/assets/video/why-wrdlnkdn-poster.jpg',
+  'https://i.ytimg.com/vi/Qc4D5W2kuBI/hqdefault.jpg',
+  'https://i.ytimg.com/vi/Qc4D5W2kuBI/mqdefault.jpg',
+] as const;
 
 export const WhyWrdlnkdnVideo = () => {
-  const sectionRef = useRef<HTMLElement | null>(null);
-  const [hasMountedPlayer, setHasMountedPlayer] = useState(false);
-  const [hasAutoStarted, setHasAutoStarted] = useState(false);
-  const [hasUserStarted, setHasUserStarted] = useState(false);
-
-  useEffect(() => {
-    if (hasMountedPlayer || typeof window === 'undefined') return;
-    if (
-      typeof window.matchMedia === 'function' &&
-      window.matchMedia(MOBILE_MANUAL_PLAY_QUERY).matches
-    ) {
-      return;
-    }
-
-    const node = sectionRef.current;
-    if (!node || typeof IntersectionObserver === 'undefined') return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const [entry] = entries;
-        if (!entry?.isIntersecting || entry.intersectionRatio < 0.6) return;
-        setHasMountedPlayer(true);
-        setHasAutoStarted(true);
-        observer.disconnect();
-      },
-      {
-        threshold: [0.6, 0.8],
-        rootMargin: '0px 0px -10% 0px',
-      },
-    );
-
-    observer.observe(node);
-    return () => observer.disconnect();
-  }, [hasMountedPlayer]);
-
-  const iframeSrc = useMemo(() => {
-    const params = new URLSearchParams({
-      playsinline: '1',
-      rel: '0',
-    });
-
-    if (hasAutoStarted || hasUserStarted) {
-      params.set('autoplay', '1');
-    }
-
-    if (hasAutoStarted && !hasUserStarted) {
-      params.set('mute', '1');
-    }
-
-    return `${VIDEO_EMBED_BASE}?${params.toString()}`;
-  }, [hasAutoStarted, hasUserStarted]);
+  const [hasStarted, setHasStarted] = useState(false);
+  const [posterIndex, setPosterIndex] = useState(0);
 
   const handleManualStart = () => {
-    setHasMountedPlayer(true);
-    setHasUserStarted(true);
+    setHasStarted(true);
   };
 
   return (
     <section
-      ref={sectionRef}
       className="home-landing__section home-landing__section--video"
       aria-labelledby="why-wrdlnkdn-video-heading"
     >
@@ -83,10 +35,10 @@ export const WhyWrdlnkdnVideo = () => {
             </h2>
           </div>
           <div className="home-landing__video-frame">
-            {hasMountedPlayer ? (
+            {hasStarted ? (
               <iframe
                 className="home-landing__video-embed"
-                src={iframeSrc}
+                src={`${VIDEO_EMBED_BASE}?playsinline=1&rel=0&autoplay=1`}
                 title="Why WRDLNKDN video"
                 loading="lazy"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
@@ -102,19 +54,26 @@ export const WhyWrdlnkdnVideo = () => {
               >
                 <img
                   className="home-landing__video-preview-image"
-                  src={VIDEO_POSTER}
+                  src={VIDEO_POSTER_URLS[posterIndex]}
                   alt=""
                   loading="lazy"
+                  onError={() => {
+                    setPosterIndex((i) =>
+                      i < VIDEO_POSTER_URLS.length - 1 ? i + 1 : i,
+                    );
+                  }}
                 />
                 <span
                   className="home-landing__video-preview-overlay"
                   aria-hidden="true"
                 >
-                  <span className="home-landing__video-preview-badge">
-                    Why WRDLNKDN
-                  </span>
                   <span className="home-landing__video-preview-play">
-                    Play video
+                    <PlayArrow
+                      className="home-landing__video-preview-play-icon"
+                      fontSize="small"
+                      aria-hidden
+                    />
+                    Play
                   </span>
                 </span>
               </ButtonBase>

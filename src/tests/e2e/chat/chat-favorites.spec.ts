@@ -94,6 +94,33 @@ async function fulfillChatRoomPreferencesRoute(
     return;
   }
 
+  if (method === 'POST') {
+    const payload = route.request().postDataJSON() as {
+      room_id?: string;
+      user_id?: string;
+      is_favorite?: boolean;
+    };
+    if (payload.room_id && payload.user_id === userId && payload.is_favorite) {
+      roomPrefs.set(payload.room_id, { is_favorite: true });
+    }
+    await route.fulfill({
+      status: 201,
+      contentType: 'application/json',
+      body: JSON.stringify(payload),
+    });
+    return;
+  }
+
+  if (method === 'DELETE') {
+    const roomId = parsePostgrestEqFilter(url, 'room_id');
+    const requestUserId = parsePostgrestEqFilter(url, 'user_id');
+    if (roomId && requestUserId === userId) {
+      roomPrefs.delete(roomId);
+    }
+    await route.fulfill({ status: 204, body: '' });
+    return;
+  }
+
   await route.fulfill({
     status: 200,
     contentType: 'application/json',
@@ -104,6 +131,7 @@ async function fulfillChatRoomPreferencesRoute(
 async function stubChatFavoritesSurface(
   page: import('@playwright/test').Page,
   favoriteState: { value: boolean },
+  options?: { failFavoriteRpc?: boolean },
 ) {
   const roomPrefs = new Map<string, { is_favorite: boolean }>();
   if (favoriteState.value) {
@@ -242,6 +270,18 @@ async function stubChatFavoritesSurface(
   });
 
   await page.route('**/rest/v1/rpc/chat_set_room_favorite', async (route) => {
+    if (options?.failFavoriteRpc) {
+      await route.fulfill({
+        status: 404,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          code: 'PGRST202',
+          message:
+            'Could not find the function public.chat_set_room_favorite(p_room_id, p_is_favorite) in the schema cache.',
+        }),
+      });
+      return;
+    }
     await fulfillChatSetRoomFavoriteRpc(route, roomPrefs, syncFavoriteState);
   });
 
@@ -331,6 +371,39 @@ test.describe('Chat favorites', () => {
         timeout: 15_000,
       })
       .toMatch(/remove from favorites/i);
+  });
+
+  test('falls back to direct preferences writes when the favorite rpc is unavailable', async ({
+    page,
+  }) => {
+    const favoriteState = { value: false };
+    const { stubAdminRpc } = await seedSignedInSession(page.context());
+    await stubAdminRpc(page);
+    await stubAppSurface(page);
+    await stubChatFavoritesSurface(page, favoriteState, {
+      failFavoriteRpc: true,
+    });
+
+    await page.goto(`/chat-full/${ROOM_ID}`, {
+      waitUntil: 'domcontentloaded',
+    });
+
+    const favoriteButton = page.getByTestId(`chat-room-favorite-${ROOM_ID}`);
+    await expect(favoriteButton).toBeVisible({ timeout: 30_000 });
+    await favoriteButton.click();
+
+    await expect(favoriteButton).toHaveAttribute(
+      'aria-label',
+      /remove from favorites/i,
+    );
+    await expect(
+      favoriteButton.getByTestId(`chat-room-favorite-icon-filled-${ROOM_ID}`),
+    ).toBeVisible();
+
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await expect(
+      page.getByTestId(`chat-room-favorite-${ROOM_ID}`),
+    ).toHaveAttribute('aria-label', /remove from favorites/i);
   });
 
   test('messenger overlay can be closed with Escape and toggles favorites', async ({

@@ -7,7 +7,7 @@
 
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { WhyWrdlnkdnVideo } from '../../components/home/WhyWrdlnkdnVideo';
 
@@ -19,32 +19,11 @@ const AUTOPLAY_SRC =
 describe('WhyWrdlnkdnVideo', () => {
   let container: HTMLDivElement;
   let root: Root;
-  let intersectionCallback: IntersectionObserverCallback | null = null;
-  let disconnectSpy: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     container = document.createElement('div');
     document.body.appendChild(container);
     root = createRoot(container);
-
-    disconnectSpy = vi.fn();
-    intersectionCallback = null;
-
-    class MockIntersectionObserver {
-      observe = vi.fn();
-      unobserve = vi.fn();
-      disconnect = disconnectSpy;
-      takeRecords = vi.fn();
-      root = null;
-      rootMargin = '0px 0px -10% 0px';
-      thresholds = [0.6, 0.8];
-
-      constructor(callback: IntersectionObserverCallback) {
-        intersectionCallback = callback;
-      }
-    }
-
-    vi.stubGlobal('IntersectionObserver', MockIntersectionObserver);
   });
 
   const renderVideo = async () => {

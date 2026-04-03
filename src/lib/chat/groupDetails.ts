@@ -22,6 +22,49 @@ export function normalizeChatGroupDescription(
   return trimmed.slice(0, CHAT_GROUP_DESCRIPTION_MAX);
 }
 
+type ErrorWithMessage = {
+  code?: string;
+  details?: string;
+  hint?: string;
+  message?: string;
+};
+
+function messageFromCause(cause: unknown): string {
+  if (typeof cause === 'string') return cause;
+  if (cause instanceof Error) return cause.message;
+  if (
+    cause &&
+    typeof cause === 'object' &&
+    typeof (cause as ErrorWithMessage).message === 'string'
+  ) {
+    return (cause as ErrorWithMessage).message ?? '';
+  }
+  return '';
+}
+
+export function isChatGroupOptionalDetailsUnsupportedError(
+  cause: unknown,
+): boolean {
+  const message = messageFromCause(cause);
+  const code =
+    cause &&
+    typeof cause === 'object' &&
+    typeof (cause as ErrorWithMessage).code === 'string'
+      ? (cause as ErrorWithMessage).code
+      : '';
+
+  const mentionsOptionalField = /(description|image_url)/i.test(message);
+  const mentionsChatRooms = /chat_rooms/i.test(message);
+
+  return (
+    ((/schema cache/i.test(message) || code === 'PGRST204') &&
+      mentionsOptionalField &&
+      mentionsChatRooms) ||
+    (code === '42703' && mentionsOptionalField) ||
+    (/column .* does not exist/i.test(message) && mentionsOptionalField)
+  );
+}
+
 export function assertValidChatGroupImage(file: File): void {
   const rejectionReason = getSharedUploadRejectionReason('group_image', file);
   if (rejectionReason) throw new Error(rejectionReason);

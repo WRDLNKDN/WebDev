@@ -22,6 +22,8 @@ type AttachmentPreviewProps = {
   createdAt?: string;
 };
 
+const signedUrlCache = new Map<string, Promise<string | null>>();
+
 const CHAT_ATTACHMENT_FRAME_SX = {
   width: '100%',
   maxWidth: { xs: 280, sm: 420, md: 520 },
@@ -33,11 +35,26 @@ const CHAT_ATTACHMENT_FRAME_SX = {
 
 async function createSignedUrl(path: string | null): Promise<string | null> {
   if (!path) return null;
-  const { data, error } = await supabase.storage
+  const cached = signedUrlCache.get(path);
+  if (cached) return cached;
+
+  const pending = supabase.storage
     .from('chat-attachments')
-    .createSignedUrl(path, 3600);
-  if (error || !data?.signedUrl) return null;
-  return data.signedUrl;
+    .createSignedUrl(path, 3600)
+    .then(({ data, error }) => {
+      if (error || !data?.signedUrl) {
+        signedUrlCache.delete(path);
+        return null;
+      }
+      return data.signedUrl;
+    })
+    .catch(() => {
+      signedUrlCache.delete(path);
+      return null;
+    });
+
+  signedUrlCache.set(path, pending);
+  return pending;
 }
 
 function getStructuredDerivativePaths(
@@ -87,6 +104,50 @@ function getStructuredDerivativePaths(
   };
 }
 
+async function resolveAttachmentUrls(
+  derivatives: ReturnType<typeof getStructuredDerivativePaths>,
+  mimeType: string,
+): Promise<{
+  originalUrl: string | null;
+  displayUrl: string | null;
+  thumbnailUrl: string | null;
+}> {
+  const lowerMime = mimeType.toLowerCase();
+
+  if (lowerMime.startsWith('image/')) {
+    // Chat threads only need the display image up front; avoid signing unused
+    // sibling files for every inline image on initial render.
+    const displayUrl = await createSignedUrl(derivatives.displayPath);
+    return {
+      originalUrl: displayUrl,
+      displayUrl,
+      thumbnailUrl: displayUrl,
+    };
+  }
+
+  if (lowerMime.startsWith('video/')) {
+    const [displayUrl, thumbnailUrl] = await Promise.all([
+      createSignedUrl(derivatives.displayPath),
+      createSignedUrl(derivatives.thumbnailPath),
+    ]);
+    return {
+      originalUrl: displayUrl,
+      displayUrl,
+      thumbnailUrl,
+    };
+  }
+
+  const [originalUrl, thumbnailUrl] = await Promise.all([
+    createSignedUrl(derivatives.originalPath),
+    createSignedUrl(derivatives.thumbnailPath),
+  ]);
+  return {
+    originalUrl,
+    displayUrl: originalUrl,
+    thumbnailUrl,
+  };
+}
+
 export const AttachmentPreview = ({
   path,
   mimeType,
@@ -105,11 +166,8 @@ export const AttachmentPreview = ({
     const derivatives = getStructuredDerivativePaths(path, mimeType);
 
     void (async () => {
-      const [originalUrl, displayUrl, thumbnailUrl] = await Promise.all([
-        createSignedUrl(derivatives.originalPath),
-        createSignedUrl(derivatives.displayPath),
-        createSignedUrl(derivatives.thumbnailPath),
-      ]);
+      const { originalUrl, displayUrl, thumbnailUrl } =
+        await resolveAttachmentUrls(derivatives, mimeType);
       if (cancelled) return;
       if (!originalUrl && !displayUrl && !thumbnailUrl) {
         reportMediaTelemetryAsync({

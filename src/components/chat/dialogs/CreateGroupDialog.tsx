@@ -1,9 +1,13 @@
 import CloseIcon from '@mui/icons-material/Close';
+import GroupOutlinedIcon from '@mui/icons-material/GroupOutlined';
+import ImageOutlinedIcon from '@mui/icons-material/ImageOutlined';
 import SearchIcon from '@mui/icons-material/Search';
 import {
+  Alert,
   Box,
   Button,
   Checkbox,
+  Chip,
   Dialog,
   DialogActions,
   DialogContent,
@@ -14,9 +18,12 @@ import {
   ListItemButton,
   ListItemIcon,
   ListItemText,
+  Skeleton,
+  Stack,
   TextField,
   Tooltip,
   Typography,
+  useTheme,
 } from '@mui/material';
 import {
   useEffect,
@@ -84,6 +91,33 @@ type CreateGroupDialogProps = {
 };
 
 const MAX_MEMBERS = 99;
+const CREATE_GROUP_FALLBACK_ERROR =
+  "We couldn't create the group right now. Please try again.";
+
+function formatCreateGroupSubmitError(cause: unknown): string {
+  const message = toMessage(cause).trim();
+  if (!message) return CREATE_GROUP_FALLBACK_ERROR;
+
+  if (
+    /schema cache|chat_rooms|column .* does not exist|relation .* does not exist|function .* does not exist/i.test(
+      message,
+    )
+  ) {
+    return CREATE_GROUP_FALLBACK_ERROR;
+  }
+
+  return message.length > 200 ? CREATE_GROUP_FALLBACK_ERROR : message;
+}
+
+function buildProfileSecondaryText(
+  profile: EligibleChatConnection,
+): string | null {
+  const parts = [
+    profile.handle ? `@${profile.handle}` : null,
+    profile.email ?? null,
+  ].filter(Boolean);
+  return parts.length > 0 ? parts.join(' • ') : null;
+}
 
 function filterProfilesByQuery(
   profiles: ProfileOption[],
@@ -280,6 +314,7 @@ export const CreateGroupDialog = ({
   onCreate,
   currentUserId,
 }: CreateGroupDialogProps) => {
+  const theme = useTheme();
   const nameInputRef = useRef<HTMLInputElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [name, setName] = useState('');
@@ -373,10 +408,13 @@ export const CreateGroupDialog = ({
 
   const handleCreate = async () => {
     if (!name.trim()) {
-      setError('Enter a group name');
+      setError('Enter a group name.');
       return;
     }
-    const memberIds = profiles.filter((p) => p.selected).map((p) => p.id);
+
+    const memberIds = profiles
+      .filter((profile) => profile.selected)
+      .map((p) => p.id);
     setSubmitting(true);
     setError(null);
     setGroupImageUploadState(null);
@@ -403,8 +441,9 @@ export const CreateGroupDialog = ({
         memberIds,
       );
       onClose();
-    } catch (e) {
-      setError(toMessage(e));
+    } catch (cause) {
+      console.warn('CreateGroupDialog submit failed:', cause);
+      setError(formatCreateGroupSubmitError(cause));
     } finally {
       setSubmitting(false);
     }

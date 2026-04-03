@@ -20,6 +20,7 @@ import {
   SUPPORTED_TEXT_EXTENSIONS,
   SUPPORTED_VIDEO_EXTENSIONS,
 } from './linkUtils';
+import { toMessage } from '../utils/errors';
 
 export const PROJECT_SOURCE_BUCKET = 'project-sources';
 export const PROJECT_THUMBNAIL_BUCKET = 'project-images';
@@ -133,7 +134,13 @@ export function getProjectThumbnailFileError(file: File): string | null {
   if (file.size > PROJECT_THUMBNAIL_HARD_MAX_BYTES) {
     return `${file.name} is ${formatSizeMb(file.size)}. ${THUMBNAIL_SIZE_GUIDANCE}`;
   }
-  return null;
+  return isAllowedFile(
+    file,
+    PROJECT_THUMBNAIL_ALLOWED_MIME_TYPES,
+    new Set(['jpg', 'jpeg', 'png', 'gif', 'webp']),
+  )
+    ? null
+    : 'Optional thumbnails must be PNG, JPG, GIF, or WEBP images.';
 }
 
 export function getProjectSourceFileError(file: File): string | null {

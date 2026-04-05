@@ -85,7 +85,6 @@ export const Navbar = () => {
   // ── Derived path flags ─────────────────────────────────────────────────────
   const forcePublicHeader = isForcePublicPath(path);
   const isAdminActive = path.startsWith('/admin');
-  const isJoinActive = path.startsWith('/join');
   const isGroupsActive = path === '/groups' || path.startsWith('/groups/');
   const homeRoute = isHomePath(path);
 
@@ -516,7 +515,7 @@ export const Navbar = () => {
               showAuthedHeader={showAuthedHeader}
               comingSoon={comingSoon}
               isAdminActive={isAdminActive}
-              isJoinActive={isJoinActive}
+              isJoinActive={forcePublicHeader}
               dashboardEnabled={dashboardEnabled}
               notificationsUnread={notificationsUnread}
               avatarUrl={avatarUrl}
@@ -538,7 +537,7 @@ export const Navbar = () => {
               showAuthedHeader={showAuthedHeader}
               productionComingSoon={comingSoon}
               isAdminActive={isAdminActive}
-              isJoinActive={isJoinActive}
+              isJoinActive={forcePublicHeader}
               dashboardEnabled={dashboardEnabled}
               notificationsUnread={notificationsUnread}
               avatarUrl={avatarUrl}
@@ -627,7 +626,7 @@ export const Navbar = () => {
         session={session}
         comingSoon={comingSoon}
         isAdminActive={isAdminActive}
-        isJoinActive={isJoinActive}
+        isJoinActive={forcePublicHeader}
         storeEnabled={storeEnabled}
         gamesEnabled={gamesEnabled}
         groupsEnabled={groupsEnabled}

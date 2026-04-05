@@ -41,7 +41,7 @@ import { useAppToast } from '../../context/AppToastContext';
 import { useNotificationsUnread } from '../../hooks/useNotificationsUnread';
 import {
   useFeatureFlag,
-  useProductionComingSoonMode,
+  usePublicComingSoonMode,
 } from '../../context/FeatureFlagsContext';
 import {
   DASHBOARD_FLAG,
@@ -90,7 +90,7 @@ export const Navbar = () => {
   const homeRoute = isHomePath(path);
 
   // ── Feature flags ──────────────────────────────────────────────────────────
-  const productionComingSoon = useProductionComingSoonMode();
+  const comingSoon = usePublicComingSoonMode();
   const dashboardEnabled = useFeatureFlag(DASHBOARD_FLAG);
   const storeEnabled = useFeatureFlag(STORE_FLAG);
   const gamesEnabled = useFeatureFlag(GAMES_FLAG);
@@ -129,20 +129,20 @@ export const Navbar = () => {
     Boolean(session) &&
     (profileOnboarded || !onboardingLoaded) &&
     !forcePublicHeader &&
-    (!productionComingSoon || isAdminActive);
+    (!comingSoon || isAdminActive);
 
   /**
    * Coming-soon + home: logo-only chrome.
    * No hamburger, no Join/Sign-in (avoids perpetual mobile spinner on getSession).
    */
-  const minimalNavbar = productionComingSoon && !isAdminActive && homeRoute;
+  const minimalNavbar = comingSoon && !isAdminActive && homeRoute;
 
   /** Avatar account dropdown shown when session confirmed and not in minimal mode. */
   const showAccountDropdown =
     Boolean(session) &&
     sessionLoaded &&
     onboardingLoaded &&
-    (!productionComingSoon || isAdminActive) &&
+    (!comingSoon || isAdminActive) &&
     path !== '/auth/callback' &&
     !minimalNavbar;
 
@@ -514,7 +514,7 @@ export const Navbar = () => {
               sessionLoaded={sessionLoaded}
               onboardingLoaded={onboardingLoaded}
               showAuthedHeader={showAuthedHeader}
-              comingSoon={productionComingSoon}
+              comingSoon={comingSoon}
               isAdminActive={isAdminActive}
               isJoinActive={isJoinActive}
               dashboardEnabled={dashboardEnabled}
@@ -536,7 +536,7 @@ export const Navbar = () => {
               sessionLoaded={sessionLoaded}
               onboardingLoaded={onboardingLoaded}
               showAuthedHeader={showAuthedHeader}
-              productionComingSoon={productionComingSoon}
+              productionComingSoon={comingSoon}
               isAdminActive={isAdminActive}
               isJoinActive={isJoinActive}
               dashboardEnabled={dashboardEnabled}
@@ -625,7 +625,7 @@ export const Navbar = () => {
         setDrawerOpen={setDrawerOpen}
         showAuthedHeader={showAuthedHeader}
         session={session}
-        comingSoon={productionComingSoon}
+        comingSoon={comingSoon}
         isAdminActive={isAdminActive}
         isJoinActive={isJoinActive}
         storeEnabled={storeEnabled}

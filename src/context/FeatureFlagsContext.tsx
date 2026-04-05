@@ -184,3 +184,11 @@ export function useProductionComingSoonMode(): boolean {
   if (isUatHostname()) return false;
   return true;
 }
+
+/**
+ * Backwards-compatible alias used by older layout/navbar callers.
+ * Public "coming soon" behavior is the production-only gate behavior.
+ */
+export function usePublicComingSoonMode(): boolean {
+  return useProductionComingSoonMode();
+}

@@ -2,6 +2,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { expect, test } from '../fixtures';
 import { seedSignedInSession, USER_ID } from '../utils/auth';
+import { stubChatDmRoom } from '../utils/stubChatDmRoom';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const UPLOAD_FIXTURE = path.join(
@@ -13,100 +14,6 @@ const UPLOAD_FIXTURE = path.join(
 
 const E2E_ROOM_ID = 'e2e-media-ux-room-1111-4111-8111-111111111111';
 
-function requestWantsSingleObject(route: import('@playwright/test').Route) {
-  return (
-    route
-      .request()
-      .headers()
-      ['accept']?.includes('application/vnd.pgrst.object+json') ?? false
-  );
-}
-
-async function stubChatRoom(page: import('@playwright/test').Page) {
-  const messages: Array<Record<string, unknown>> = [];
-
-  await page.route('**/rest/v1/chat_rooms*', async (route) => {
-    const isSingle = requestWantsSingleObject(route);
-    const room = {
-      id: E2E_ROOM_ID,
-      room_type: 'dm',
-      name: null,
-      created_by: USER_ID,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    };
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify(isSingle ? room : [room]),
-    });
-  });
-
-  await page.route('**/rest/v1/chat_room_members*', async (route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify([
-        {
-          room_id: E2E_ROOM_ID,
-          user_id: USER_ID,
-          role: 'member',
-          joined_at: new Date().toISOString(),
-          left_at: null,
-        },
-      ]),
-    });
-  });
-
-  await page.route('**/rest/v1/profiles*', async (route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify([
-        {
-          id: USER_ID,
-          handle: 'member',
-          display_name: 'Member',
-          avatar: null,
-        },
-      ]),
-    });
-  });
-
-  await page.route('**/rest/v1/chat_messages*', async (route) => {
-    if (route.request().method() === 'POST') {
-      const payload = route.request().postDataJSON() as {
-        content?: string | null;
-        room_id?: string;
-        sender_id?: string;
-      };
-      const message = {
-        id: 'msg-media-ux-1',
-        room_id: payload.room_id ?? E2E_ROOM_ID,
-        sender_id: payload.sender_id ?? USER_ID,
-        content: payload.content ?? null,
-        is_system_message: false,
-        is_deleted: false,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      };
-      messages.splice(0, messages.length, message);
-      await route.fulfill({
-        status: 201,
-        contentType: 'application/json',
-        body: JSON.stringify(message),
-      });
-      return;
-    }
-
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify(messages),
-    });
-  });
-}
-
 test.describe('Shared media upload UX', () => {
   test('shows the canonical media status banner while an attachment uploads', async ({
     page,
@@ -115,7 +22,7 @@ test.describe('Shared media upload UX', () => {
 
     const { stubAdminRpc } = await seedSignedInSession(page.context());
     await stubAdminRpc(page);
-    await stubChatRoom(page);
+    await stubChatDmRoom(page, E2E_ROOM_ID);
 
     // Broad storage stub first; narrow chat-attachments route registered after so it
     // wins (Playwright matches most recently registered handler first).

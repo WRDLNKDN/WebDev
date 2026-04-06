@@ -1,5 +1,13 @@
-import { Box, Button, Stack, TextField, Typography } from '@mui/material';
-import type { KeyboardEvent as ReactKeyboardEvent } from 'react';
+import {
+  Box,
+  Button,
+  Stack,
+  TextField,
+  Typography,
+  type SxProps,
+  type Theme,
+} from '@mui/material';
+import type { KeyboardEvent as ReactKeyboardEvent, ReactNode } from 'react';
 import { AssetInlinePreview } from '../../components/media/AssetThumbnail';
 import {
   createNormalizedGifAsset,
@@ -12,6 +20,32 @@ import {
   type LinkPreviewPayload,
 } from './feedRenderUtils';
 import { feedMediaBleedSx, feedMediaFlushRadiusSx } from './feedPostLayout';
+
+const ZoomableFeedImage = ({
+  onOpen,
+  sx,
+  children,
+}: {
+  onOpen: () => void;
+  sx?: SxProps<Theme>;
+  children: ReactNode;
+}) => (
+  <Box
+    onClick={onOpen}
+    onKeyDown={(e: ReactKeyboardEvent) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        onOpen();
+      }
+    }}
+    tabIndex={0}
+    role="button"
+    aria-label="View image full screen"
+    sx={sx}
+  >
+    {children}
+  </Box>
+);
 
 type FeedCardPostContentProps = {
   isEditingPost: boolean;
@@ -104,18 +138,9 @@ export const FeedCardPostContent = ({
             </Typography>
           )}
           {bodyGifUrls.map((gifUrl) => (
-            <Box
+            <ZoomableFeedImage
               key={gifUrl}
-              onClick={() => openImageLightbox(gifUrl, 'body_gif')}
-              onKeyDown={(e: ReactKeyboardEvent) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  openImageLightbox(gifUrl, 'body_gif');
-                }
-              }}
-              tabIndex={0}
-              role="button"
-              aria-label="View image full screen"
+              onOpen={() => openImageLightbox(gifUrl, 'body_gif')}
               sx={(theme) => ({
                 ...feedMediaBleedSx(theme),
                 mt: 0.5,
@@ -137,7 +162,7 @@ export const FeedCardPostContent = ({
                   bgcolor: 'rgba(0,0,0,0.18)',
                 }}
               />
-            </Box>
+            </ZoomableFeedImage>
           ))}
         </>
       )
@@ -169,18 +194,9 @@ export const FeedCardPostContent = ({
         {postAttachmentAssets.map((asset) => {
           const openUrl = getNormalizedAssetDisplayUrl(asset);
           return (
-            <Box
+            <ZoomableFeedImage
               key={asset.assetId}
-              onClick={() => openImageLightbox(openUrl, 'post_attachment')}
-              onKeyDown={(e: ReactKeyboardEvent) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  openImageLightbox(openUrl, 'post_attachment');
-                }
-              }}
-              tabIndex={0}
-              role="button"
-              aria-label="View image full screen"
+              onOpen={() => openImageLightbox(openUrl, 'post_attachment')}
               sx={{
                 width: '100%',
                 minWidth: 0,
@@ -193,7 +209,7 @@ export const FeedCardPostContent = ({
                 surface="feed"
                 sx={feedMediaFlushRadiusSx}
               />
-            </Box>
+            </ZoomableFeedImage>
           );
         })}
       </Stack>

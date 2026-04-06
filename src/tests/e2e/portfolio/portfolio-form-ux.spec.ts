@@ -196,9 +196,10 @@ test.describe('Add Project dialog UX', () => {
       buffer: Buffer.alloc(16 * 1024 * 1024, 1),
     });
 
-    await expect(
-      dialog.getByText(/optimized toward a 6 MB target/i),
-    ).toBeVisible();
+    await expect(dialog.locator('#project-source-file-helper')).toContainText(
+      /optimized toward a 6 MB target/i,
+    );
+    await expect(dialog.getByRole('alert')).toContainText(/artifact\.pdf/i);
     await expect(
       dialog.getByRole('button', { name: /add to portfolio/i }),
     ).toBeDisabled();

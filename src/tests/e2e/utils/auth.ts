@@ -24,7 +24,9 @@ import { acceptWantsPgrstObjectJson } from './postgrestFulfill';
 export const USER_ID = FIXTURE_USER_ID;
 
 // Deliberately synthetic test fixtures, not real JWTs or reusable credentials.
-const E2E_FAKE_ACCESS_TOKEN = 'e2e-fake-access-token';
+// Must be JWT-shaped (three dot-separated segments) so FeatureFlagsContext and
+// other clients attempt PostgREST fetches instead of bailing out early.
+const E2E_FAKE_ACCESS_TOKEN = 'e2e-access.e2e-payload.e2e-signature';
 const E2E_FAKE_REFRESH_TOKEN = 'e2e-fake-refresh-token';
 
 function resolveAuthStorageKey(): string {

@@ -17,9 +17,9 @@ test.describe('Edit Profile smoke', () => {
       timeout: 15_000,
     });
     await expect(
-      page.getByRole('button', { name: /profile menu/i }),
+      page.getByRole('button', { name: /manage profile/i }),
     ).toBeVisible({ timeout: 15_000 });
-    await page.getByRole('button', { name: /profile menu/i }).click();
+    await page.getByRole('button', { name: /manage profile/i }).click();
     await page.getByRole('menuitem', { name: /edit profile/i }).click();
 
     const dialog = page.getByRole('dialog', { name: /edit.*profile/i });

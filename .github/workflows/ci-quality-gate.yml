@@ -84,10 +84,11 @@ jobs:
       # -------------
       # E2E (Playwright)
       # -------------
-      - name: 🎭 Install Playwright (Chromium only)
+      - name: 🎭 Install Playwright (Chromium + headless shell)
         id: pwinstall
         continue-on-error: true
-        run: npx playwright install --with-deps chromium
+        # Playwright 1.59+ uses chromium-headless-shell for headless Chromium; `chromium` alone is not enough.
+        run: npx playwright install --with-deps chromium chromium-headless-shell
 
       - name: 🎭 Run Playwright tests (E2E, vite preview, Chromium)
         id: e2e

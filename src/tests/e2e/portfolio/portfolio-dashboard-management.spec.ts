@@ -215,7 +215,9 @@ test.describe('Dashboard portfolio showcase management', () => {
     ).toContainText('Portfolio Launch');
 
     await page.goto('/profile/member', { waitUntil: 'domcontentloaded' });
-    await expect(page.getByText('Member')).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByRole('heading', { name: 'Member' })).toBeVisible({
+      timeout: 20_000,
+    });
     await expect(page.getByTestId('portfolio-highlights-carousel')).toBeVisible(
       {
         timeout: 20_000,
@@ -238,7 +240,9 @@ test.describe('Dashboard portfolio showcase management', () => {
     await expect(page.getByText('Portfolio Launch')).toHaveCount(0);
 
     await page.goto('/profile/member', { waitUntil: 'domcontentloaded' });
-    await expect(page.getByText('Member')).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByRole('heading', { name: 'Member' })).toBeVisible({
+      timeout: 20_000,
+    });
     await expect(page.getByText('Portfolio Launch')).toHaveCount(0);
     await expect(page.getByTestId('portfolio-highlights-carousel')).toHaveCount(
       0,

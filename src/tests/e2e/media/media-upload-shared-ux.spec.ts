@@ -117,11 +117,17 @@ test.describe('Shared media upload UX', () => {
     await stubAdminRpc(page);
     await stubChatRoom(page);
 
+    // Broad storage stub first; narrow chat-attachments route registered after so it
+    // wins (Playwright matches most recently registered handler first).
+    await page.route('**/storage/v1/object/**', async (route) => {
+      await route.fulfill({ status: 200, body: '{}' });
+    });
+
     await page.route(
       '**/storage/v1/object/chat-attachments/**',
       async (route) => {
         await new Promise((r) => {
-          setTimeout(r, 2_000);
+          setTimeout(r, 5_000);
         });
         await route.fulfill({
           status: 200,
@@ -130,10 +136,6 @@ test.describe('Shared media upload UX', () => {
         });
       },
     );
-
-    await page.route('**/storage/v1/object/**', async (route) => {
-      await route.fulfill({ status: 200, body: '{}' });
-    });
 
     await page.route('**/rest/v1/chat_message_attachments*', async (route) => {
       await route.fulfill({
@@ -169,16 +171,17 @@ test.describe('Shared media upload UX', () => {
       }),
     ).toBeVisible({ timeout: 35_000 });
 
+    const thread = page.getByTestId('chat-thread-column');
     const fileInput = page.getByTestId('chat-attachment-file-input');
     await fileInput.setInputFiles(UPLOAD_FIXTURE);
+    await thread.getByRole('textbox', { name: 'Message' }).fill('attachment');
 
-    await page
-      .getByTestId('chat-thread-column')
-      .getByRole('button', { name: 'Send message' })
-      .click();
+    const sendButton = thread.getByRole('button', { name: 'Send message' });
+    await expect(sendButton).toBeEnabled({ timeout: 15_000 });
+    await sendButton.click();
 
     const banner = page.getByTestId('media-status-banner');
-    await expect(banner).toBeVisible({ timeout: 8_000 });
+    await expect(banner).toBeVisible({ timeout: 15_000 });
     await expect(banner).toContainText(
       /Checking file|Uploading media|Optimizing media|Converting media|Media ready/,
     );

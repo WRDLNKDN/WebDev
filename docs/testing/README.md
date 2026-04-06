@@ -36,6 +36,11 @@ replace touch, safe areas, or mobile Safari quirks.
 
 ## E2E (Playwright)
 
+After upgrading Playwright or on a fresh machine, install browsers:
+**`npm run playwright:install`** (Chromium plus **chromium-headless-shell**,
+which Playwright 1.59+ uses for headless runs—`chromium` alone is not enough).
+For Firefox too: **`npm run playwright:install:all`**.
+
 All e2e specs live under `src/tests/e2e/`. By default they run on **Chromium**
 and **Firefox** (see `playwright.config.ts` `projects`). Use
 `--project=chromium` or `--project=firefox` to run a single browser.

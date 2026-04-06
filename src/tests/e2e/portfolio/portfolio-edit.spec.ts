@@ -128,7 +128,9 @@ test.describe('Portfolio artifact editing', () => {
     await expectUpdatedArtifactOnDashboard(page);
 
     await page.goto('/profile/member', { waitUntil: 'domcontentloaded' });
-    await expect(page.getByText('Member')).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByRole('heading', { name: 'Member' })).toBeVisible({
+      timeout: 15_000,
+    });
     await expect(
       page.getByTestId('portfolio-section-research').getByRole('button', {
         name: /updated artifact/i,

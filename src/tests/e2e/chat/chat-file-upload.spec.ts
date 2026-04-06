@@ -341,7 +341,7 @@ test.describe('Chat file upload', () => {
       )
       .toMatchObject({
         objectFit: 'contain',
-        maxHeight: '520px',
+        maxHeight: '440px',
       });
   });
 

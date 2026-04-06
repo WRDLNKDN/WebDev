@@ -29,7 +29,8 @@ export const AUTHED_PRIMARY_NAV: NavItem[] = [
     label: 'Chat',
     to: '/chat',
     flagKey: 'chat',
-    isActive: (p) => p === '/chat' || p.startsWith('/chat/') || p.startsWith('/chat-full'),
+    isActive: (p) =>
+      p === '/chat' || p.startsWith('/chat/') || p.startsWith('/chat-full'),
   },
   {
     label: 'Directory',
@@ -75,7 +76,12 @@ export const PUBLIC_ONLY_PATHS = ['/join'];
 /**
  * Routes that bypass the Layout wrapper entirely (no nav).
  */
-export const NO_NAV_PATHS = ['/auth/callback', '/signin', '/bumper', '/chat-popup'];
+export const NO_NAV_PATHS = [
+  '/auth/callback',
+  '/signin',
+  '/bumper',
+  '/chat-popup',
+];
 
 /**
  * Returns true when the current path should force a public-only header

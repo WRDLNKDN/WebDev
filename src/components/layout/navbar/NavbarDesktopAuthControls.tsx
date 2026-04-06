@@ -141,7 +141,9 @@ export const NavbarDesktopAuthControls = ({
               }}
             >
               <Badge
-                badgeContent={notificationsUnread > 0 ? notificationsUnread : undefined}
+                badgeContent={
+                  notificationsUnread > 0 ? notificationsUnread : undefined
+                }
                 color="error"
               >
                 <NotificationsIcon sx={{ fontSize: 22 }} />

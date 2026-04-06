@@ -109,7 +109,6 @@ export const NavbarMobileDrawer = ({
     >
       <Box sx={{ py: 2, overflow: 'auto' }}>
         <Stack component="nav" spacing={0} sx={{ px: 1 }}>
-
           {/* Guest controls */}
           {!session && guestControlsVisible && (
             <>

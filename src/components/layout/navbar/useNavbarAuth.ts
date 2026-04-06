@@ -7,6 +7,7 @@
 import type { Session } from '@supabase/supabase-js';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { NavigateFunction } from 'react-router-dom';
+import { useAppToast } from '../../../context/AppToastContext';
 import { signOut } from '../../../lib/auth/signOut';
 import { supabase } from '../../../lib/auth/supabaseClient';
 import { consumeJoinCompletionFlash } from '../../../lib/profile/joinCompletionFlash';
@@ -26,8 +27,6 @@ export type UseNavbarAuthReturn = {
   profileOnboarded: boolean;
   isAdmin: boolean;
   busy: boolean;
-  snack: string | null;
-  setSnack: (msg: string | null) => void;
   drawerOpen: boolean;
   setDrawerOpen: (open: boolean) => void;
   avatarMenuAnchor: HTMLElement | null;
@@ -43,15 +42,17 @@ export const useNavbarAuth = ({
   forcePublicHeader,
   navigate,
 }: UseNavbarAuthArgs): UseNavbarAuthReturn => {
+  const { showToast } = useAppToast();
   const [session, setSession] = useState<Session | null>(null);
   const [sessionLoaded, setSessionLoaded] = useState(false);
   const [onboardingLoaded, setOnboardingLoaded] = useState(false);
   const [profileOnboarded, setProfileOnboarded] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [snack, setSnack] = useState<string | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [avatarMenuAnchor, setAvatarMenuAnchor] = useState<HTMLElement | null>(null);
+  const [avatarMenuAnchor, setAvatarMenuAnchor] = useState<HTMLElement | null>(
+    null,
+  );
   const [joinLoading, setJoinLoading] = useState(false);
 
   // ── Session ────────────────────────────────────────────────────────────────
@@ -75,12 +76,14 @@ export const useNavbarAuth = ({
 
     void refreshSession();
 
-    const { data: sub } = supabase.auth.onAuthStateChange((_evt, newSession) => {
-      if (!cancelled) {
-        setSession(newSession ?? null);
-        setSessionLoaded(true);
-      }
-    });
+    const { data: sub } = supabase.auth.onAuthStateChange(
+      (_evt, newSession) => {
+        if (!cancelled) {
+          setSession(newSession ?? null);
+          setSessionLoaded(true);
+        }
+      },
+    );
 
     // Retry after OAuth callback race: SIGNED_IN may fire before our listener attaches.
     const retries = [600, 1200];
@@ -138,7 +141,9 @@ export const useNavbarAuth = ({
       try {
         const { data } = await supabase
           .from('profiles')
-          .select('display_name, join_reason, participation_style, policy_version')
+          .select(
+            'display_name, join_reason, participation_style, policy_version',
+          )
           .eq('id', session.user.id)
           .maybeSingle();
         if (!cancelled) {
@@ -191,7 +196,9 @@ export const useNavbarAuth = ({
     };
 
     void checkAdmin();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [session]);
 
   // ── Drawer / navigation auto-close ────────────────────────────────────────
@@ -207,8 +214,11 @@ export const useNavbarAuth = ({
   useEffect(() => {
     if (path !== '/feed') return;
     if (!consumeJoinCompletionFlash()) return;
-    setSnack('Your account is ready. Welcome to the Feed.');
-  }, [path]);
+    showToast({
+      message: 'Your account is ready. Welcome to the Feed.',
+      severity: 'success',
+    });
+  }, [path, showToast]);
 
   // ── Actions ────────────────────────────────────────────────────────────────
   const handleSignOut = async () => {
@@ -218,14 +228,17 @@ export const useNavbarAuth = ({
       setSession(null);
       navigate('/', { replace: true });
     } catch (error) {
-      setSnack(toMessage(error));
+      showToast({ message: toMessage(error), severity: 'error' });
     } finally {
       setBusy(false);
     }
   };
 
   const openJoin = useCallback(async () => {
-    if (path === '/join') { setJoinLoading(false); return; }
+    if (path === '/join') {
+      setJoinLoading(false);
+      return;
+    }
     setDrawerOpen(false);
     setJoinLoading(true);
     try {
@@ -256,8 +269,6 @@ export const useNavbarAuth = ({
     profileOnboarded,
     isAdmin,
     busy,
-    snack,
-    setSnack,
     drawerOpen,
     setDrawerOpen,
     avatarMenuAnchor,

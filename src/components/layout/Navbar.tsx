@@ -172,27 +172,31 @@ export const Navbar = () => {
   }, [searchOpen, searchAnchorEl, closeSearchDropdown]);
 
   useEffect(() => {
-    if (!showAuthedHeader) {
-      setSearchMatches([]);
-      setSearchOpen(false);
-      setSearchLoading(false);
+    const clearDebounceTimer = () => {
       if (searchDebounceRef.current) {
         clearTimeout(searchDebounceRef.current);
         searchDebounceRef.current = null;
       }
+    };
+
+    const clearSearchMatchesAndClose = () => {
+      setSearchMatches([]);
+      setSearchOpen(false);
+    };
+
+    if (!showAuthedHeader) {
+      clearSearchMatchesAndClose();
+      setSearchLoading(false);
+      clearDebounceTimer();
       return;
     }
     const term = searchQuery.trim().toLowerCase();
     if (term.length < SEARCH_MIN_LENGTH) {
-      setSearchMatches([]);
-      setSearchOpen(false);
-      if (searchDebounceRef.current) {
-        clearTimeout(searchDebounceRef.current);
-        searchDebounceRef.current = null;
-      }
+      clearSearchMatchesAndClose();
+      clearDebounceTimer();
       return;
     }
-    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    clearDebounceTimer();
     searchDebounceRef.current = setTimeout(async () => {
       searchDebounceRef.current = null;
       setSearchLoading(true);
@@ -213,9 +217,14 @@ export const Navbar = () => {
       setSearchLoading(false);
     }, SEARCH_DEBOUNCE_MS);
     return () => {
-      if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+      clearDebounceTimer();
     };
   }, [searchQuery, showAuthedHeader]);
+
+  const closeAccountMenuAndNavigate = (to: string) => {
+    setAvatarMenuAnchor(null);
+    navigate(to);
+  };
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
@@ -572,10 +581,7 @@ export const Navbar = () => {
           >
             {isAdmin && (
               <MenuItem
-                onClick={() => {
-                  setAvatarMenuAnchor(null);
-                  navigate('/admin');
-                }}
+                onClick={() => closeAccountMenuAndNavigate('/admin')}
                 sx={{ py: 1.25, color: 'warning.main' }}
               >
                 Admin
@@ -583,10 +589,7 @@ export const Navbar = () => {
             )}
             {dashboardEnabled && (
               <MenuItem
-                onClick={() => {
-                  setAvatarMenuAnchor(null);
-                  navigate('/dashboard');
-                }}
+                onClick={() => closeAccountMenuAndNavigate('/dashboard')}
                 sx={{ py: 1.25 }}
               >
                 Profile
@@ -594,10 +597,7 @@ export const Navbar = () => {
             )}
             {dashboardEnabled && (
               <MenuItem
-                onClick={() => {
-                  setAvatarMenuAnchor(null);
-                  navigate('/dashboard/settings');
-                }}
+                onClick={() => closeAccountMenuAndNavigate('/dashboard/settings')}
                 sx={{ py: 1.25 }}
               >
                 Settings

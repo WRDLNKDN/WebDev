@@ -1,12 +1,20 @@
-import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
+/**
+ * Navbar — canonical global navigation for WRDLNKDN.
+ *
+ * Governance:
+ * - All auth state via useNavbarAuth hook (no inline session logic).
+ * - All nav items via NavbarDesktopNavLinks / NavbarMobileDrawer (driven by navConfig.ts).
+ * - All auth controls via NavbarDesktopAuthControls / NavbarMobileAuthControls.
+ * - Coming-soon mode collapses to logo-only on home routes.
+ * - Feature flags hide items cleanly — no placeholders, no layout shift.
+ * - Active state is deterministic: same route = same nav state, always.
+ * - z-index: 1250 (above messenger FAB at 1200, below modal at 1300).
+ */
 import MenuIcon from '@mui/icons-material/Menu';
-import NotificationsIcon from '@mui/icons-material/Notifications';
-import PersonIcon from '@mui/icons-material/Person';
 import SearchIcon from '@mui/icons-material/Search';
 import {
   AppBar,
   Backdrop,
-  Badge,
   Box,
   Button,
   CircularProgress,
@@ -25,42 +33,43 @@ import {
   useMediaQuery,
   useTheme,
 } from '@mui/material';
-import type { Session } from '@supabase/supabase-js';
+import PersonIcon from '@mui/icons-material/Person';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link as RouterLink, useLocation, useNavigate } from 'react-router-dom';
 import { useCurrentUserAvatar } from '../../context/AvatarContext';
-import { useAppToast } from '../../context/AppToastContext';
 import { useNotificationsUnread } from '../../hooks/useNotificationsUnread';
-import { signOut } from '../../lib/auth/signOut';
-import { supabase } from '../../lib/auth/supabaseClient';
-import { getStoreExternalUrl } from '../../lib/marketing/storefront';
 import {
   useFeatureFlag,
-  useProductionComingSoonMode,
+  usePublicComingSoonMode,
 } from '../../context/FeatureFlagsContext';
-import { EVENTS_FLAG, GROUPS_FLAG } from '../../lib/featureFlags/keys';
-import { isProfileOnboarded } from '../../lib/profile/profileOnboarding';
-import { toMessage } from '../../lib/utils/errors';
+import {
+  DASHBOARD_FLAG,
+  GAMES_FLAG,
+  GROUPS_FLAG,
+  STORE_FLAG,
+} from '../../lib/featureFlags/keys';
 import { denseMenuPaperSxFromTheme } from '../../lib/ui/formSurface';
 import { getNavbarGlass } from '../../theme/candyStyles';
-import { ProfileAvatar } from '../avatar/ProfileAvatar';
-import { GlobalNavAuthenticatedPrimary } from './navbar/GlobalNavAuthenticatedPrimary';
-import { getNavbarDrawerChrome } from './navbar/navbarDrawerChrome';
+import { NavbarDesktopAuthControls } from './navbar/NavbarDesktopAuthControls';
+import { NavbarDesktopNavLinks } from './navbar/NavbarDesktopNavLinks';
 import { NavbarMobileAuthControls } from './navbar/NavbarMobileAuthControls';
 import { NavbarMobileDrawer } from './navbar/NavbarMobileDrawer';
+import { useNavbarAuth } from './navbar/useNavbarAuth';
+import { isForcePublicPath, isHomePath } from './navbar/navConfig';
+import { supabase } from '../../lib/auth/supabaseClient';
 
-/** One row in the navbar search dropdown (approved profiles only). */
+/** Search dropdown result shape. */
 type SearchMatch = {
   id: string;
   handle: string | null;
   display_name: string | null;
 };
 
-/** Search: debounce before fetching; min chars to trigger; max rows in dropdown. */
 const SEARCH_DEBOUNCE_MS = 300;
 const SEARCH_MIN_LENGTH = 2;
 const SEARCH_MAX_MATCHES = 8;
 const SEARCH_MAX_QUERY_CHARS = 500;
+
 const KICKSTARTER_URL =
   'https://www.kickstarter.com/projects/wrdlnkdn/wrdlnkdn-business-but-weirder-0';
 
@@ -68,26 +77,72 @@ export const Navbar = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const path = location.pathname;
-  const forcePublicHeader = path.startsWith('/join');
-  const isJoinActive = path.startsWith('/join');
-  const productionComingSoon = useProductionComingSoonMode();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const isCompactDesktop = useMediaQuery(theme.breakpoints.down('lg'));
+
+  // ── Derived path flags ─────────────────────────────────────────────────────
+  const forcePublicHeader = isForcePublicPath(path);
   const isAdminActive = path.startsWith('/admin');
-  const eventsEnabled = useFeatureFlag(EVENTS_FLAG);
-  const directoryEnabled = useFeatureFlag('directory');
-  const storeEnabled = useFeatureFlag('store');
-  const chatEnabled = useFeatureFlag('chat');
+  const isGroupsActive = path === '/groups' || path.startsWith('/groups/');
+  const homeRoute = isHomePath(path);
+
+  // ── Feature flags ──────────────────────────────────────────────────────────
+  const comingSoon = usePublicComingSoonMode();
+  const dashboardEnabled = useFeatureFlag(DASHBOARD_FLAG);
+  const storeEnabled = useFeatureFlag(STORE_FLAG);
+  const gamesEnabled = useFeatureFlag(GAMES_FLAG);
   const groupsEnabled = useFeatureFlag(GROUPS_FLAG);
-  const gamesEnabled = useFeatureFlag('games');
-  const feedEnabled = useFeatureFlag('feed');
-  const dashboardEnabled = useFeatureFlag('dashboard');
-  const storeExternalUrl = getStoreExternalUrl();
-  const [session, setSession] = useState<Session | null>(null);
-  const [sessionLoaded, setSessionLoaded] = useState(false);
-  const [onboardingLoaded, setOnboardingLoaded] = useState(false);
-  const [profileOnboarded, setProfileOnboarded] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [busy, setBusy] = useState(false);
-  /** Search: query string, dropdown matches from Supabase, open state, refs for Popper and debounce. */
+
+  // ── Auth state ─────────────────────────────────────────────────────────────
+  const {
+    session,
+    sessionLoaded,
+    onboardingLoaded,
+    profileOnboarded,
+    isAdmin,
+    busy,
+    drawerOpen,
+    setDrawerOpen,
+    avatarMenuAnchor,
+    setAvatarMenuAnchor,
+    joinLoading,
+    handleSignOut,
+    openJoin,
+    openSignIn,
+  } = useNavbarAuth({ path, forcePublicHeader, navigate });
+
+  const { avatarUrl } = useCurrentUserAvatar();
+  const notificationsUnread = useNotificationsUnread();
+
+  // ── Derived visibility flags ───────────────────────────────────────────────
+  /**
+   * Show authenticated nav links and controls.
+   * Fail-open while onboarding loads (onboardingLoaded=false) so the icon
+   * stays visible during the profile check.
+   */
+  const showAuthedHeader =
+    Boolean(session) &&
+    (profileOnboarded || !onboardingLoaded) &&
+    !forcePublicHeader &&
+    (!comingSoon || isAdminActive);
+
+  /**
+   * Coming-soon + home: logo-only chrome.
+   * No hamburger, no Join/Sign-in (avoids perpetual mobile spinner on getSession).
+   */
+  const minimalNavbar = comingSoon && !isAdminActive && homeRoute;
+
+  /** Avatar account dropdown shown when session confirmed and not in minimal mode. */
+  const showAccountDropdown =
+    Boolean(session) &&
+    sessionLoaded &&
+    onboardingLoaded &&
+    (!comingSoon || isAdminActive) &&
+    path !== '/auth/callback' &&
+    !minimalNavbar;
+
+  // ── Search ─────────────────────────────────────────────────────────────────
   const [searchQuery, setSearchQuery] = useState('');
   const [searchMatches, setSearchMatches] = useState<SearchMatch[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
@@ -97,226 +152,9 @@ export const Navbar = () => {
   );
   const searchPopperRef = useRef<HTMLDivElement>(null);
   const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const [avatarMenuAnchor, setAvatarMenuAnchor] = useState<HTMLElement | null>(
-    null,
-  );
-  const [joinLoading, setJoinLoading] = useState(false);
-  const theme = useTheme();
-  const isLightNav = theme.palette.mode === 'light';
-  const { drawerPaperSx, drawerLinkColor, drawerActiveNavSx } =
-    getNavbarDrawerChrome(theme);
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  const isCompactDesktop = useMediaQuery(theme.breakpoints.down('lg'));
-  const { avatarUrl } = useCurrentUserAvatar();
-  const notificationsUnread = useNotificationsUnread();
-  const { showToast } = useAppToast();
-  const isGroupsActive = path === '/groups' || path.startsWith('/groups/');
-  const isHomePath = path === '/' || path === '/home';
-  /** Coming soon + home: logo-only chrome — no hamburger, no Join/Sign-in spinner (mobile can hang on getSession). */
-  const minimalComingSoonHomeNavbar =
-    productionComingSoon && !isAdminActive && isHomePath;
-  /** Avatar menu must mount for both desktop and mobile headers (mobile had anchor + no Menu = dead clicks). */
-  const showHeaderAccountDropdown =
-    Boolean(session) &&
-    sessionLoaded &&
-    onboardingLoaded &&
-    (!productionComingSoon || isAdminActive) &&
-    path !== '/auth/callback' &&
-    !minimalComingSoonHomeNavbar;
-  // Show authed header if session exists and either:
-  // 1. Profile is confirmed onboarded, OR
-  // 2. Onboarding check is still loading (fail-open to show icon while checking)
-  // Coming soon mode hides ALL auth UI (including avatar) - only show on admin routes
-  const showAuthedHeader =
-    Boolean(session) &&
-    (profileOnboarded || !onboardingLoaded) &&
-    !forcePublicHeader &&
-    (!productionComingSoon || isAdminActive);
-  const desktopNavButtonSx = {
-    color: 'rgba(255,255,255,0.85)',
-    textTransform: 'none',
-    fontSize: isCompactDesktop ? '0.92rem' : '1rem',
-    minWidth: 0,
-    px: isCompactDesktop ? 1 : 1.25,
-    py: 0.625,
-    whiteSpace: 'nowrap' as const,
-    borderRadius: 1,
-    '&:hover': {
-      bgcolor: 'rgba(56,132,210,0.14)',
-      color: 'white',
-    },
-    '&:visited': {
-      color: 'rgba(255,255,255,0.85)',
-    },
-  };
 
-  // Auth session: IF session exists we show Feed/Dashboard/Sign Out; ELSE Sign in + Join
-  // NOTE: Supabase may recover session from OAuth URL before our listener is registered, so we
-  // retry getSession when null to avoid "stuck on Sign in" after returning from OAuth.
-  useEffect(() => {
-    let cancelled = false;
+  const closeSearchDropdown = useCallback(() => setSearchOpen(false), []);
 
-    const refreshSession = async () => {
-      try {
-        const { data } = await supabase.auth.getSession();
-        if (!cancelled) {
-          setSession(data.session ?? null);
-          setSessionLoaded(true);
-        }
-      } catch {
-        if (!cancelled) {
-          setSession(null);
-          setSessionLoaded(true);
-        }
-      }
-    };
-
-    void refreshSession();
-
-    const { data: sub } = supabase.auth.onAuthStateChange(
-      (_evt, newSession) => {
-        if (!cancelled) {
-          setSession(newSession ?? null);
-          setSessionLoaded(true);
-        }
-      },
-    );
-
-    // Retries when null: catches OAuth callback race where session recovery completes
-    // before our listener was attached (SIGNED_IN fires, we miss it). UAT can be slow.
-    const retries = [600, 1200];
-    const retryTimers = retries.map((delay) =>
-      setTimeout(async () => {
-        const { data } = await supabase.auth.getSession();
-        if (!cancelled) {
-          if (data.session) setSession(data.session);
-          setSessionLoaded(true);
-        }
-      }, delay),
-    );
-
-    // Guard: never await getSession again here — on slow mobile networks a second hung
-    // getSession() left sessionLoaded false forever (perpetual navbar spinner).
-    const sessionGuardTimer = setTimeout(() => {
-      if (!cancelled) {
-        setSessionLoaded(true);
-      }
-    }, 3000);
-
-    return () => {
-      cancelled = true;
-      retryTimers.forEach(clearTimeout);
-      clearTimeout(sessionGuardTimer);
-      sub.subscription.unsubscribe();
-    };
-  }, []);
-
-  useEffect(() => {
-    let cancelled = false;
-    const checkOnboarding = async () => {
-      if (forcePublicHeader) {
-        if (!cancelled) {
-          setProfileOnboarded(false);
-          setOnboardingLoaded(true);
-        }
-        return;
-      }
-      if (!session?.user?.id) {
-        if (!cancelled) {
-          setProfileOnboarded(false);
-          setOnboardingLoaded(true);
-        }
-        return;
-      }
-      setOnboardingLoaded(false);
-      try {
-        const { data } = await supabase
-          .from('profiles')
-          .select(
-            'display_name, join_reason, participation_style, policy_version',
-          )
-          .eq('id', session.user.id)
-          .maybeSingle();
-        if (!cancelled) {
-          setProfileOnboarded(Boolean(data && isProfileOnboarded(data)));
-          setOnboardingLoaded(true);
-        }
-      } catch {
-        if (!cancelled) {
-          // Fail-open on profile read errors so signed-in members are not
-          // incorrectly treated as signed-out due transient fetch issues.
-          setProfileOnboarded(true);
-          setOnboardingLoaded(true);
-        }
-      }
-    };
-    void checkOnboarding();
-
-    // Guard: if profile fetch hangs, stop showing spinner and treat as onboarded
-    const onboardingGuardTimer = setTimeout(() => {
-      if (!cancelled) {
-        setProfileOnboarded(true);
-        setOnboardingLoaded(true);
-      }
-    }, 4000);
-
-    return () => {
-      cancelled = true;
-      clearTimeout(onboardingGuardTimer);
-    };
-  }, [forcePublicHeader, session?.user?.id]);
-
-  // Re-fetch session when navigating away from /auth/callback (AuthCallback just established it)
-  const prevPathRef = useRef(path);
-  useEffect(() => {
-    if (prevPathRef.current === '/auth/callback' && path !== '/auth/callback') {
-      void (async () => {
-        const { data } = await supabase.auth.getSession();
-        if (data.session) {
-          setSession(data.session);
-          setSessionLoaded(true);
-        }
-      })();
-    }
-    prevPathRef.current = path;
-  }, [path]);
-
-  // Admin: IF session exists, check is_admin RPC; ELSE not admin
-  useEffect(() => {
-    let cancelled = false;
-
-    const checkAdmin = async () => {
-      if (!session) {
-        setIsAdmin(false);
-        return;
-      }
-
-      try {
-        const { data, error } = (await supabase.rpc('is_admin')) as {
-          data: boolean | null;
-          error: Error | null;
-        };
-        if (cancelled) return;
-
-        setIsAdmin(!error && data === true);
-      } catch {
-        if (!cancelled) setIsAdmin(false);
-      }
-    };
-
-    void checkAdmin();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [session]);
-
-  const closeSearchDropdown = useCallback(() => {
-    setSearchOpen(false);
-  }, []);
-
-  // Search: close dropdown when clicking outside
   useEffect(() => {
     if (!searchOpen) return;
     const handleClickOutside = (e: MouseEvent) => {
@@ -332,42 +170,41 @@ export const Navbar = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [searchOpen, searchAnchorEl, closeSearchDropdown]);
 
-  // Search: debounced fetch of approved profiles, then filter client-side by handle/display_name for dropdown.
   useEffect(() => {
-    if (!showAuthedHeader) {
-      setSearchMatches([]);
-      setSearchOpen(false);
-      setSearchLoading(false);
+    const clearDebounceTimer = () => {
       if (searchDebounceRef.current) {
         clearTimeout(searchDebounceRef.current);
         searchDebounceRef.current = null;
       }
+    };
+
+    const clearSearchMatchesAndClose = () => {
+      setSearchMatches([]);
+      setSearchOpen(false);
+    };
+
+    if (!showAuthedHeader) {
+      clearSearchMatchesAndClose();
+      setSearchLoading(false);
+      clearDebounceTimer();
       return;
     }
     const term = searchQuery.trim().toLowerCase();
     if (term.length < SEARCH_MIN_LENGTH) {
-      setSearchMatches([]);
-      setSearchOpen(false);
-      if (searchDebounceRef.current) {
-        clearTimeout(searchDebounceRef.current);
-        searchDebounceRef.current = null;
-      }
+      clearSearchMatchesAndClose();
+      clearDebounceTimer();
       return;
     }
-    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    clearDebounceTimer();
     searchDebounceRef.current = setTimeout(async () => {
       searchDebounceRef.current = null;
       setSearchLoading(true);
       setSearchOpen(true);
-      let list: SearchMatch[] = [];
-      // RLS: authenticated users see approved profiles + their own (so you can find yourself).
       const { data, error } = await supabase
         .from('profiles')
         .select('id, handle, display_name')
         .limit(200);
-      if (!error && data) {
-        list = data as SearchMatch[];
-      }
+      const list: SearchMatch[] = !error && data ? (data as SearchMatch[]) : [];
       const filtered = list
         .filter((p) => {
           const h = (p.handle || '').toLowerCase();
@@ -379,65 +216,33 @@ export const Navbar = () => {
       setSearchLoading(false);
     }, SEARCH_DEBOUNCE_MS);
     return () => {
-      if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+      clearDebounceTimer();
     };
   }, [searchQuery, showAuthedHeader]);
 
-  const handleSignOut = async () => {
-    setBusy(true);
-    try {
-      await signOut({ redirectTo: '/' });
-      setSession(null);
-      navigate('/', { replace: true });
-    } catch (error) {
-      console.error(error);
-      showToast({ message: toMessage(error), severity: 'error' });
-    } finally {
-      setBusy(false);
-    }
+  const closeAccountMenuAndNavigate = (to: string) => {
+    setAvatarMenuAnchor(null);
+    navigate(to);
   };
 
-  const openJoin = useCallback(async () => {
-    if (path === '/join') {
-      setJoinLoading(false);
-      return;
-    }
-    setDrawerOpen(false);
-    setJoinLoading(true);
-    try {
-      // Warm the Join chunk so members get instant feedback.
-      await import('../../pages/auth/Join');
-    } catch {
-      // Navigation still proceeds even if preload fails.
-    } finally {
-      navigate('/join');
-    }
-  }, [navigate, path]);
+  /** Props passed to both desktop and mobile navbar auth chrome. */
+  const navbarAuthChromeProps = {
+    path,
+    session,
+    sessionLoaded,
+    onboardingLoaded,
+    showAuthedHeader,
+    isAdminActive,
+    isJoinActive: forcePublicHeader,
+    dashboardEnabled,
+    notificationsUnread,
+    avatarUrl,
+    setAvatarMenuAnchor,
+  };
 
-  const openSignIn = useCallback(async () => {
-    if (path === '/signin') return;
-    setDrawerOpen(false);
-    try {
-      await import('../../pages/auth/SignIn');
-    } catch {
-      // Navigation still proceeds even if preload fails.
-    } finally {
-      navigate('/signin');
-    }
-  }, [navigate, path]);
+  const trimmedSearchQuery = searchQuery.trim();
 
-  useEffect(() => {
-    if (path === '/join') {
-      setJoinLoading(false);
-    }
-  }, [path]);
-
-  useEffect(() => {
-    if (path === '/signin' || path === '/join') {
-      setDrawerOpen(false);
-    }
-  }, [path]);
-
+  // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <>
       <AppBar
@@ -445,9 +250,8 @@ export const Navbar = () => {
         position="sticky"
         color="transparent"
         elevation={0}
-        sx={(theme) => ({
-          ...getNavbarGlass(theme),
-          /* Above messenger FAB (1200) so header taps aren’t eaten on narrow viewports */
+        sx={(t) => ({
+          ...getNavbarGlass(t),
           zIndex: 1250,
           isolation: 'isolate',
         })}
@@ -459,14 +263,11 @@ export const Navbar = () => {
             minHeight: { xs: 48, sm: 56 },
             gap: { xs: 0.35, sm: 0.75, md: 1 },
             overflow: 'visible',
-            ...(isMobile &&
-              minimalComingSoonHomeNavbar && {
-                justifyContent: 'flex-start',
-              }),
+            ...(isMobile && minimalNavbar && { justifyContent: 'flex-start' }),
           }}
         >
-          {/* Mobile: hamburger — hidden on home during coming soon (video + text only) */}
-          {isMobile && !minimalComingSoonHomeNavbar && (
+          {/* Mobile hamburger — hidden in minimal coming-soon home chrome */}
+          {isMobile && !minimalNavbar && (
             <Tooltip title="Open menu">
               <span>
                 <IconButton
@@ -481,13 +282,12 @@ export const Navbar = () => {
             </Tooltip>
           )}
 
-          {/* Left: logo (home) + search — shrink on mobile so Sign in / Join stay visible */}
+          {/* Logo + optional store links */}
           <Stack
             direction="row"
             alignItems="center"
-            spacing={0}
             sx={{
-              mr: isMobile ? 0.5 : 0.5,
+              mr: 0.5,
               minHeight: { xs: 40, sm: 48 },
               gap: isCompactDesktop ? 0.75 : 1.25,
               overflow: 'visible',
@@ -495,7 +295,6 @@ export const Navbar = () => {
               minWidth: 0,
             }}
           >
-            {/* Brand: logo links to home — compact on mobile to avoid squishing nav */}
             <Box
               component={RouterLink}
               to="/"
@@ -531,11 +330,11 @@ export const Navbar = () => {
                 }}
               />
             </Box>
+
             {storeEnabled && (
               <Stack
                 direction="row"
                 alignItems="center"
-                spacing={0}
                 sx={{ gap: isCompactDesktop ? 0.25 : 0.5 }}
               >
                 <Button
@@ -544,25 +343,26 @@ export const Navbar = () => {
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label="Kickstarter, opens in a new tab"
-                  sx={desktopNavButtonSx}
+                  sx={{
+                    color: 'rgba(255,255,255,0.85)',
+                    textTransform: 'none',
+                    fontSize: isCompactDesktop ? '0.92rem' : '1rem',
+                    minWidth: 0,
+                    px: isCompactDesktop ? 1 : 1.25,
+                    py: 0.625,
+                    '&:hover': {
+                      bgcolor: 'rgba(56,132,210,0.14)',
+                      color: 'white',
+                    },
+                  }}
                 >
                   Kickstarter
-                </Button>
-                <Button
-                  component="a"
-                  href={storeExternalUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label="Store, opens storefront in a new tab"
-                  sx={desktopNavButtonSx}
-                >
-                  Store
                 </Button>
               </Stack>
             )}
           </Stack>
 
-          {/* Desktop: canonical authenticated primary in alphabetical order; Admin is under the avatar menu only. */}
+          {/* Desktop: authenticated primary nav in IA order */}
           {!isMobile && (
             <Box
               sx={{
@@ -572,23 +372,15 @@ export const Navbar = () => {
                 gap: isCompactDesktop ? 0.25 : 0.5,
               }}
             >
-              <GlobalNavAuthenticatedPrimary
-                variant="desktop"
+              <NavbarDesktopNavLinks
                 path={path}
                 showAuthedHeader={showAuthedHeader}
-                feedEnabled={feedEnabled}
-                directoryEnabled={directoryEnabled}
-                chatEnabled={chatEnabled}
-                dashboardEnabled={dashboardEnabled}
-                eventsEnabled={eventsEnabled}
-                sessionUserId={session?.user?.id}
                 isCompactDesktop={isCompactDesktop}
-                storeEnabled={storeEnabled}
               />
             </Box>
           )}
 
-          {/* Search: recessed bar, placeholder "I'm looking for..." — on desktop authed nav, after top links */}
+          {/* Desktop search — authed only, wide screens only */}
           {!isMobile &&
             !isCompactDesktop &&
             !forcePublicHeader &&
@@ -601,11 +393,10 @@ export const Navbar = () => {
                   component="form"
                   onSubmit={(e) => {
                     e.preventDefault();
-                    const query = searchQuery.trim();
                     closeSearchDropdown();
                     navigate(
-                      query
-                        ? `/directory?q=${encodeURIComponent(query)}`
+                      trimmedSearchQuery
+                        ? `/directory?q=${encodeURIComponent(trimmedSearchQuery)}`
                         : '/directory',
                     );
                   }}
@@ -643,7 +434,7 @@ export const Navbar = () => {
                       )
                     }
                     onFocus={() =>
-                      searchQuery.trim().length >= SEARCH_MIN_LENGTH &&
+                      trimmedSearchQuery.length >= SEARCH_MIN_LENGTH &&
                       setSearchOpen(true)
                     }
                     inputProps={{
@@ -671,7 +462,7 @@ export const Navbar = () => {
                     searchOpen &&
                     (searchMatches.length > 0 ||
                       searchLoading ||
-                      (searchQuery.trim().length >= SEARCH_MIN_LENGTH &&
+                      (trimmedSearchQuery.length >= SEARCH_MIN_LENGTH &&
                         !searchLoading))
                   }
                   anchorEl={searchAnchorEl}
@@ -700,9 +491,7 @@ export const Navbar = () => {
                       >
                         <CircularProgress
                           size={24}
-                          sx={{
-                            color: isLightNav ? 'primary.main' : 'white',
-                          }}
+                          sx={{ color: 'white' }}
                           aria-label="Loading search"
                         />
                       </Box>
@@ -715,17 +504,14 @@ export const Navbar = () => {
                             mb: 1,
                           }}
                         >
-                          No matches for &quot;{searchQuery.trim()}&quot;
+                          No matches for &quot;{trimmedSearchQuery}&quot;
                         </Box>
                         <Button
                           component={RouterLink}
-                          to={`/directory?q=${encodeURIComponent(searchQuery.trim())}`}
+                          to={`/directory?q=${encodeURIComponent(trimmedSearchQuery)}`}
                           size="small"
                           onClick={closeSearchDropdown}
-                          sx={{
-                            color: 'primary.light',
-                            textTransform: 'none',
-                          }}
+                          sx={{ color: 'primary.light', textTransform: 'none' }}
                         >
                           View all in Directory
                         </Button>
@@ -749,17 +535,12 @@ export const Navbar = () => {
                               }}
                               sx={{
                                 color: 'text.primary',
-                                '&:hover': {
-                                  bgcolor: 'action.hover',
-                                },
+                                '&:hover': { bgcolor: 'action.hover' },
                               }}
                             >
                               <ListItemIcon sx={{ minWidth: 36 }}>
                                 <PersonIcon
-                                  sx={{
-                                    color: 'text.secondary',
-                                    fontSize: 20,
-                                  }}
+                                  sx={{ color: 'text.secondary', fontSize: 20 }}
                                 />
                               </ListItemIcon>
                               <ListItemText
@@ -786,204 +567,38 @@ export const Navbar = () => {
 
           <Box sx={{ flexGrow: 1 }} />
 
-          {/* Desktop auth: hidden on mobile (shown in drawer); hidden on coming-soon home (no stuck spinner). */}
-          {!isMobile && !minimalComingSoonHomeNavbar && (
-            <Stack direction="row" spacing={2} alignItems="center">
-              {path === '/auth/callback' ? null : !sessionLoaded ||
-                (session && !onboardingLoaded) ? ( // Avoid conflicting spinner while AuthCallback handles OAuth
-                <CircularProgress
-                  size={16}
-                  sx={{ color: 'text.secondary' }}
-                  aria-label="Loading"
-                />
-              ) : !session && (!productionComingSoon || isAdminActive) ? (
-                <>
-                  {/* Guest auth controls stay alphabetical. */}
-                  {!isJoinActive && (
-                    <Button
-                      component="button"
-                      type="button"
-                      onClick={() => void openJoin()}
-                      sx={{
-                        color: 'rgba(255,255,255,0.96)',
-                        textTransform: 'none',
-                        fontSize: '1rem',
-                        fontWeight: 600,
-                        minWidth: 0,
-                        px: 1,
-                        '&:hover': {
-                          bgcolor: 'rgba(56,132,210,0.14)',
-                          color: 'white',
-                        },
-                      }}
-                    >
-                      Join
-                    </Button>
-                  )}
-                  <Button
-                    component="button"
-                    type="button"
-                    onClick={() => void openSignIn()}
-                    sx={{
-                      color: 'rgba(255,255,255,0.96)',
-                      textTransform: 'none',
-                      fontSize: '1rem',
-                      fontWeight: 600,
-                      minWidth: 0,
-                      px: 1,
-                      '&:hover': {
-                        bgcolor: 'rgba(56,132,210,0.14)',
-                        color: 'white',
-                      },
-                    }}
-                  >
-                    Sign in
-                  </Button>
-                </>
-              ) : (
-                <>
-                  {showAuthedHeader && dashboardEnabled && (
-                    <Tooltip
-                      title={
-                        notificationsUnread > 0
-                          ? `${notificationsUnread} unread notifications`
-                          : 'Notifications'
-                      }
-                    >
-                      <span>
-                        <IconButton
-                          component={RouterLink}
-                          to="/dashboard/notifications"
-                          aria-label={
-                            notificationsUnread > 0
-                              ? `${notificationsUnread} unread notifications`
-                              : 'Notifications'
-                          }
-                          sx={{
-                            color: 'rgba(255,255,255,0.85)',
-                            ...(path === '/dashboard/notifications' && {
-                              color: 'white',
-                              bgcolor: 'rgba(156,187,217,0.26)',
-                              '&:hover': { bgcolor: 'rgba(141,188,229,0.34)' },
-                            }),
-                          }}
-                        >
-                          <Badge
-                            badgeContent={
-                              notificationsUnread > 0
-                                ? notificationsUnread
-                                : undefined
-                            }
-                            color="error"
-                          >
-                            <NotificationsIcon sx={{ fontSize: 22 }} />
-                          </Badge>
-                        </IconButton>
-                      </span>
-                    </Tooltip>
-                  )}
-                  {/* Hide avatar completely in coming soon mode unless on admin route */}
-                  {(!productionComingSoon || isAdminActive) && (
-                    <Tooltip title="Account menu" disableInteractive>
-                      {/* Span wrapper: reliable ref + clicks with MUI Tooltip + IconButton */}
-                      <Box
-                        component="span"
-                        sx={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          lineHeight: 0,
-                        }}
-                      >
-                        <IconButton
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setAvatarMenuAnchor(e.currentTarget);
-                          }}
-                          aria-label="Account menu"
-                          aria-haspopup="true"
-                          aria-expanded={Boolean(avatarMenuAnchor)}
-                          sx={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 0.25,
-                            p: 0.25,
-                            color: 'inherit',
-                            borderRadius: 9999,
-                            '&:hover': { bgcolor: 'rgba(56,132,210,0.14)' },
-                          }}
-                        >
-                          <Box
-                            sx={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              borderRadius: '50%',
-                              border: '2px solid rgba(255,255,255,0.4)',
-                              p: '1px',
-                              flexShrink: 0,
-                            }}
-                          >
-                            <ProfileAvatar
-                              src={avatarUrl ?? undefined}
-                              alt={
-                                session?.user?.user_metadata?.full_name ||
-                                'User'
-                              }
-                              size="small"
-                              sx={{ width: 24, height: 24 }}
-                            />
-                          </Box>
-                          <KeyboardArrowDownIcon
-                            sx={{
-                              fontSize: 16,
-                              color: 'rgba(255,255,255,0.8)',
-                            }}
-                          />
-                        </IconButton>
-                      </Box>
-                    </Tooltip>
-                  )}
-                </>
-              )}
-            </Stack>
+          {/* Desktop auth controls */}
+          {!isMobile && !minimalNavbar && (
+            <NavbarDesktopAuthControls
+              {...navbarAuthChromeProps}
+              avatarMenuAnchor={avatarMenuAnchor}
+              comingSoon={comingSoon}
+              openJoin={() => void openJoin()}
+              openSignIn={() => void openSignIn()}
+            />
           )}
 
-          {/* Mobile auth controls stay shared, but Store still renders beside the logo on minimal home chrome. */}
-          {isMobile && !minimalComingSoonHomeNavbar && (
+          {/* Mobile auth controls */}
+          {isMobile && !minimalNavbar && (
             <NavbarMobileAuthControls
               isMobile={isMobile}
-              path={path}
-              session={session}
-              sessionLoaded={sessionLoaded}
-              onboardingLoaded={onboardingLoaded}
-              showAuthedHeader={showAuthedHeader}
-              productionComingSoon={productionComingSoon}
-              isAdminActive={isAdminActive}
-              isJoinActive={isJoinActive}
-              dashboardEnabled={dashboardEnabled}
-              notificationsUnread={notificationsUnread}
-              avatarUrl={avatarUrl}
+              {...navbarAuthChromeProps}
+              productionComingSoon={comingSoon}
               setDrawerOpen={setDrawerOpen}
-              setAvatarMenuAnchor={setAvatarMenuAnchor}
               avatarMenuOpen={Boolean(avatarMenuAnchor)}
             />
           )}
         </Toolbar>
-        {showHeaderAccountDropdown ? (
+
+        {/* Account dropdown menu — desktop + mobile share same Menu instance */}
+        {showAccountDropdown && (
           <Menu
             anchorEl={avatarMenuAnchor}
             open={Boolean(avatarMenuAnchor)}
             onClose={() => setAvatarMenuAnchor(null)}
             disableScrollLock
-            anchorOrigin={{
-              vertical: 'bottom',
-              horizontal: 'right',
-            }}
-            transformOrigin={{
-              vertical: 'top',
-              horizontal: 'right',
-            }}
+            anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+            transformOrigin={{ vertical: 'top', horizontal: 'right' }}
             slotProps={{
               paper: {
                 sx: (t) => ({
@@ -999,11 +614,7 @@ export const Navbar = () => {
           >
             {isAdmin && (
               <MenuItem
-                onClick={() => {
-                  setAvatarMenuAnchor(null);
-                  setDrawerOpen(false);
-                  navigate('/admin');
-                }}
+                onClick={() => closeAccountMenuAndNavigate('/admin')}
                 sx={{ py: 1.25, color: 'warning.main' }}
               >
                 Admin
@@ -1011,11 +622,7 @@ export const Navbar = () => {
             )}
             {dashboardEnabled && (
               <MenuItem
-                onClick={() => {
-                  setAvatarMenuAnchor(null);
-                  setDrawerOpen(false);
-                  navigate('/dashboard');
-                }}
+                onClick={() => closeAccountMenuAndNavigate('/dashboard')}
                 sx={{ py: 1.25 }}
               >
                 Profile
@@ -1023,11 +630,9 @@ export const Navbar = () => {
             )}
             {dashboardEnabled && (
               <MenuItem
-                onClick={() => {
-                  setAvatarMenuAnchor(null);
-                  setDrawerOpen(false);
-                  navigate('/dashboard/settings');
-                }}
+                onClick={() =>
+                  closeAccountMenuAndNavigate('/dashboard/settings')
+                }
                 sx={{ py: 1.25 }}
               >
                 Settings
@@ -1037,7 +642,6 @@ export const Navbar = () => {
             <MenuItem
               onClick={() => {
                 setAvatarMenuAnchor(null);
-                setDrawerOpen(false);
                 void handleSignOut();
               }}
               disabled={busy}
@@ -1046,37 +650,38 @@ export const Navbar = () => {
               Sign Out
             </MenuItem>
           </Menu>
-        ) : null}
+        )}
       </AppBar>
 
+      {/* Mobile drawer */}
       <NavbarMobileDrawer
         drawerOpen={drawerOpen}
         setDrawerOpen={setDrawerOpen}
         showAuthedHeader={showAuthedHeader}
         session={session}
-        productionComingSoon={productionComingSoon}
+        comingSoon={comingSoon}
         isAdminActive={isAdminActive}
-        isJoinActive={isJoinActive}
-        dashboardEnabled={dashboardEnabled}
-        directoryEnabled={directoryEnabled}
-        eventsEnabled={eventsEnabled}
-        groupsEnabled={groupsEnabled}
-        feedEnabled={feedEnabled}
+        isJoinActive={forcePublicHeader}
         storeEnabled={storeEnabled}
-        chatEnabled={chatEnabled}
         gamesEnabled={gamesEnabled}
+        groupsEnabled={groupsEnabled}
         isGroupsActive={isGroupsActive}
         path={path}
         location={location}
-        drawerPaperSx={drawerPaperSx}
-        drawerLinkColor={drawerLinkColor}
-        drawerActiveNavSx={drawerActiveNavSx}
+        drawerPaperSx={{}}
+        drawerLinkColor="rgba(255,255,255,0.9)"
+        drawerActiveNavSx={{
+          bgcolor: 'rgba(156,187,217,0.26)',
+          '&:hover': { bgcolor: 'rgba(141,188,229,0.34)' },
+        }}
       />
+
+      {/* Join loading backdrop */}
       <Backdrop
         open={joinLoading}
         sx={{
           color: '#FFFFFF',
-          zIndex: (theme) => theme.zIndex.drawer + 2,
+          zIndex: (t) => t.zIndex.drawer + 2,
           flexDirection: 'column',
           gap: 1.25,
         }}

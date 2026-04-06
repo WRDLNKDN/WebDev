@@ -1,6 +1,13 @@
+/**
+ * useNavbarAuth — canonical auth state hook for the global navbar.
+ *
+ * Extracted from Navbar.tsx to keep the component focused on rendering.
+ * All session, onboarding, admin checks, and navigation actions live here.
+ */
 import type { Session } from '@supabase/supabase-js';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { NavigateFunction } from 'react-router-dom';
+import { useAppToast } from '../../../context/AppToastContext';
 import { signOut } from '../../../lib/auth/signOut';
 import { supabase } from '../../../lib/auth/supabaseClient';
 import { consumeJoinCompletionFlash } from '../../../lib/profile/joinCompletionFlash';
@@ -13,24 +20,42 @@ type UseNavbarAuthArgs = {
   navigate: NavigateFunction;
 };
 
+export type UseNavbarAuthReturn = {
+  session: Session | null;
+  sessionLoaded: boolean;
+  onboardingLoaded: boolean;
+  profileOnboarded: boolean;
+  isAdmin: boolean;
+  busy: boolean;
+  drawerOpen: boolean;
+  setDrawerOpen: (open: boolean) => void;
+  avatarMenuAnchor: HTMLElement | null;
+  setAvatarMenuAnchor: (el: HTMLElement | null) => void;
+  joinLoading: boolean;
+  handleSignOut: () => Promise<void>;
+  openJoin: () => Promise<void>;
+  openSignIn: () => Promise<void>;
+};
+
 export const useNavbarAuth = ({
   path,
   forcePublicHeader,
   navigate,
-}: UseNavbarAuthArgs) => {
+}: UseNavbarAuthArgs): UseNavbarAuthReturn => {
+  const { showToast } = useAppToast();
   const [session, setSession] = useState<Session | null>(null);
   const [sessionLoaded, setSessionLoaded] = useState(false);
   const [onboardingLoaded, setOnboardingLoaded] = useState(false);
   const [profileOnboarded, setProfileOnboarded] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [snack, setSnack] = useState<string | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [avatarMenuAnchor, setAvatarMenuAnchor] = useState<HTMLElement | null>(
     null,
   );
   const [joinLoading, setJoinLoading] = useState(false);
 
+  // ── Session ────────────────────────────────────────────────────────────────
   useEffect(() => {
     let cancelled = false;
 
@@ -60,6 +85,7 @@ export const useNavbarAuth = ({
       },
     );
 
+    // Retry after OAuth callback race: SIGNED_IN may fire before our listener attaches.
     const retries = [600, 1200];
     const retryTimers = retries.map((delay) =>
       setTimeout(async () => {
@@ -71,14 +97,10 @@ export const useNavbarAuth = ({
       }, delay),
     );
 
-    const sessionGuardTimer = setTimeout(async () => {
-      if (cancelled) return;
-      const { data } = await supabase.auth.getSession();
-      if (!cancelled) {
-        setSession(data.session ?? null);
-        setSessionLoaded(true);
-      }
-    }, 2500);
+    // Hard guard: never leave sessionLoaded=false forever on slow mobile networks.
+    const sessionGuardTimer = setTimeout(() => {
+      if (!cancelled) setSessionLoaded(true);
+    }, 3000);
 
     return () => {
       cancelled = true;
@@ -88,17 +110,27 @@ export const useNavbarAuth = ({
     };
   }, []);
 
+  // Re-fetch session when navigating away from /auth/callback (it just established it).
+  const prevPathRef = useRef(path);
+  useEffect(() => {
+    if (prevPathRef.current === '/auth/callback' && path !== '/auth/callback') {
+      void (async () => {
+        const { data } = await supabase.auth.getSession();
+        if (data.session) {
+          setSession(data.session);
+          setSessionLoaded(true);
+        }
+      })();
+    }
+    prevPathRef.current = path;
+  }, [path]);
+
+  // ── Onboarding ─────────────────────────────────────────────────────────────
   useEffect(() => {
     let cancelled = false;
+
     const checkOnboarding = async () => {
-      if (forcePublicHeader) {
-        if (!cancelled) {
-          setProfileOnboarded(false);
-          setOnboardingLoaded(true);
-        }
-        return;
-      }
-      if (!session?.user?.id) {
+      if (forcePublicHeader || !session?.user?.id) {
         if (!cancelled) {
           setProfileOnboarded(false);
           setOnboardingLoaded(true);
@@ -120,13 +152,16 @@ export const useNavbarAuth = ({
         }
       } catch {
         if (!cancelled) {
+          // Fail-open: transient errors should not strand signed-in members.
           setProfileOnboarded(true);
           setOnboardingLoaded(true);
         }
       }
     };
+
     void checkOnboarding();
 
+    // Guard: if profile fetch hangs, treat as onboarded to avoid stuck spinner.
     const onboardingGuardTimer = setTimeout(() => {
       if (!cancelled) {
         setProfileOnboarded(true);
@@ -140,20 +175,7 @@ export const useNavbarAuth = ({
     };
   }, [forcePublicHeader, session?.user?.id]);
 
-  const prevPathRef = useRef(path);
-  useEffect(() => {
-    if (prevPathRef.current === '/auth/callback' && path !== '/auth/callback') {
-      void (async () => {
-        const { data } = await supabase.auth.getSession();
-        if (data.session) {
-          setSession(data.session);
-          setSessionLoaded(true);
-        }
-      })();
-    }
-    prevPathRef.current = path;
-  }, [path]);
-
+  // ── Admin ──────────────────────────────────────────────────────────────────
   useEffect(() => {
     let cancelled = false;
 
@@ -162,35 +184,51 @@ export const useNavbarAuth = ({
         setIsAdmin(false);
         return;
       }
-
       try {
         const { data, error } = (await supabase.rpc('is_admin')) as {
           data: boolean | null;
           error: Error | null;
         };
-        if (cancelled) return;
-
-        setIsAdmin(!error && data === true);
+        if (!cancelled) setIsAdmin(!error && data === true);
       } catch {
         if (!cancelled) setIsAdmin(false);
       }
     };
 
     void checkAdmin();
-
     return () => {
       cancelled = true;
     };
   }, [session]);
 
+  // ── Drawer / navigation auto-close ────────────────────────────────────────
+  useEffect(() => {
+    if (path === '/join') setJoinLoading(false);
+  }, [path]);
+
+  useEffect(() => {
+    if (path === '/signin' || path === '/join') setDrawerOpen(false);
+  }, [path]);
+
+  // ── Join completion flash ──────────────────────────────────────────────────
+  useEffect(() => {
+    if (path !== '/feed') return;
+    if (!consumeJoinCompletionFlash()) return;
+    showToast({
+      message: 'Your account is ready. Welcome to the Feed.',
+      severity: 'success',
+    });
+  }, [path, showToast]);
+
+  // ── Actions ────────────────────────────────────────────────────────────────
   const handleSignOut = async () => {
     setBusy(true);
     try {
-      await signOut();
+      await signOut({ redirectTo: '/' });
       setSession(null);
       navigate('/', { replace: true });
     } catch (error) {
-      setSnack(toMessage(error));
+      showToast({ message: toMessage(error), severity: 'error' });
     } finally {
       setBusy(false);
     }
@@ -205,6 +243,8 @@ export const useNavbarAuth = ({
     setJoinLoading(true);
     try {
       await import('../../../pages/auth/Join');
+    } catch {
+      // Preload failure — navigation still proceeds.
     } finally {
       navigate('/join');
     }
@@ -215,28 +255,12 @@ export const useNavbarAuth = ({
     setDrawerOpen(false);
     try {
       await import('../../../pages/auth/SignIn');
+    } catch {
+      // Preload failure — navigation still proceeds.
     } finally {
       navigate('/signin');
     }
   }, [navigate, path]);
-
-  useEffect(() => {
-    if (path === '/join') {
-      setJoinLoading(false);
-    }
-  }, [path]);
-
-  useEffect(() => {
-    if (path === '/signin' || path === '/join') {
-      setDrawerOpen(false);
-    }
-  }, [path]);
-
-  useEffect(() => {
-    if (path !== '/feed') return;
-    if (!consumeJoinCompletionFlash()) return;
-    setSnack('Your account is ready. Welcome to the Feed.');
-  }, [path]);
 
   return {
     session,
@@ -245,8 +269,6 @@ export const useNavbarAuth = ({
     profileOnboarded,
     isAdmin,
     busy,
-    snack,
-    setSnack,
     drawerOpen,
     setDrawerOpen,
     avatarMenuAnchor,

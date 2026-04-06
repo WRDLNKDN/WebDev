@@ -332,9 +332,13 @@ export function createAppTheme(themeId: AppThemeId = 'dark') {
       MuiLink: {
         styleOverrides: {
           root: {
-            color: PALETTE.primary.light,
+            // WCAG 1.4.1 / link-in-text-block: link vs surrounding text needs ≥3:1 contrast
+            // (dark: primary.light on text.primary fails in Firefox+axe; primary.dark passes).
+            color: isLight ? PALETTE.primary.main : PALETTE.primary.dark,
             textDecoration: 'none',
-            '&:hover': { color: PALETTE.primary.main },
+            '&:hover': {
+              color: isLight ? PALETTE.primary.dark : PALETTE.primary.main,
+            },
             '&:focus-visible': {
               ...FOCUS_RING,
               borderRadius: '2px',

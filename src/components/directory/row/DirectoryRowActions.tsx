@@ -216,6 +216,7 @@ export const DirectoryRowActions = ({
           </Button>
           {isMobile ? (
             <IconButton
+              size="small"
               onClick={(e) => onManageOpen(e.currentTarget)}
               disabled={busy}
               aria-haspopup="true"

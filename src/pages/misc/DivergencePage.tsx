@@ -2,6 +2,7 @@ import { Box, Button, Container, Typography, useTheme } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { WeirdlingRunner } from '../../components/games/WeirdlingRunner';
 import { getGlassCard, SIGNUP_BG } from '../../theme/candyStyles';
+import { LAYOUT_READING_CONTAINER_MAX_WIDTH } from '../../theme/layoutTokens';
 
 export const DivergencePage = () => {
   const theme = useTheme();
@@ -9,7 +10,7 @@ export const DivergencePage = () => {
 
   return (
     <Box sx={SIGNUP_BG}>
-      <Container maxWidth="md">
+      <Container maxWidth={LAYOUT_READING_CONTAINER_MAX_WIDTH}>
         <Box
           sx={{
             ...getGlassCard(theme),

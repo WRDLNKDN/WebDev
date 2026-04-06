@@ -22,6 +22,8 @@ type NormalizedAssetMetadataFields = {
   moderationStatus?: string | null;
   safeToRender?: boolean;
   failureMessage?: string | null;
+  /** When false, failed assets hide the Retry affordance in shared media UI. */
+  retryable?: boolean | null;
   abuseReportId?: string | null;
   mimeType?: string | null;
   title?: string | null;
@@ -285,6 +287,7 @@ export function createNormalizedAsset(
     moderationStatus: input.moderationStatus ?? null,
     safeToRender: input.safeToRender ?? true,
     failureMessage: input.failureMessage ?? null,
+    retryable: input.retryable ?? null,
     abuseReportId: input.abuseReportId ?? null,
     mimeType: input.mimeType ?? null,
     title: input.title ?? null,
@@ -428,6 +431,7 @@ export function createNormalizedAssetFromPlatformMediaAsset(
       asset.moderation?.safeToRender === false
         ? 'This media is unavailable.'
         : (asset.failure?.reason ?? null),
+    retryable: asset.failure?.retryable ?? null,
     abuseReportId: asset.moderation?.abuseReport?.reportId ?? null,
     mimeType:
       display?.mimeType ??

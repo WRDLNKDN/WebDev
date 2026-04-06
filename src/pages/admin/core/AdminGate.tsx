@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import { toMessage } from '../../../lib/utils/errors';
 import { supabase } from '../../../lib/auth/supabaseClient';
+import { LAYOUT_READING_CONTAINER_MAX_WIDTH } from '../../../theme/layoutTokens';
 
 type Props = {
   children: React.ReactNode;
@@ -90,7 +91,7 @@ export const AdminGate = ({ children }: Props) => {
   if (error) {
     return (
       <Box sx={BG_SX}>
-        <Container maxWidth="md" sx={CARD_SX}>
+        <Container maxWidth={LAYOUT_READING_CONTAINER_MAX_WIDTH} sx={CARD_SX}>
           <Alert severity="error" sx={{ bgcolor: 'rgba(211, 47, 47, 0.1)' }}>
             {error}
           </Alert>
@@ -102,7 +103,7 @@ export const AdminGate = ({ children }: Props) => {
   if (!isAdmin) {
     return (
       <Box sx={BG_SX}>
-        <Container maxWidth="md" sx={CARD_SX}>
+        <Container maxWidth={LAYOUT_READING_CONTAINER_MAX_WIDTH} sx={CARD_SX}>
           <Alert severity="warning" sx={{ bgcolor: 'rgba(237, 108, 2, 0.1)' }}>
             <strong>403 Forbidden.</strong>{' '}
             {isSignedIn

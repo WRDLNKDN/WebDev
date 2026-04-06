@@ -55,11 +55,12 @@ export const FeedCardImageDialog = ({
       Image preview
       <Box sx={{ flex: 1 }} />
       <IconButton
+        size="small"
         edge="end"
         onClick={closeImageLightbox}
         aria-label="Close image preview"
       >
-        <CloseIcon />
+        <CloseIcon fontSize="small" />
       </IconButton>
     </DialogTitle>
     <DialogContent

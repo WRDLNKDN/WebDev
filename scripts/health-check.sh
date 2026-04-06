@@ -20,6 +20,7 @@ wait_for_url() {
       echo -e "\n🛑 [SYSTEM FAULT]: $name failed to respond."
       if [[ "$name" == "API Server" ]]; then
         echo "   Ensure .env has SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY (run: npx supabase status)."
+        echo "   Quick check: node scripts/check-backend-env.mjs"
       fi
       exit 1
     fi

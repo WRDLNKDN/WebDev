@@ -1,4 +1,5 @@
 import { Box, Container, Paper, Typography } from '@mui/material';
+import { LAYOUT_READING_CONTAINER_MAX_WIDTH } from '../../theme/layoutTokens';
 import type { ReactNode } from 'react';
 
 const EFFECTIVE_LINE =
@@ -14,7 +15,7 @@ export const LegalDocumentShell = ({
   children,
 }: LegalDocumentShellProps) => (
   <Box sx={{ py: 6 }}>
-    <Container maxWidth="md">
+    <Container maxWidth={LAYOUT_READING_CONTAINER_MAX_WIDTH}>
       <Paper
         elevation={0}
         sx={{

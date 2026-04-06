@@ -23,6 +23,7 @@ import {
   joinFlowPrimaryButtonSx,
   joinFlowSecondaryButtonSx,
 } from '../../theme/joinStyles';
+import { LAYOUT_NARROW_FORM_MAX_WIDTH_PX } from '../../theme/layoutTokens';
 import { BRAND_COLORS } from '../../theme/themeConstants';
 import { POLICY_VERSION } from '../../types/join';
 import { JoinInterestsSelector } from './profile/JoinInterestsSelector';
@@ -159,7 +160,11 @@ const ProfileStep = () => {
     >
       <Stack
         spacing={{ xs: 0.5, sm: 0.75, md: 1 }}
-        sx={{ width: '100%', maxWidth: { xs: 520, md: '100%' }, mx: 'auto' }}
+        sx={{
+          width: '100%',
+          maxWidth: { xs: LAYOUT_NARROW_FORM_MAX_WIDTH_PX, md: '100%' },
+          mx: 'auto',
+        }}
       >
         <ProfileStepHero compact />
 

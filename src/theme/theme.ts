@@ -31,7 +31,7 @@ export function createAppTheme(themeId: AppThemeId = 'dark') {
     minWidth: '40px !important',
     padding: '0 !important',
     position: 'relative' as const,
-    overflow: 'hidden',
+    overflow: 'visible',
     borderRadius: '10px !important',
     color: `${alpha(PALETTE.text.primary, isLight ? 0.52 : 0.68)} !important`,
     background: 'transparent !important',
@@ -48,7 +48,8 @@ export function createAppTheme(themeId: AppThemeId = 'dark') {
     '& .MuiSvgIcon-root': {
       position: 'relative' as const,
       zIndex: 1,
-      fontSize: '1.25rem !important',
+      fontSize: '1.375rem !important',
+      display: 'block',
     },
     '&:hover': {
       transform: 'none !important',
@@ -291,10 +292,18 @@ export function createAppTheme(themeId: AppThemeId = 'dark') {
         styleOverrides: {
           root: {
             '&:focus-visible': FOCUS_RING,
+            overflow: 'visible',
             // Ensure visual bounds match touch target
             padding: 12,
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
             transition:
               'color 120ms ease, background-color 120ms ease, transform 120ms ease, box-shadow 120ms ease',
+            '& .MuiSvgIcon-root': {
+              flexShrink: 0,
+              display: 'block',
+            },
             '&:hover': {
               transform: 'scale(1.04)',
               boxShadow: 'inset 0 0 0 1px currentColor',
@@ -310,6 +319,12 @@ export function createAppTheme(themeId: AppThemeId = 'dark') {
               '&:hover': {
                 transform: 'none',
               },
+            },
+          },
+          sizeSmall: {
+            padding: 8,
+            '& .MuiSvgIcon-root': {
+              fontSize: '1.25rem',
             },
           },
         },

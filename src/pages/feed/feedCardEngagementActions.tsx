@@ -140,7 +140,7 @@ export const FeedCardEngagementActions = ({
       {(totalReactions > 0 || commentCount > 0) && (
         <Box
           sx={{
-            mt: 1,
+            mt: 0.5,
             display: 'flex',
             alignItems: 'center',
             gap: 1,
@@ -206,7 +206,7 @@ export const FeedCardEngagementActions = ({
       )}
       <Box
         sx={{
-          mt: 2.15,
+          mt: 1.25,
           width: '100%',
           display: 'flex',
           flexDirection: 'row',
@@ -217,8 +217,8 @@ export const FeedCardEngagementActions = ({
           rowGap: 0.5,
           borderTop: 1,
           borderColor: 'divider',
-          pt: 1,
-          pb: 0.75,
+          pt: 0.65,
+          pb: 0.65,
           '& > *': {
             minHeight: { xs: 40, sm: 36 },
             display: 'flex',

@@ -32,6 +32,8 @@ export type PostAuthorProps = {
   description?: string | null;
   /** Chat: consecutive message from same sender — omit avatar/header row */
   continuation?: boolean;
+  /** Feed: slightly tighter header spacing (avatar + name block) */
+  tightHeader?: boolean;
 };
 
 export const PostAuthor = ({
@@ -47,6 +49,7 @@ export const PostAuthor = ({
   children,
   description,
   continuation = false,
+  tightHeader = false,
 }: PostAuthorProps) => {
   const timeStr = formatTime(createdAt);
   const trimmedDescription =
@@ -67,7 +70,11 @@ export const PostAuthor = ({
   }
 
   return (
-    <Stack direction="row" spacing={1} alignItems="flex-start">
+    <Stack
+      direction="row"
+      spacing={tightHeader ? 0.75 : 1}
+      alignItems="flex-start"
+    >
       <ProfileAvatar
         src={avatarUrl ?? undefined}
         alt={displayName || '?'}
@@ -81,7 +88,7 @@ export const PostAuthor = ({
           alignItems="center"
           flexWrap="wrap"
           gap={0.5}
-          sx={{ pr: 1 }}
+          sx={{ pr: tightHeader ? 0.75 : 1 }}
         >
           {handle ? (
             <Typography
@@ -135,7 +142,7 @@ export const PostAuthor = ({
             variant="body2"
             color="text.secondary"
             sx={{
-              mt: 0.2,
+              mt: tightHeader ? 0.15 : 0.2,
               lineHeight: 1.2,
               fontSize: '0.82rem',
               overflow: 'hidden',

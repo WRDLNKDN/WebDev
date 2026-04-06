@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "--- BOOT SEQUENCE (Environment Optimization) ---": "",
-    "dev": "npm run build && concurrently -n \"API,VITE,SUPA,HEALTH\" -c \"magenta,blue,green,cyan\" \"npm run api\" \"npx wait-on http://127.0.0.1:3001/api/health -t 60000 && (sleep 3 || true) && npm run vite\" \"npm run supabase:start\" \"npm run health:launch\"",
+    "dev": "npm run build && node scripts/check-backend-env.mjs && concurrently -n \"API,VITE,SUPA,HEALTH\" -c \"magenta,blue,green,cyan\" \"npm run api\" \"npx wait-on http://127.0.0.1:3001/api/health -t 180000 && (sleep 3 || true) && npm run vite\" \"npm run supabase:start\" \"npm run health:launch\"",
     "health:launch": "bash ./scripts/health-check.sh",
     "launch": "npm run health:launch",
     "vite": "vite --config config/vite/vite.config.ts",

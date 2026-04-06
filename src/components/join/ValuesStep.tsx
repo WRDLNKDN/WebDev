@@ -23,6 +23,7 @@ import { useState } from 'react';
 import { useJoin } from '../../context/useJoin';
 import type { ValuesData } from '../../types/join';
 import { JOIN_REASONS, PARTICIPATION_STYLES } from '../../types/join';
+import { LAYOUT_NARROW_FORM_MAX_WIDTH_PX } from '../../theme/layoutTokens';
 import { BRAND_COLORS } from '../../theme/themeConstants';
 import {
   joinFlowPrimaryButtonSx,
@@ -76,7 +77,7 @@ export const ValuesStep = () => {
         elevation={0}
         sx={{
           ...signupPaper,
-          maxWidth: 520,
+          maxWidth: LAYOUT_NARROW_FORM_MAX_WIDTH_PX,
           mx: 'auto',
         }}
       >

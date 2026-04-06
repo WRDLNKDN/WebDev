@@ -143,22 +143,40 @@ export function mapAssetProcessingStateToMediaStage(
   }
 }
 
-export function describeNormalizedAssetStatus(
-  asset: Pick<NormalizedAsset, 'assetId' | 'processingState' | 'mimeType'> & {
-    failureMessage?: string | null;
-    retryable?: boolean;
-    diagnostics?: MediaStatusDiagnostics | null;
-  },
-): MediaStatusPresentation | null {
+export function normalizedAssetToMediaStatusInput(
+  asset: Pick<
+    NormalizedAsset,
+    'assetId' | 'processingState' | 'mimeType' | 'failureMessage'
+  > & { retryable?: boolean | null },
+): MediaStatusInput | null {
   if (asset.processingState === 'ready') return null;
 
-  return describeMediaStatus({
+  return {
     stage: mapAssetProcessingStateToMediaStage(asset.processingState),
     message: asset.failureMessage ?? null,
-    retryable: asset.retryable,
-    diagnostics: asset.diagnostics ?? {
+    retryable:
+      typeof asset.retryable === 'boolean' ? asset.retryable : undefined,
+    diagnostics: {
       id: asset.assetId,
       mimeType: asset.mimeType ?? null,
     },
+  };
+}
+
+export function describeNormalizedAssetStatus(
+  asset: Pick<NormalizedAsset, 'assetId' | 'processingState' | 'mimeType'> & {
+    failureMessage?: string | null;
+    retryable?: boolean | null;
+    diagnostics?: MediaStatusDiagnostics | null;
+  },
+): MediaStatusPresentation | null {
+  const input = normalizedAssetToMediaStatusInput(asset);
+  if (!input) return null;
+
+  return describeMediaStatus({
+    ...input,
+    diagnostics: asset.diagnostics ?? input.diagnostics,
+    retryable:
+      typeof asset.retryable === 'boolean' ? asset.retryable : input.retryable,
   });
 }

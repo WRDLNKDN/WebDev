@@ -1,4 +1,5 @@
 import { Box, Button, Stack, TextField, Typography } from '@mui/material';
+import type { KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { AssetInlinePreview } from '../../components/media/AssetThumbnail';
 import {
   createNormalizedGifAsset,
@@ -10,6 +11,7 @@ import {
   linkifyBody,
   type LinkPreviewPayload,
 } from './feedRenderUtils';
+import { feedMediaBleedSx, feedMediaFlushRadiusSx } from './feedPostLayout';
 
 type FeedCardPostContentProps = {
   isEditingPost: boolean;
@@ -52,7 +54,7 @@ export const FeedCardPostContent = ({
   url,
   label,
 }: FeedCardPostContentProps) => (
-  <Box sx={{ pb: 1.25 }}>
+  <Box sx={{ pb: 0.5 }}>
     {isEditingPost ? (
       <Stack spacing={1} sx={{ mt: 1 }}>
         <TextField
@@ -90,8 +92,8 @@ export const FeedCardPostContent = ({
               variant="body1"
               component="span"
               sx={{
-                mt: 0.5,
-                lineHeight: 1.65,
+                mt: 0.25,
+                lineHeight: 1.55,
                 whiteSpace: 'pre-wrap',
                 display: 'block',
                 overflowWrap: 'break-word',
@@ -105,7 +107,7 @@ export const FeedCardPostContent = ({
             <Box
               key={gifUrl}
               onClick={() => openImageLightbox(gifUrl, 'body_gif')}
-              onKeyDown={(e) => {
+              onKeyDown={(e: ReactKeyboardEvent) => {
                 if (e.key === 'Enter' || e.key === ' ') {
                   e.preventDefault();
                   openImageLightbox(gifUrl, 'body_gif');
@@ -114,12 +116,12 @@ export const FeedCardPostContent = ({
               tabIndex={0}
               role="button"
               aria-label="View image full screen"
-              sx={{
-                mt: 1,
-                width: '100%',
-                maxWidth: { xs: '100%', sm: 360, md: 420 },
+              sx={(theme) => ({
+                ...feedMediaBleedSx(theme),
+                mt: 0.5,
+                minWidth: 0,
                 cursor: 'zoom-in',
-              }}
+              })}
             >
               <AssetInlinePreview
                 asset={createNormalizedGifAsset({
@@ -129,7 +131,7 @@ export const FeedCardPostContent = ({
                 alt=""
                 surface="feed"
                 sx={{
-                  borderRadius: 1,
+                  ...feedMediaFlushRadiusSx,
                   border: '1px solid',
                   borderColor: 'divider',
                   bgcolor: 'rgba(0,0,0,0.18)',
@@ -141,17 +143,36 @@ export const FeedCardPostContent = ({
       )
     )}
     {linkPreview?.url && !isLinkPreviewDismissed && (
-      <LinkPreviewCard preview={linkPreview} onDismiss={onDismissLinkPreview} />
+      <Box
+        sx={(theme) => ({
+          ...feedMediaBleedSx(theme),
+          mt: 0.75,
+          minWidth: 0,
+        })}
+      >
+        <LinkPreviewCard
+          preview={linkPreview}
+          onDismiss={onDismissLinkPreview}
+          flushTop
+        />
+      </Box>
     )}
     {postAttachmentAssets.length > 0 && (
-      <Stack direction="row" spacing={0.5} sx={{ mt: 1.5 }} flexWrap="wrap">
+      <Stack
+        spacing={0.5}
+        sx={(theme) => ({
+          ...feedMediaBleedSx(theme),
+          mt: 0.75,
+          minWidth: 0,
+        })}
+      >
         {postAttachmentAssets.map((asset) => {
           const openUrl = getNormalizedAssetDisplayUrl(asset);
           return (
             <Box
               key={asset.assetId}
               onClick={() => openImageLightbox(openUrl, 'post_attachment')}
-              onKeyDown={(e) => {
+              onKeyDown={(e: ReactKeyboardEvent) => {
                 if (e.key === 'Enter' || e.key === ' ') {
                   e.preventDefault();
                   openImageLightbox(openUrl, 'post_attachment');
@@ -162,7 +183,7 @@ export const FeedCardPostContent = ({
               aria-label="View image full screen"
               sx={{
                 width: '100%',
-                maxWidth: { xs: '100%', sm: 360, md: 420 },
+                minWidth: 0,
                 cursor: 'zoom-in',
               }}
             >
@@ -170,9 +191,7 @@ export const FeedCardPostContent = ({
                 asset={asset}
                 alt=""
                 surface="feed"
-                sx={{
-                  borderRadius: 1,
-                }}
+                sx={feedMediaFlushRadiusSx}
               />
             </Box>
           );

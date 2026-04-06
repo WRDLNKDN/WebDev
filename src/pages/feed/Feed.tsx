@@ -57,7 +57,7 @@ import {
   useTheme,
 } from '@mui/material';
 import type { Session } from '@supabase/supabase-js';
-import type { ReactNode } from 'react';
+import type { KeyboardEvent as ReactKeyboardEvent, ReactNode } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Link as RouterLink,
@@ -126,6 +126,24 @@ import {
   type SharedUploadState,
 } from '../../lib/media/uploadIntake';
 import { MediaStatusBanner } from '../../components/media/MediaStatusBanner';
+import {
+  LinkPreviewCard,
+  type LinkPreviewPayload,
+} from '../../components/media/LinkPreviewCard';
+import { AssetInlinePreview } from '../../components/media/AssetThumbnail';
+import {
+  createNormalizedFeedImageAsset,
+  createNormalizedGifAsset,
+} from '../../lib/media/assets';
+import {
+  feedMediaBleedSx,
+  feedMediaFlushRadiusSx,
+  feedPostCardContentSx,
+} from './feedPostLayout';
+import {
+  LAYOUT_FEED_STREAM_MAX_WIDTH_PX,
+  LAYOUT_INTRO_COPY_MAX_WIDTH_PX,
+} from '../../theme/layoutTokens';
 
 import { ProfileAvatar } from '../../components/avatar/ProfileAvatar';
 import {
@@ -313,123 +331,6 @@ function removeGifUrlsFromBody(body: string): string {
     .replace(/[ \t]{2,}/g, ' ')
     .trim();
 }
-
-type LinkPreviewPayload = {
-  url: string;
-  title?: string;
-  description?: string;
-  image?: string;
-  siteName?: string;
-};
-
-function linkPreviewDomain(url: string): string {
-  try {
-    return new URL(url).hostname;
-  } catch {
-    return url;
-  }
-}
-
-const LinkPreviewCard = ({
-  preview,
-  onDismiss,
-}: {
-  preview: LinkPreviewPayload;
-  onDismiss?: () => void;
-}) => (
-  <Box sx={{ position: 'relative', display: 'block', mt: 1.5 }}>
-    {onDismiss && (
-      <IconButton
-        size="small"
-        aria-label="Dismiss link preview"
-        onClick={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          onDismiss();
-        }}
-        sx={{
-          position: 'absolute',
-          top: 8,
-          right: 8,
-          zIndex: 1,
-          bgcolor: 'background.paper',
-          boxShadow: 1,
-          '&:hover': { bgcolor: 'action.hover' },
-          '&:focus': { bgcolor: 'background.paper' },
-        }}
-      >
-        <CloseIcon fontSize="small" />
-      </IconButton>
-    )}
-    <Link
-      href={preview.url}
-      target="_blank"
-      rel="noopener noreferrer"
-      underline="none"
-      sx={{ display: 'block' }}
-    >
-      <Paper
-        variant="outlined"
-        sx={{
-          display: 'flex',
-          flexDirection: { xs: 'column', sm: 'row' },
-          overflow: 'hidden',
-          borderRadius: 1.5,
-          borderColor: 'divider',
-          '&:hover': { borderColor: 'primary.main', bgcolor: 'action.hover' },
-        }}
-      >
-        {preview.image && (
-          <Box
-            component="img"
-            src={preview.image}
-            alt=""
-            sx={{
-              width: { xs: '100%', sm: 120 },
-              minWidth: { sm: 120 },
-              height: { xs: 140, sm: 120 },
-              objectFit: 'cover',
-              bgcolor: 'action.hover',
-            }}
-          />
-        )}
-        <Box sx={{ p: 1.5, flex: 1, minWidth: 0 }}>
-          <Typography
-            variant="subtitle2"
-            fontWeight={600}
-            sx={{
-              color: 'text.primary',
-              overflowWrap: 'break-word',
-              wordBreak: 'break-word',
-            }}
-          >
-            {preview.title || linkPreviewDomain(preview.url)}
-          </Typography>
-          {preview.description && (
-            <Typography
-              variant="body2"
-              color="text.secondary"
-              sx={{
-                mt: 0.25,
-                overflowWrap: 'break-word',
-                wordBreak: 'break-word',
-              }}
-            >
-              {preview.description}
-            </Typography>
-          )}
-          <Typography
-            variant="caption"
-            color="text.secondary"
-            sx={{ mt: 0.5, display: 'block' }}
-          >
-            {preview.siteName || linkPreviewDomain(preview.url)}
-          </Typography>
-        </Box>
-      </Paper>
-    </Link>
-  </Box>
-);
 
 type FeedCardActions = {
   updateItem: (id: string, patch: Partial<FeedItem>) => void;
@@ -1087,6 +988,7 @@ const FeedCard = ({
           createdAt: item.created_at,
           editedAt: isPostEdited ? item.edited_at : null,
           formatTime: formatPostTime,
+          tightHeader: true,
           children:
             item.kind === 'repost' ? (
               <Stack
@@ -1132,6 +1034,7 @@ const FeedCard = ({
         actionMenu={{
           visible: !isEditingPost,
           ariaLabel: 'Post options',
+          menuDensity: 'subtle',
           items: [
             {
               label: item.viewer_saved ? 'Unsave' : 'Save',
@@ -1203,6 +1106,7 @@ const FeedCard = ({
               : []),
           ],
         }}
+        contentSx={feedPostCardContentSx}
         sx={
           item.kind === 'repost'
             ? {
@@ -1253,7 +1157,8 @@ const FeedCard = ({
                   variant="body1"
                   component="span"
                   sx={{
-                    mt: 0.5,
+                    mt: 0.25,
+                    lineHeight: 1.55,
                     whiteSpace: 'pre-wrap',
                     display: 'block',
                     overflowWrap: 'break-word',
@@ -1266,14 +1171,8 @@ const FeedCard = ({
               {bodyGifUrls.map((gifUrl) => (
                 <Box
                   key={gifUrl}
-                  component="img"
-                  src={gifUrl}
-                  alt=""
-                  loading="lazy"
-                  width={320}
-                  height={320}
                   onClick={() => openImageLightbox(gifUrl, 'body_gif')}
-                  onKeyDown={(e) => {
+                  onKeyDown={(e: ReactKeyboardEvent) => {
                     if (e.key === 'Enter' || e.key === ' ') {
                       e.preventDefault();
                       openImageLightbox(gifUrl, 'body_gif');
@@ -1282,40 +1181,61 @@ const FeedCard = ({
                   tabIndex={0}
                   role="button"
                   aria-label="View image full screen"
-                  sx={{
-                    mt: 1,
-                    maxWidth: 320,
-                    width: '100%',
-                    maxHeight: 320,
-                    objectFit: 'contain',
-                    borderRadius: 1,
-                    border: '1px solid',
-                    borderColor: 'divider',
+                  sx={(theme) => ({
+                    ...feedMediaBleedSx(theme),
+                    mt: 0.5,
+                    minWidth: 0,
                     cursor: 'zoom-in',
-                  }}
-                />
+                  })}
+                >
+                  <AssetInlinePreview
+                    asset={createNormalizedGifAsset({
+                      url: gifUrl,
+                      surface: 'feed',
+                    })}
+                    alt=""
+                    surface="feed"
+                    sx={{
+                      ...feedMediaFlushRadiusSx,
+                      border: '1px solid',
+                      borderColor: 'divider',
+                      bgcolor: 'rgba(0,0,0,0.18)',
+                    }}
+                  />
+                </Box>
               ))}
             </>
           )
         )}
         {linkPreview?.url && !isLinkPreviewDismissed && (
-          <LinkPreviewCard
-            preview={linkPreview}
-            onDismiss={onDismissLinkPreview}
-          />
+          <Box
+            sx={(theme) => ({
+              ...feedMediaBleedSx(theme),
+              mt: 0.75,
+              minWidth: 0,
+            })}
+          >
+            <LinkPreviewCard
+              preview={linkPreview}
+              onDismiss={onDismissLinkPreview}
+              flushTop
+            />
+          </Box>
         )}
         {postAttachmentImages.length > 0 && (
-          <Stack direction="row" spacing={0.5} sx={{ mt: 1.5 }} flexWrap="wrap">
+          <Stack
+            spacing={0.5}
+            sx={(theme) => ({
+              ...feedMediaBleedSx(theme),
+              mt: 0.75,
+              minWidth: 0,
+            })}
+          >
             {postAttachmentImages.map((imgUrl) => (
               <Box
                 key={imgUrl}
-                component="img"
-                src={imgUrl}
-                alt=""
-                width={280}
-                height={280}
                 onClick={() => openImageLightbox(imgUrl, 'post_attachment')}
-                onKeyDown={(e) => {
+                onKeyDown={(e: ReactKeyboardEvent) => {
                   if (e.key === 'Enter' || e.key === ' ') {
                     e.preventDefault();
                     openImageLightbox(imgUrl, 'post_attachment');
@@ -1325,13 +1245,18 @@ const FeedCard = ({
                 role="button"
                 aria-label="View image full screen"
                 sx={{
-                  maxWidth: 280,
-                  maxHeight: 280,
-                  objectFit: 'cover',
-                  borderRadius: 1,
+                  width: '100%',
+                  minWidth: 0,
                   cursor: 'zoom-in',
                 }}
-              />
+              >
+                <AssetInlinePreview
+                  asset={createNormalizedFeedImageAsset(imgUrl)}
+                  alt=""
+                  surface="feed"
+                  sx={feedMediaFlushRadiusSx}
+                />
+              </Box>
             ))}
           </Stack>
         )}
@@ -1361,7 +1286,7 @@ const FeedCard = ({
         {(totalReactions > 0 || commentCount > 0) && (
           <Box
             sx={{
-              mt: 1,
+              mt: 0.5,
               display: 'flex',
               alignItems: 'center',
               gap: 1,
@@ -1426,7 +1351,7 @@ const FeedCard = ({
         {/* Post action bar: React | Comment | Repost | Send | Save — left-aligned, colored rollovers */}
         <Box
           sx={{
-            mt: 2.15,
+            mt: 1.25,
             width: '100%',
             display: 'flex',
             flexDirection: 'row',
@@ -1437,8 +1362,8 @@ const FeedCard = ({
             rowGap: 0.5,
             borderTop: 1,
             borderColor: 'divider',
-            pt: 1,
-            pb: 0.75,
+            pt: 0.65,
+            pb: 0.65,
             '& > *': {
               minHeight: { xs: 40, sm: 36 },
               display: 'flex',
@@ -3091,7 +3016,12 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
             pt: { xs: 0.25, md: 0 },
           }}
         >
-          <Box sx={{ width: '100%', maxWidth: { xs: '100%', md: 680 } }}>
+          <Box
+            sx={{
+              width: '100%',
+              maxWidth: { xs: '100%', md: LAYOUT_FEED_STREAM_MAX_WIDTH_PX },
+            }}
+          >
             <Typography
               component="h2"
               variant="h5"
@@ -3109,7 +3039,7 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
               variant="body2"
               color="text.secondary"
               sx={{
-                maxWidth: 520,
+                maxWidth: LAYOUT_INTRO_COPY_MAX_WIDTH_PX,
                 lineHeight: 1.6,
                 fontSize: { xs: '0.8125rem', md: '0.875rem' },
               }}
@@ -3346,7 +3276,7 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
             gridColumn: { xs: '1', md: '2' },
             minWidth: 0,
             width: '100%',
-            maxWidth: { md: 680 },
+            maxWidth: { md: LAYOUT_FEED_STREAM_MAX_WIDTH_PX },
             justifySelf: { md: 'center' },
             display: 'flex',
             flexDirection: 'column',
@@ -3770,7 +3700,7 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
             border: '1px solid rgba(156,187,217,0.22)',
             boxShadow:
               '0 32px 64px rgba(1, 6, 18, 0.46), inset 0 1px 0 rgba(255,255,255,0.06)',
-            width: 'min(100%, 680px)',
+            width: `min(100%, ${LAYOUT_FEED_STREAM_MAX_WIDTH_PX}px)`,
             maxWidth: 'calc(100vw - 24px)',
             maxHeight: isSmallScreen
               ? '100dvh'

@@ -71,7 +71,7 @@ export const PostActionMenu = ({
               width: subtle ? 32 : 44,
               height: subtle ? 32 : 44,
               position: 'relative',
-              overflow: 'hidden',
+              overflow: 'visible',
               borderRadius: subtle ? 1.25 : '18px',
               color: subtleLight
                 ? 'rgba(0,0,0,0.45)'
@@ -90,22 +90,9 @@ export const PostActionMenu = ({
                   : '1px solid rgba(173,203,255,0.18)',
               boxShadow: subtle
                 ? 'none'
-                : '0 12px 26px rgba(4,10,25,0.42), inset 0 1px 0 rgba(156,187,217,0.26)',
+                : '0 4px 14px rgba(0,0,0,0.28), inset 0 1px 0 rgba(156,187,217,0.12)',
               transition:
                 'background-color 120ms ease, color 120ms ease, transform 120ms ease, border-color 120ms ease',
-              ...(!subtle
-                ? {
-                    '&::before': {
-                      content: '""',
-                      position: 'absolute',
-                      inset: 1,
-                      borderRadius: '16px',
-                      background:
-                        'radial-gradient(circle at 30% 28%, rgba(156,187,217,0.32), rgba(56,132,210,0.06) 48%, rgba(132,154,214,0.08) 100%)',
-                      pointerEvents: 'none',
-                    },
-                  }
-                : {}),
               '&:hover': {
                 bgcolor: subtleLight
                   ? 'rgba(0,0,0,0.08)'
@@ -130,7 +117,13 @@ export const PostActionMenu = ({
               },
             }}
           >
-            <MoreVertIcon sx={{ fontSize: subtle ? 18 : undefined }} />
+            <MoreVertIcon
+              sx={{
+                fontSize: subtle ? 20 : 22,
+                display: 'block',
+                opacity: subtleLight ? 0.88 : subtle ? 0.92 : 1,
+              }}
+            />
           </IconButton>
         </span>
       </Tooltip>

@@ -1,3 +1,7 @@
+import type { SxProps, Theme } from '@mui/material/styles';
+import type { SystemStyleObject } from '@mui/system';
+import { layoutScrollSafeBottomSx } from '../../theme/layoutTokens';
+
 /** Feed grid alpha on dark shell (slightly softer on feed route). */
 export function layoutFeedGridAlpha(isLight: boolean, isFeedRoute: boolean) {
   return !isLight && isFeedRoute ? 0.032 : 0.06;
@@ -83,7 +87,7 @@ export function buildAppScrollContainerSx({
   isHome,
   isFeedRoute,
   isLight,
-}: ScrollContainerSxArgs) {
+}: ScrollContainerSxArgs): SxProps<Theme> {
   let overflowY: 'hidden' | 'scroll' | 'auto';
   if (isJoin) {
     overflowY = 'hidden';
@@ -103,6 +107,7 @@ export function buildAppScrollContainerSx({
     WebkitOverflowScrolling: 'touch',
     willChange: 'scroll-position',
     contain: 'layout style paint',
+    ...(layoutScrollSafeBottomSx as SystemStyleObject<Theme>),
     ...(isFeedRoute && !isLight
       ? {
           '&::after': {
@@ -123,5 +128,5 @@ export function buildAppScrollContainerSx({
           },
         }
       : {}),
-  };
+  } as SxProps<Theme>;
 }

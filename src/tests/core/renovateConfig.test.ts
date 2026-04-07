@@ -19,7 +19,7 @@ describe('renovate config', () => {
     expect(config.platformAutomerge).toBe(true);
   });
 
-  it('marks low-risk github-actions and npm updates as safe to automerge', () => {
+  it('marks low-risk github-actions updates as safe to automerge', () => {
     const packageRules = config.packageRules ?? [];
     const safeRules = packageRules.filter(
       (rule) =>
@@ -40,13 +40,9 @@ describe('renovate config', () => {
 
     expect(
       safeRules.some(
-        (rule) =>
-          JSON.stringify(rule.matchManagers) === JSON.stringify(['npm']) &&
-          JSON.stringify(rule.matchUpdateTypes) ===
-            JSON.stringify(['patch', 'pin', 'digest']) &&
-          rule.automerge === true,
+        (rule) => JSON.stringify(rule.matchManagers) === JSON.stringify(['npm']),
       ),
-    ).toBe(true);
+    ).toBe(false);
   });
 
   it('auto-merges Renovate vulnerability alert PRs', () => {

@@ -476,12 +476,13 @@ const AssetRenderFrame = ({
   );
   const failed = asset.processingState === 'failed';
   const baseStatusInput = normalizedAssetToMediaStatusInput(asset);
-  const processingStateInput =
-    pending && baseStatusInput
-      ? loadingLabel
-        ? { ...baseStatusInput, message: loadingLabel }
-        : baseStatusInput
-      : null;
+  let processingStateInput: ReturnType<typeof normalizedAssetToMediaStatusInput> =
+    null;
+  if (pending && baseStatusInput) {
+    processingStateInput = loadingLabel
+      ? { ...baseStatusInput, message: loadingLabel }
+      : baseStatusInput;
+  }
   const failedStateInput = failed && baseStatusInput ? baseStatusInput : null;
   const usingFallbackDerivatives = !asset.displayUrl && !asset.thumbnailUrl;
   const resolvedFrameSx = compact

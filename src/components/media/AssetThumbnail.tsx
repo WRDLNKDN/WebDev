@@ -476,8 +476,9 @@ const AssetRenderFrame = ({
   );
   const failed = asset.processingState === 'failed';
   const baseStatusInput = normalizedAssetToMediaStatusInput(asset);
-  let processingStateInput: ReturnType<typeof normalizedAssetToMediaStatusInput> =
-    null;
+  let processingStateInput: ReturnType<
+    typeof normalizedAssetToMediaStatusInput
+  > = null;
   if (pending && baseStatusInput) {
     processingStateInput = loadingLabel
       ? { ...baseStatusInput, message: loadingLabel }

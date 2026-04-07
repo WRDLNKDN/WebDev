@@ -40,19 +40,21 @@ export const MediaPreviewStatusOverlay = ({
   return (
     <Box
       data-testid={MEDIA_PREVIEW_STATUS_OVERLAY_TEST_ID}
-      sx={[
-        {
-          position: 'absolute',
-          inset: 0,
-          zIndex: 2,
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'flex-end',
-          alignItems: 'stretch',
-          pointerEvents: 'none',
-        },
-        ...resolvedSx,
-      ] satisfies SxProps<Theme>}
+      sx={
+        [
+          {
+            position: 'absolute',
+            inset: 0,
+            zIndex: 2,
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'flex-end',
+            alignItems: 'stretch',
+            pointerEvents: 'none',
+          },
+          ...resolvedSx,
+        ] satisfies SxProps<Theme>
+      }
     >
       {isProcessing ? (
         <LinearProgress

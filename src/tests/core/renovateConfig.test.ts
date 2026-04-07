@@ -40,7 +40,8 @@ describe('renovate config', () => {
 
     expect(
       safeRules.some(
-        (rule) => JSON.stringify(rule.matchManagers) === JSON.stringify(['npm']),
+        (rule) =>
+          JSON.stringify(rule.matchManagers) === JSON.stringify(['npm']),
       ),
     ).toBe(false);
   });

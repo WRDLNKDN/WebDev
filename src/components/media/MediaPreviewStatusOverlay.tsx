@@ -27,7 +27,14 @@ export const MediaPreviewStatusOverlay = ({
   retryBusy = false,
   sx,
 }: MediaPreviewStatusOverlayProps) => {
-  const resolvedSx = Array.isArray(sx) ? sx : sx ? [sx] : [];
+  let resolvedSx;
+  if (Array.isArray(sx)) {
+    resolvedSx = sx;
+  } else if (sx != null) {
+    resolvedSx = [sx];
+  } else {
+    resolvedSx = [];
+  }
 
   return (
     <Box

@@ -74,13 +74,14 @@ export const LinkPreviewCard = ({
   });
   const thumbnailUrl = getNormalizedAssetThumbnailUrl(asset);
   const showThumbnail = variant === 'feed' || Boolean(preview.image?.trim());
+  const rootMarginTop = variant === 'chat' || flushTop ? 0 : 1.5;
 
   return (
     <Box
       sx={{
         position: 'relative',
         display: 'block',
-        mt: variant === 'chat' ? 0 : flushTop ? 0 : 1.5,
+        mt: rootMarginTop,
       }}
     >
       {onDismiss ? (

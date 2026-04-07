@@ -192,13 +192,14 @@ export function getInlineMediaPresentation(params: {
   /** Feed: always span the post column so portrait shots are not a narrow centered strip. */
   const feedSpansPostColumn = surface === 'feed' && asset.mediaType !== 'doc';
   const prefersFullWidth = !isPortrait || isUnknown || feedSpansPostColumn;
+  const mediaWidth =
+    asset.mediaType === 'doc' || prefersFullWidth ? '100%' : 'auto';
 
   return {
     shape,
     mediaSx: {
       display: 'block',
-      width:
-        asset.mediaType === 'doc' ? '100%' : prefersFullWidth ? '100%' : 'auto',
+      width: mediaWidth,
       height: 'auto',
       maxWidth: '100%',
       maxHeight,
@@ -222,6 +223,12 @@ function getMediaSizingBaseSx(
   }
 
   return THUMBNAIL_MEDIA_BASE_SX;
+}
+
+function sxPropsToArray(sx: SxProps<Theme> | undefined) {
+  if (sx == null) return [];
+  if (Array.isArray(sx)) return sx;
+  return [sx];
 }
 
 export const AssetFallbackNotice = ({
@@ -250,7 +257,7 @@ export const AssetFallbackNotice = ({
             textAlign: 'center',
             fontWeight: 600,
           },
-      ...(Array.isArray(sx) ? sx : sx ? [sx] : []),
+      ...sxPropsToArray(sx),
     ]}
   >
     {label}

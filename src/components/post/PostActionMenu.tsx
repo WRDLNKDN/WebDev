@@ -56,6 +56,40 @@ export const PostActionMenu = ({
   const subtle = density === 'subtle';
   const subtleLight = subtle && theme.palette.mode === 'light';
 
+  let triggerColor: string;
+  let triggerBgcolor: string;
+  let triggerBorder: string;
+  let hoverBgcolor: string;
+  let hoverBorderColor: string;
+  let hoverColor: string;
+  let iconOpacity: number;
+
+  if (subtleLight) {
+    triggerColor = 'rgba(0,0,0,0.45)';
+    triggerBgcolor = 'rgba(0,0,0,0.05)';
+    triggerBorder = '1px solid rgba(0,0,0,0.1)';
+    hoverBgcolor = 'rgba(0,0,0,0.08)';
+    hoverBorderColor = 'rgba(0,0,0,0.16)';
+    hoverColor = 'rgba(0,0,0,0.78)';
+    iconOpacity = 0.88;
+  } else if (subtle) {
+    triggerColor = 'rgba(255,255,255,0.5)';
+    triggerBgcolor = 'rgba(255,255,255,0.06)';
+    triggerBorder = '1px solid rgba(255,255,255,0.1)';
+    hoverBgcolor = 'rgba(255,255,255,0.1)';
+    hoverBorderColor = 'rgba(255,255,255,0.18)';
+    hoverColor = 'rgba(255,255,255,0.92)';
+    iconOpacity = 0.92;
+  } else {
+    triggerColor = 'rgba(255,255,255,0.82)';
+    triggerBgcolor = 'rgba(132,154,214,0.14)';
+    triggerBorder = '1px solid rgba(173,203,255,0.18)';
+    hoverBgcolor = 'rgba(148,175,232,0.18)';
+    hoverBorderColor = 'rgba(191,219,254,0.32)';
+    hoverColor = '#FFFFFF';
+    iconOpacity = 1;
+  }
+
   return (
     <>
       <Tooltip title={ariaLabel}>
@@ -73,42 +107,18 @@ export const PostActionMenu = ({
               position: 'relative',
               overflow: 'visible',
               borderRadius: subtle ? 1.25 : '18px',
-              color: subtleLight
-                ? 'rgba(0,0,0,0.45)'
-                : subtle
-                  ? 'rgba(255,255,255,0.5)'
-                  : 'rgba(255,255,255,0.82)',
-              bgcolor: subtleLight
-                ? 'rgba(0,0,0,0.05)'
-                : subtle
-                  ? 'rgba(255,255,255,0.06)'
-                  : 'rgba(132,154,214,0.14)',
-              border: subtleLight
-                ? '1px solid rgba(0,0,0,0.1)'
-                : subtle
-                  ? '1px solid rgba(255,255,255,0.1)'
-                  : '1px solid rgba(173,203,255,0.18)',
+              color: triggerColor,
+              bgcolor: triggerBgcolor,
+              border: triggerBorder,
               boxShadow: subtle
                 ? 'none'
                 : '0 4px 14px rgba(0,0,0,0.28), inset 0 1px 0 rgba(156,187,217,0.12)',
               transition:
                 'background-color 120ms ease, color 120ms ease, transform 120ms ease, border-color 120ms ease',
               '&:hover': {
-                bgcolor: subtleLight
-                  ? 'rgba(0,0,0,0.08)'
-                  : subtle
-                    ? 'rgba(255,255,255,0.1)'
-                    : 'rgba(148,175,232,0.18)',
-                borderColor: subtleLight
-                  ? 'rgba(0,0,0,0.16)'
-                  : subtle
-                    ? 'rgba(255,255,255,0.18)'
-                    : 'rgba(191,219,254,0.32)',
-                color: subtleLight
-                  ? 'rgba(0,0,0,0.78)'
-                  : subtle
-                    ? 'rgba(255,255,255,0.92)'
-                    : '#FFFFFF',
+                bgcolor: hoverBgcolor,
+                borderColor: hoverBorderColor,
+                color: hoverColor,
                 transform: subtle ? 'none' : 'scale(1.04)',
               },
               '&:focus-visible': {
@@ -121,7 +131,7 @@ export const PostActionMenu = ({
               sx={{
                 fontSize: subtle ? 20 : 22,
                 display: 'block',
-                opacity: subtleLight ? 0.88 : subtle ? 0.92 : 1,
+                opacity: iconOpacity,
               }}
             />
           </IconButton>

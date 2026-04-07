@@ -26,11 +26,13 @@ jobs:
       'true'
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        # v6 — pin SHA for S7637 (tag immutability)
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
         with:
           fetch-depth: 0
 
       - name: SonarQube Scan
-        uses: SonarSource/sonarqube-scan-action@v6.0.0
+        # v6.0.0 — pin SHA for S7637
+        uses: SonarSource/sonarqube-scan-action@fd88b7d7ccbaefd23d8f36f73b59db7a3d246602
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}

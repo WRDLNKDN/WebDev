@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   GIPHY_RATING_MAP,
   normalizeGifErrorMessage,
+  PLATFORM_GIPHY_GIF_CONTENT_FILTER,
 } from '../../lib/chat/gifApi';
 import type { GifContentFilter } from '../../lib/chat/gifApi';
 
@@ -43,6 +44,10 @@ describe('normalizeGifErrorMessage', () => {
 });
 
 describe('GIPHY rating mapping (GIPHY API fix)', () => {
+  it('uses a single platform default tier for shared GIF search', () => {
+    expect(PLATFORM_GIPHY_GIF_CONTENT_FILTER).toBe('medium');
+  });
+
   it('maps content filter to GIPHY rating string', () => {
     expect(GIPHY_RATING_MAP.off).toBe('r');
     expect(GIPHY_RATING_MAP.low).toBe('pg-13');

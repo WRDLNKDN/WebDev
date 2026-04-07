@@ -12,8 +12,10 @@ import {
 } from '../portfolio/linkUtils';
 import type { MediaStatusDiagnostics, SharedMediaUiStage } from './mediaStatus';
 import {
+  classifyMimeForMediaPolicy,
   getPreparedUploadLimitFailure,
   getUploadSizeDecision,
+  type MediaSizeRejectionCode,
   type ResolvedUploadSizePolicy,
 } from './mediaSizePolicy';
 import { reportMediaTelemetryAsync } from './telemetry';
@@ -37,6 +39,7 @@ export type SharedUploadPlan =
       surface: PlatformUploadSurface;
       detectedMimeType: string | null;
       reason: string;
+      rejectionCode: MediaSizeRejectionCode;
     };
 
 export type SharedUploadState =
@@ -236,6 +239,7 @@ function planFromDescriptor(
       surface,
       detectedMimeType,
       reason: policy.unsupportedTypeMessage,
+      rejectionCode: 'unsupported_file_type',
     };
   }
 
@@ -250,6 +254,7 @@ function planFromDescriptor(
       surface,
       detectedMimeType,
       reason: sizeDecision.reason,
+      rejectionCode: sizeDecision.rejectionCode,
     };
   }
 
@@ -524,6 +529,8 @@ function trackUploadIntakeTelemetry(params: {
   failureCode?: string | null;
   failureReason?: string | null;
   status?: string | null;
+  rejectionCode?: MediaSizeRejectionCode | null;
+  mediaAssetClass?: string | null;
   meta?: Record<string, unknown>;
 }) {
   reportMediaTelemetryAsync({
@@ -537,6 +544,8 @@ function trackUploadIntakeTelemetry(params: {
     failureReason: params.failureReason,
     meta: {
       mimeType: params.mimeType ?? null,
+      rejectionCode: params.rejectionCode ?? null,
+      mediaAssetClass: params.mediaAssetClass ?? null,
       ...params.meta,
     },
   });
@@ -560,12 +569,19 @@ function trackCompressionTelemetry(params: {
   const telemetryStage =
     params.plan.mode === 'gif_processing' ? 'converting' : 'optimizing';
   const outputBytes = params.outputBytes ?? null;
+  const compressionOutcome =
+    params.status === 'failed'
+      ? 'failed'
+      : params.status === 'ready'
+        ? 'succeeded'
+        : (params.status ?? null);
   trackUploadIntakeTelemetry({
     eventName: params.eventName,
     stage: telemetryStage,
     surface: params.surface,
     requestId: params.requestId,
     mimeType: params.mimeType,
+    mediaAssetClass: params.plan.policy.mediaAssetClass,
     status: params.status,
     failureCode: params.status === 'failed' ? 'compression_failed' : undefined,
     failureReason: params.failureReason ?? undefined,
@@ -578,6 +594,7 @@ function trackCompressionTelemetry(params: {
       directUploadMaxBytes: params.plan.policy.directUploadMaxBytes,
       inputBytes: params.inputBytes,
       outputBytes,
+      compressionOutcome,
       bytesSaved:
         outputBytes == null
           ? null
@@ -612,6 +629,7 @@ export async function runSharedUploadIntake<T>(params: {
     surface: params.surface,
     requestId: fingerprint,
     mimeType: initialMime,
+    mediaAssetClass: classifyMimeForMediaPolicy(initialMime),
     status: 'started',
   });
 
@@ -639,9 +657,11 @@ export async function runSharedUploadIntake<T>(params: {
       surface: params.surface,
       requestId: fingerprint,
       mimeType: initialMime,
+      mediaAssetClass: classifyMimeForMediaPolicy(initialMime),
       status: 'failed',
       failureCode: 'validation_failed',
       failureReason: initialPlan.reason,
+      rejectionCode: initialPlan.rejectionCode,
     });
     throw new Error(initialPlan.reason);
   }
@@ -671,6 +691,7 @@ export async function runSharedUploadIntake<T>(params: {
       surface: params.surface,
       requestId: fingerprint,
       mimeType: initialPlan.detectedMimeType,
+      mediaAssetClass: initialPlan.policy.mediaAssetClass,
       status: 'started',
       meta: {
         mode: initialPlan.mode,
@@ -742,9 +763,11 @@ export async function runSharedUploadIntake<T>(params: {
         surface: params.surface,
         requestId: fingerprint,
         mimeType: preparedMime,
+        mediaAssetClass: classifyMimeForMediaPolicy(preparedMime),
         status: 'failed',
         failureCode: 'validation_failed',
         failureReason: preparedPlan.reason,
+        rejectionCode: preparedPlan.rejectionCode,
       });
       throw new Error(preparedPlan.reason);
     }
@@ -760,7 +783,7 @@ export async function runSharedUploadIntake<T>(params: {
           surface: params.surface,
           status: 'failed',
           stage: 'failed',
-          message: preparedLimitFailure,
+          message: preparedLimitFailure.message,
           fingerprint,
           mimeType: preparedMime,
           retryable: false,
@@ -773,9 +796,11 @@ export async function runSharedUploadIntake<T>(params: {
         surface: params.surface,
         requestId: fingerprint,
         mimeType: preparedMime,
+        mediaAssetClass: preparedPlan.policy.mediaAssetClass,
         status: 'failed',
         failureCode: 'prepared_size_limit_exceeded',
-        failureReason: preparedLimitFailure,
+        failureReason: preparedLimitFailure.message,
+        rejectionCode: preparedLimitFailure.code,
         meta: {
           policyId: preparedPlan.policy.policyId,
           compressionStrategy: preparedPlan.policy.compressionStrategy,
@@ -784,7 +809,7 @@ export async function runSharedUploadIntake<T>(params: {
           softLimitBytes: preparedPlan.policy.softLimitBytes,
         },
       });
-      throw new Error(preparedLimitFailure);
+      throw new Error(preparedLimitFailure.message);
     }
 
     params.onStateChange?.(
@@ -806,6 +831,7 @@ export async function runSharedUploadIntake<T>(params: {
       surface: params.surface,
       requestId: fingerprint,
       mimeType: preparedMime,
+      mediaAssetClass: preparedPlan.policy.mediaAssetClass,
       status: 'started',
       meta: {
         mode: preparedPlan.mode,
@@ -837,6 +863,7 @@ export async function runSharedUploadIntake<T>(params: {
       surface: params.surface,
       requestId: fingerprint,
       mimeType: preparedMime,
+      mediaAssetClass: preparedPlan.policy.mediaAssetClass,
       status: 'ready',
       meta: {
         mode: preparedPlan.mode,

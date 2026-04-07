@@ -1,42 +1,67 @@
 import type { PlatformUploadSurface } from './uploadSurface';
+import {
+  CHAT_DIRECT_UPLOAD_MAX_FILE_BYTES,
+  CHAT_GIF_DIRECT_UPLOAD_MAX_FILE_BYTES,
+  CHAT_PROCESSED_MEDIA_MAX_FILE_BYTES,
+  classifyMimeForMediaPolicy,
+  formatResumeOversizeMessage,
+  MEDIA_SIZE_REJECTION,
+  PROFILE_AVATAR_INPUT_HARD_LIMIT_BYTES,
+  PROFILE_AVATAR_OUTPUT_MAX_FILE_BYTES,
+  PROFILE_RESUME_INPUT_HARD_LIMIT_BYTES,
+  PROFILE_RESUME_THUMBNAIL_INPUT_HARD_LIMIT_BYTES,
+  PROFILE_RESUME_THUMBNAIL_OUTPUT_MAX_FILE_BYTES,
+  PROJECT_SOURCE_HARD_MAX_BYTES,
+  PROJECT_SOURCE_MAX_BYTES,
+  PROJECT_THUMBNAIL_HARD_MAX_BYTES,
+  PROJECT_THUMBNAIL_MAX_BYTES,
+  rejectionAvatarOverHardCap,
+  rejectionChatPdfOverHardCap,
+  rejectionChatRasterOverHardCap,
+  rejectionPortfolioSourceBinaryOverCap,
+  rejectionPortfolioTransformableOverCap,
+  rejectionResumeThumbnailOverHardCap,
+  RESUME_MAX_FILE_BYTES,
+  SHARED_MEDIA_SOFT_LIMIT_BYTES,
+  SHARED_TRANSFORMABLE_INPUT_HARD_LIMIT_BYTES,
+  type MediaCompressionStrategy,
+  type MediaPolicyAssetClass,
+  type MediaSizeRejectionCode,
+} from './mediaSizePolicyConfig';
 
-const MB = 1024 * 1024;
-
-export const SHARED_MEDIA_SOFT_LIMIT_BYTES = 6 * MB;
-export const SHARED_TRANSFORMABLE_INPUT_HARD_LIMIT_BYTES = 15 * MB;
-export const CHAT_DIRECT_UPLOAD_MAX_FILE_BYTES = 2 * MB;
-export const CHAT_GIF_DIRECT_UPLOAD_MAX_FILE_BYTES =
-  SHARED_MEDIA_SOFT_LIMIT_BYTES;
-export const CHAT_GIF_PROCESSING_MAX_FILE_BYTES = SHARED_MEDIA_SOFT_LIMIT_BYTES;
-export const CHAT_PROCESSED_MEDIA_MAX_FILE_BYTES =
-  SHARED_MEDIA_SOFT_LIMIT_BYTES;
-export const RESUME_MAX_FILE_BYTES = SHARED_MEDIA_SOFT_LIMIT_BYTES;
-export const RESUME_SOFT_SIZE_WARNING_BYTES = 5 * MB;
-export const PROFILE_AVATAR_INPUT_HARD_LIMIT_BYTES =
-  SHARED_TRANSFORMABLE_INPUT_HARD_LIMIT_BYTES;
-export const PROFILE_AVATAR_OUTPUT_MAX_FILE_BYTES = 1 * MB;
-export const PROFILE_RESUME_INPUT_HARD_LIMIT_BYTES =
-  SHARED_TRANSFORMABLE_INPUT_HARD_LIMIT_BYTES;
-export const PROFILE_RESUME_THUMBNAIL_INPUT_HARD_LIMIT_BYTES =
-  SHARED_TRANSFORMABLE_INPUT_HARD_LIMIT_BYTES;
-export const PROFILE_RESUME_THUMBNAIL_OUTPUT_MAX_FILE_BYTES = 2 * MB;
-export const PROJECT_SOURCE_MAX_BYTES = SHARED_MEDIA_SOFT_LIMIT_BYTES;
-export const PROJECT_SOURCE_HARD_MAX_BYTES =
-  SHARED_TRANSFORMABLE_INPUT_HARD_LIMIT_BYTES;
-export const PROJECT_THUMBNAIL_MAX_BYTES = SHARED_MEDIA_SOFT_LIMIT_BYTES;
-export const PROJECT_THUMBNAIL_HARD_MAX_BYTES =
-  SHARED_TRANSFORMABLE_INPUT_HARD_LIMIT_BYTES;
-export const STRUCTURED_MEDIA_INPUT_HARD_LIMIT_BYTES =
-  SHARED_TRANSFORMABLE_INPUT_HARD_LIMIT_BYTES;
-
-export type MediaCompressionStrategy =
-  | 'none'
-  | 'image_derivatives'
-  | 'avatar_resize'
-  | 'gif_transcode'
-  | 'pdf_resave'
-  | 'resume_preview_resize'
-  | 'preview_generation';
+export {
+  BYTES_PER_KB,
+  BYTES_PER_MB,
+  CHAT_DIRECT_UPLOAD_MAX_FILE_BYTES,
+  CHAT_GIF_DIRECT_UPLOAD_MAX_FILE_BYTES,
+  CHAT_GIF_PROCESSING_MAX_FILE_BYTES,
+  CHAT_PROCESSED_MEDIA_MAX_FILE_BYTES,
+  classifyMimeForMediaPolicy,
+  formatResumeOversizeMessage,
+  getResumeSoftSizeNote,
+  MB,
+  MEDIA_COMPRESSION_DECISION_TREE,
+  PLATFORM_UPLOAD_ABSOLUTE_CEILING_BYTES,
+  PROFILE_AVATAR_INPUT_HARD_LIMIT_BYTES,
+  PROFILE_AVATAR_OUTPUT_MAX_FILE_BYTES,
+  PROFILE_RESUME_INPUT_HARD_LIMIT_BYTES,
+  PROFILE_RESUME_THUMBNAIL_INPUT_HARD_LIMIT_BYTES,
+  PROFILE_RESUME_THUMBNAIL_OUTPUT_MAX_FILE_BYTES,
+  PROJECT_SOURCE_HARD_MAX_BYTES,
+  PROJECT_SOURCE_MAX_BYTES,
+  PROJECT_THUMBNAIL_HARD_MAX_BYTES,
+  PROJECT_THUMBNAIL_MAX_BYTES,
+  RESUME_MAX_FILE_BYTES,
+  RESUME_SOFT_SIZE_WARNING_BYTES,
+  RESUME_UPLOAD_ACCESSIBILITY_DESCRIPTION,
+  SHARED_MEDIA_SOFT_LIMIT_BYTES,
+  SHARED_TRANSFORMABLE_INPUT_HARD_LIMIT_BYTES,
+  STRUCTURED_MEDIA_INPUT_HARD_LIMIT_BYTES,
+  type MediaCompressionDecisionTree,
+  type MediaCompressionStrategy,
+  type MediaPolicyAssetClass,
+  type MediaSizeRejectionCode,
+} from './mediaSizePolicyConfig';
 
 export type UploadSizePolicyId =
   | 'feed_image'
@@ -57,6 +82,8 @@ export type UploadSizePolicyId =
 
 export type ResolvedUploadSizePolicy = {
   policyId: UploadSizePolicyId;
+  /** MIME-derived class for telemetry and policy docs. */
+  mediaAssetClass: MediaPolicyAssetClass;
   hardLimitBytes: number;
   softLimitBytes: number | null;
   directUploadMaxBytes: number | null;
@@ -76,17 +103,9 @@ export type UploadSizeDecision =
   | {
       accepted: false;
       reason: string;
+      rejectionCode: MediaSizeRejectionCode;
       policy: ResolvedUploadSizePolicy;
     };
-
-function formatBytesAsMegabytes(
-  bytes: number,
-  options?: { compact?: boolean; precision?: number },
-): string {
-  const precision = options?.precision ?? (bytes >= 10 * MB ? 0 : 1);
-  const label = (bytes / MB).toFixed(precision);
-  return options?.compact ? `${label}MB` : `${label} MB`;
-}
 
 function createPolicy(
   policy: ResolvedUploadSizePolicy,
@@ -111,55 +130,15 @@ function acceptDecision(
 
 function rejectDecision(
   policy: ResolvedUploadSizePolicy,
-  reason: string,
+  payload: { code: MediaSizeRejectionCode; message: string },
 ): UploadSizeDecision {
   return {
     accepted: false,
-    reason,
+    reason: payload.message,
+    rejectionCode: payload.code,
     policy,
   };
 }
-
-function buildImageHardLimitMessage(
-  label: string,
-  bytes: number,
-  hardLimitBytes: number,
-): string {
-  return `${label} is too large (${formatBytesAsMegabytes(bytes)}). We can optimize images up to ${formatBytesAsMegabytes(hardLimitBytes)}.`;
-}
-
-function buildProjectHardLimitMessage(
-  bytes: number,
-  hardLimitBytes: number,
-  subject: string,
-): string {
-  return `${formatBytesAsMegabytes(bytes, { compact: true })} file selected. ${subject} can start up to ${formatBytesAsMegabytes(hardLimitBytes)} and are optimized toward a ${formatBytesAsMegabytes(SHARED_MEDIA_SOFT_LIMIT_BYTES)} target. Compress the file before uploading or choose a smaller file.`;
-}
-
-export function formatResumeOversizeMessage(
-  fileSize: number,
-  mimeType = 'application/pdf',
-): string {
-  const sizeMb = formatBytesAsMegabytes(fileSize);
-  if (mimeType === 'application/pdf') {
-    return `Resume is too large (${sizeMb}). PDFs can start up to ${formatBytesAsMegabytes(PROFILE_RESUME_INPUT_HARD_LIMIT_BYTES)} and are optimized toward the ${formatBytesAsMegabytes(RESUME_MAX_FILE_BYTES)} upload limit. Compress the PDF or export a smaller version, then try again.`;
-  }
-
-  return `Resume is too large (${sizeMb}). Word files must already be ${formatBytesAsMegabytes(RESUME_MAX_FILE_BYTES)} or smaller. Save as a smaller PDF or shorten the document, then try again.`;
-}
-
-export function getResumeSoftSizeNote(fileSize: number): string | null {
-  if (
-    fileSize > RESUME_SOFT_SIZE_WARNING_BYTES &&
-    fileSize <= RESUME_MAX_FILE_BYTES
-  ) {
-    return 'This file is close to the 6 MB limit. If anything fails, export a more compact PDF.';
-  }
-  return null;
-}
-
-export const RESUME_UPLOAD_ACCESSIBILITY_DESCRIPTION =
-  'Accepted formats: PDF or Word (.doc, .docx). Word files must be 6 megabytes or smaller. PDFs can start up to 15 megabytes and are optimized toward the 6 megabyte upload limit when possible.';
 
 export function getUploadSurfaceGuidance(
   surface: PlatformUploadSurface,
@@ -191,7 +170,7 @@ export function getPreparedUploadLimitFailure(
   policy: ResolvedUploadSizePolicy,
   size: number,
   mimeType: string,
-): string | null {
+): { code: MediaSizeRejectionCode; message: string } | null {
   if (!policy.enforcePreparedSoftLimit || policy.softLimitBytes == null) {
     return null;
   }
@@ -199,15 +178,34 @@ export function getPreparedUploadLimitFailure(
 
   switch (policy.policyId) {
     case 'profile_avatar':
-      return 'Avatar is still too large after optimization. Try a smaller or simpler image.';
+      return {
+        code: 'post_transform_soft_target_not_met',
+        message:
+          'Avatar is still too large after optimization. Try a smaller or simpler image.',
+      };
     case 'profile_resume_pdf':
-      return formatResumeOversizeMessage(size, mimeType);
+      return {
+        code: 'post_transform_soft_target_not_met',
+        message: formatResumeOversizeMessage(size, mimeType),
+      };
     case 'profile_resume_thumbnail':
-      return 'Preview image is still too large after optimization. Try a smaller or simpler image.';
+      return {
+        code: 'post_transform_soft_target_not_met',
+        message:
+          'Preview image is still too large after optimization. Try a smaller or simpler image.',
+      };
     case 'portfolio_source_pdf':
-      return 'This PDF is still too large after optimization. Export a smaller PDF and try again.';
+      return {
+        code: 'post_transform_soft_target_not_met',
+        message:
+          'This PDF is still too large after optimization. Export a smaller PDF and try again.',
+      };
     case 'chat_pdf':
-      return 'This PDF is still too large after optimization. Try a smaller file or compress it first.';
+      return {
+        code: 'post_transform_soft_target_not_met',
+        message:
+          'This PDF is still too large after optimization. Try a smaller file or compress it first.',
+      };
     default:
       return null;
   }
@@ -219,6 +217,7 @@ export function getUploadSizeDecision(params: {
   mimeType: string;
 }): UploadSizeDecision {
   const mimeType = params.mimeType.toLowerCase().trim();
+  const assetClass = classifyMimeForMediaPolicy(mimeType);
   const isImage = mimeType.startsWith('image/');
   const isPdf = mimeType === 'application/pdf';
   const isProcessedGifVideo =
@@ -228,6 +227,7 @@ export function getUploadSizeDecision(params: {
     case 'feed_post_image': {
       const policy = createPolicy({
         policyId: 'feed_image',
+        mediaAssetClass: assetClass,
         hardLimitBytes: SHARED_TRANSFORMABLE_INPUT_HARD_LIMIT_BYTES,
         softLimitBytes: SHARED_MEDIA_SOFT_LIMIT_BYTES,
         directUploadMaxBytes: null,
@@ -238,11 +238,11 @@ export function getUploadSizeDecision(params: {
       if (params.size > policy.hardLimitBytes) {
         return rejectDecision(
           policy,
-          buildImageHardLimitMessage(
-            'Image',
-            params.size,
-            policy.hardLimitBytes,
-          ),
+          MEDIA_SIZE_REJECTION.hardCapTransformableMedia({
+            subjectLabel: 'Image',
+            fileSizeBytes: params.size,
+            hardCapBytes: policy.hardLimitBytes,
+          }),
         );
       }
       return acceptDecision(
@@ -256,6 +256,7 @@ export function getUploadSizeDecision(params: {
       if (isProcessedGifVideo) {
         const policy = createPolicy({
           policyId: 'chat_processed_gif',
+          mediaAssetClass: 'loop_video',
           hardLimitBytes: CHAT_PROCESSED_MEDIA_MAX_FILE_BYTES,
           softLimitBytes: CHAT_PROCESSED_MEDIA_MAX_FILE_BYTES,
           directUploadMaxBytes: CHAT_PROCESSED_MEDIA_MAX_FILE_BYTES,
@@ -266,7 +267,7 @@ export function getUploadSizeDecision(params: {
         if (params.size > policy.hardLimitBytes) {
           return rejectDecision(
             policy,
-            'This GIF is too large to process. Try a smaller file.',
+            MEDIA_SIZE_REJECTION.chatTranscodedDeliveryLimit(),
           );
         }
         return acceptDecision(
@@ -280,6 +281,7 @@ export function getUploadSizeDecision(params: {
       if (mimeType === 'image/gif') {
         const policy = createPolicy({
           policyId: 'chat_gif',
+          mediaAssetClass: 'animated_gif',
           hardLimitBytes: CHAT_GIF_DIRECT_UPLOAD_MAX_FILE_BYTES,
           softLimitBytes: CHAT_GIF_DIRECT_UPLOAD_MAX_FILE_BYTES,
           directUploadMaxBytes: CHAT_DIRECT_UPLOAD_MAX_FILE_BYTES,
@@ -293,7 +295,7 @@ export function getUploadSizeDecision(params: {
         if (params.size > policy.hardLimitBytes) {
           return rejectDecision(
             policy,
-            'This GIF is too large to process. Try a smaller file.',
+            MEDIA_SIZE_REJECTION.chatGifProcessBudget(),
           );
         }
         if (params.size <= CHAT_DIRECT_UPLOAD_MAX_FILE_BYTES) {
@@ -310,6 +312,7 @@ export function getUploadSizeDecision(params: {
       if (isImage) {
         const policy = createPolicy({
           policyId: 'chat_image',
+          mediaAssetClass: assetClass,
           hardLimitBytes: SHARED_TRANSFORMABLE_INPUT_HARD_LIMIT_BYTES,
           softLimitBytes: SHARED_MEDIA_SOFT_LIMIT_BYTES,
           directUploadMaxBytes: CHAT_DIRECT_UPLOAD_MAX_FILE_BYTES,
@@ -320,7 +323,7 @@ export function getUploadSizeDecision(params: {
         if (params.size > policy.hardLimitBytes) {
           return rejectDecision(
             policy,
-            `This image is too large to optimize. Try one under ${formatBytesAsMegabytes(policy.hardLimitBytes)}.`,
+            rejectionChatRasterOverHardCap(policy.hardLimitBytes),
           );
         }
         return acceptDecision(
@@ -334,6 +337,7 @@ export function getUploadSizeDecision(params: {
       if (isPdf) {
         const policy = createPolicy({
           policyId: 'chat_pdf',
+          mediaAssetClass: 'pdf',
           hardLimitBytes: SHARED_TRANSFORMABLE_INPUT_HARD_LIMIT_BYTES,
           softLimitBytes: SHARED_MEDIA_SOFT_LIMIT_BYTES,
           directUploadMaxBytes: CHAT_DIRECT_UPLOAD_MAX_FILE_BYTES,
@@ -347,7 +351,7 @@ export function getUploadSizeDecision(params: {
         if (params.size > policy.hardLimitBytes) {
           return rejectDecision(
             policy,
-            `This PDF is too large to optimize. Try one under ${formatBytesAsMegabytes(policy.hardLimitBytes)}.`,
+            rejectionChatPdfOverHardCap(policy.hardLimitBytes),
           );
         }
         if (params.size > CHAT_DIRECT_UPLOAD_MAX_FILE_BYTES) {
@@ -368,6 +372,7 @@ export function getUploadSizeDecision(params: {
 
       const policy = createPolicy({
         policyId: 'chat_file',
+        mediaAssetClass: assetClass,
         hardLimitBytes: CHAT_PROCESSED_MEDIA_MAX_FILE_BYTES,
         softLimitBytes: CHAT_PROCESSED_MEDIA_MAX_FILE_BYTES,
         directUploadMaxBytes: CHAT_DIRECT_UPLOAD_MAX_FILE_BYTES,
@@ -379,10 +384,7 @@ export function getUploadSizeDecision(params: {
             : 'none',
       });
       if (params.size > policy.hardLimitBytes) {
-        return rejectDecision(
-          policy,
-          'This file is too large to process. Try a file under 6 MB.',
-        );
+        return rejectDecision(policy, MEDIA_SIZE_REJECTION.chatGenericSixMb());
       }
       if (params.size > CHAT_DIRECT_UPLOAD_MAX_FILE_BYTES) {
         return acceptDecision(
@@ -397,6 +399,7 @@ export function getUploadSizeDecision(params: {
     case 'profile_avatar': {
       const policy = createPolicy({
         policyId: 'profile_avatar',
+        mediaAssetClass: 'raster_image',
         hardLimitBytes: PROFILE_AVATAR_INPUT_HARD_LIMIT_BYTES,
         softLimitBytes: PROFILE_AVATAR_OUTPUT_MAX_FILE_BYTES,
         directUploadMaxBytes: null,
@@ -405,10 +408,7 @@ export function getUploadSizeDecision(params: {
         compressionStrategy: 'avatar_resize',
       });
       if (params.size > policy.hardLimitBytes) {
-        return rejectDecision(
-          policy,
-          'Avatar image is too large. We can optimize avatar images up to 15 MB.',
-        );
+        return rejectDecision(policy, rejectionAvatarOverHardCap());
       }
       return acceptDecision(
         policy,
@@ -421,6 +421,7 @@ export function getUploadSizeDecision(params: {
       if (isPdf) {
         const policy = createPolicy({
           policyId: 'profile_resume_pdf',
+          mediaAssetClass: 'pdf',
           hardLimitBytes: PROFILE_RESUME_INPUT_HARD_LIMIT_BYTES,
           softLimitBytes: RESUME_MAX_FILE_BYTES,
           directUploadMaxBytes: CHAT_DIRECT_UPLOAD_MAX_FILE_BYTES,
@@ -429,10 +430,10 @@ export function getUploadSizeDecision(params: {
           compressionStrategy: 'pdf_resave',
         });
         if (params.size > policy.hardLimitBytes) {
-          return rejectDecision(
-            policy,
-            formatResumeOversizeMessage(params.size, mimeType),
-          );
+          return rejectDecision(policy, {
+            code: 'hard_cap_transformable_media',
+            message: formatResumeOversizeMessage(params.size, mimeType),
+          });
         }
         return acceptDecision(
           policy,
@@ -444,6 +445,7 @@ export function getUploadSizeDecision(params: {
 
       const policy = createPolicy({
         policyId: 'profile_resume_word',
+        mediaAssetClass: 'office_document',
         hardLimitBytes: RESUME_MAX_FILE_BYTES,
         softLimitBytes: RESUME_MAX_FILE_BYTES,
         directUploadMaxBytes: RESUME_MAX_FILE_BYTES,
@@ -452,16 +454,17 @@ export function getUploadSizeDecision(params: {
         compressionStrategy: 'none',
       });
       if (params.size > policy.hardLimitBytes) {
-        return rejectDecision(
-          policy,
-          formatResumeOversizeMessage(params.size, mimeType),
-        );
+        return rejectDecision(policy, {
+          code: 'hard_cap_fixed_ceiling_binary',
+          message: formatResumeOversizeMessage(params.size, mimeType),
+        });
       }
       return acceptDecision(policy, 'direct', 'Uploading resume...', null);
     }
     case 'profile_resume_thumbnail': {
       const policy = createPolicy({
         policyId: 'profile_resume_thumbnail',
+        mediaAssetClass: 'raster_image',
         hardLimitBytes: PROFILE_RESUME_THUMBNAIL_INPUT_HARD_LIMIT_BYTES,
         softLimitBytes: PROFILE_RESUME_THUMBNAIL_OUTPUT_MAX_FILE_BYTES,
         directUploadMaxBytes: null,
@@ -470,10 +473,7 @@ export function getUploadSizeDecision(params: {
         compressionStrategy: 'resume_preview_resize',
       });
       if (params.size > policy.hardLimitBytes) {
-        return rejectDecision(
-          policy,
-          'Preview image is too large. We can optimize preview images up to 15 MB.',
-        );
+        return rejectDecision(policy, rejectionResumeThumbnailOverHardCap());
       }
       return acceptDecision(
         policy,
@@ -486,6 +486,7 @@ export function getUploadSizeDecision(params: {
       if (isImage) {
         const policy = createPolicy({
           policyId: 'portfolio_source_image',
+          mediaAssetClass: 'raster_image',
           hardLimitBytes: PROJECT_SOURCE_HARD_MAX_BYTES,
           softLimitBytes: PROJECT_SOURCE_MAX_BYTES,
           directUploadMaxBytes: null,
@@ -496,7 +497,7 @@ export function getUploadSizeDecision(params: {
         if (params.size > policy.hardLimitBytes) {
           return rejectDecision(
             policy,
-            buildProjectHardLimitMessage(
+            rejectionPortfolioTransformableOverCap(
               params.size,
               policy.hardLimitBytes,
               'Project images',
@@ -514,6 +515,7 @@ export function getUploadSizeDecision(params: {
       if (isPdf) {
         const policy = createPolicy({
           policyId: 'portfolio_source_pdf',
+          mediaAssetClass: 'pdf',
           hardLimitBytes: PROJECT_SOURCE_HARD_MAX_BYTES,
           softLimitBytes: PROJECT_SOURCE_MAX_BYTES,
           directUploadMaxBytes: CHAT_DIRECT_UPLOAD_MAX_FILE_BYTES,
@@ -524,7 +526,7 @@ export function getUploadSizeDecision(params: {
         if (params.size > policy.hardLimitBytes) {
           return rejectDecision(
             policy,
-            buildProjectHardLimitMessage(
+            rejectionPortfolioTransformableOverCap(
               params.size,
               policy.hardLimitBytes,
               'Project PDFs',
@@ -541,6 +543,7 @@ export function getUploadSizeDecision(params: {
 
       const policy = createPolicy({
         policyId: 'portfolio_source_other',
+        mediaAssetClass: assetClass,
         hardLimitBytes: PROJECT_SOURCE_MAX_BYTES,
         softLimitBytes: PROJECT_SOURCE_MAX_BYTES,
         directUploadMaxBytes: PROJECT_SOURCE_MAX_BYTES,
@@ -551,7 +554,7 @@ export function getUploadSizeDecision(params: {
       if (params.size > policy.hardLimitBytes) {
         return rejectDecision(
           policy,
-          buildProjectHardLimitMessage(
+          rejectionPortfolioSourceBinaryOverCap(
             params.size,
             policy.hardLimitBytes,
             'Project files',
@@ -568,6 +571,7 @@ export function getUploadSizeDecision(params: {
     case 'portfolio_thumbnail': {
       const policy = createPolicy({
         policyId: 'portfolio_thumbnail',
+        mediaAssetClass: 'raster_image',
         hardLimitBytes: PROJECT_THUMBNAIL_HARD_MAX_BYTES,
         softLimitBytes: PROJECT_THUMBNAIL_MAX_BYTES,
         directUploadMaxBytes: null,
@@ -578,7 +582,7 @@ export function getUploadSizeDecision(params: {
       if (params.size > policy.hardLimitBytes) {
         return rejectDecision(
           policy,
-          buildProjectHardLimitMessage(
+          rejectionPortfolioTransformableOverCap(
             params.size,
             policy.hardLimitBytes,
             'Thumbnail images',
@@ -595,6 +599,7 @@ export function getUploadSizeDecision(params: {
     case 'group_image': {
       const policy = createPolicy({
         policyId: 'group_image',
+        mediaAssetClass: 'raster_image',
         hardLimitBytes: SHARED_TRANSFORMABLE_INPUT_HARD_LIMIT_BYTES,
         softLimitBytes: SHARED_MEDIA_SOFT_LIMIT_BYTES,
         directUploadMaxBytes: null,
@@ -605,11 +610,11 @@ export function getUploadSizeDecision(params: {
       if (params.size > policy.hardLimitBytes) {
         return rejectDecision(
           policy,
-          buildImageHardLimitMessage(
-            'Group picture',
-            params.size,
-            policy.hardLimitBytes,
-          ),
+          MEDIA_SIZE_REJECTION.hardCapTransformableMedia({
+            subjectLabel: 'Group picture',
+            fileSizeBytes: params.size,
+            hardCapBytes: policy.hardLimitBytes,
+          }),
         );
       }
       return acceptDecision(

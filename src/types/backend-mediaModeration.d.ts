@@ -56,6 +56,12 @@ declare module '*mediaModeration.js' {
     meta?: { [key: string]: JsonValue | undefined } | null;
   }
 
+  /**
+   * Passed from `mediaService` as `body.safetyHook`. When `inputSafetyHook` is
+   * `null` or `undefined`, `runMediaSafetyCheck` skips
+   * `normalizeProviderSafetyDecision` and applies source-type defaults (e.g.
+   * `gif_provider` → provider default filter + `hookStatus: 'passed'`).
+   */
   export interface MediaSafetyCheckParams {
     sourceType?: string | null;
     source?: {
@@ -81,6 +87,7 @@ declare module '*mediaModeration.js' {
     provider?: string | null;
   }
 
+  /** See {@link MediaSafetyCheckParams} for `inputSafetyHook` semantics. */
   export function runMediaSafetyCheck(
     params: MediaSafetyCheckParams,
   ): ProviderSafetyDecision | null;

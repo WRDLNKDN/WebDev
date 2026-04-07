@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { buildPlatformMediaRenderingReferences } from '../../lib/media/contract';
+import {
+  buildPlatformMediaRenderingReferences,
+  isPlatformMediaSafeToRender,
+} from '../../lib/media/moderation';
 import {
   buildPlatformMediaDelivery,
   buildPlatformMediaLifecycle,
@@ -215,6 +218,13 @@ describe('platform media delivery', () => {
   });
 
   it('suppresses renderable urls when an asset is quarantined', () => {
+    expect(
+      isPlatformMediaSafeToRender({
+        moderationStatus: 'quarantined',
+        moderation: { safeToRender: false },
+      }),
+    ).toBe(false);
+
     const rendering = buildPlatformMediaRenderingReferences({
       mediaType: 'image',
       source: {

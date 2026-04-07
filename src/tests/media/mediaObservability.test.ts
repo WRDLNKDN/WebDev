@@ -104,4 +104,56 @@ describe('media observability summary', () => {
       failureEvents: 1,
     });
   });
+
+  it('classifies media_render_fallback_visible as render-stage telemetry', () => {
+    const [event] = normalizeClientMediaTelemetryPayload({
+      event: {
+        eventName: 'media_render_fallback_visible',
+        surface: 'feed',
+        assetId: 'asset-fb',
+        pipeline: 'asset_renderer',
+        status: 'fallback',
+        meta: { missingDisplayDerivative: true },
+      },
+    });
+    expect(event?.stage).toBe('render');
+
+    const summary = summarizeMediaHealth({
+      generatedAt: '2026-04-01T00:00:00.000Z',
+      windowHours: 24,
+      assetSummary: {
+        totalActive: 0,
+        pending: 0,
+        uploading: 0,
+        processing: 0,
+        staleProcessing: 0,
+        ready: 0,
+        failed: 0,
+      },
+      events: [
+        {
+          source: 'client',
+          eventName: 'media_render_fallback_visible',
+          stage: event?.stage ?? 'render',
+          surface: 'feed',
+          assetId: 'asset-fb',
+          requestId: null,
+          pipeline: 'asset_renderer',
+          status: 'fallback',
+          failureCode: null,
+          failureReason: null,
+          createdAt: '2026-04-01T00:08:00.000Z',
+        },
+      ],
+    });
+
+    const renderStage = summary.stageMetrics.find(
+      (metric: { stage: string }) => metric.stage === 'render',
+    );
+    expect(renderStage).toMatchObject({
+      totalEvents: 1,
+      failureEvents: 1,
+    });
+    expect(summary.failureMetrics.renderFailures).toBe(1);
+  });
 });

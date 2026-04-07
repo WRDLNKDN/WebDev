@@ -27,7 +27,8 @@ export const MEDIA_REGRESSION_GUARDS = [
   },
   {
     id: 'inline-media-clipping',
-    label: 'Inline media preserves aspect ratio without default clipping.',
+    label:
+      'Inline media uses display derivatives and presentation rules (contain/cover) without wrong cropping.',
     coveredBy: [
       'src/tests/media/AssetRenderers.test.tsx',
       'src/tests/e2e/media/media-platform-smoke.spec.ts',
@@ -64,10 +65,19 @@ export const MEDIA_SYNTHETIC_CHECKS: MediaSyntheticCheck[] = [
   },
   {
     id: 'media-platform-smoke',
-    label: 'Synthetic smoke route checks shared media on the groups surface.',
+    label:
+      'Synthetic smoke route checks group list renders shared media avatars without error chrome.',
     coverage: 'e2e',
     surfaces: ['Groups'],
     reference: 'src/tests/e2e/media/media-platform-smoke.spec.ts',
+  },
+  {
+    id: 'media-upload-shared-ux',
+    label:
+      'Chat shared upload intake shows canonical media status banner through send.',
+    coverage: 'e2e',
+    surfaces: ['Chat'],
+    reference: 'src/tests/e2e/media/media-upload-shared-ux.spec.ts',
   },
   {
     id: 'chat-file-upload',

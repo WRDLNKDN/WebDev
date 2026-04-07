@@ -1,3 +1,4 @@
+import type { MediaSizeRejectionCode } from '../media/mediaSizePolicy';
 import { getSharedUploadPlanFromDescriptor } from '../media/uploadIntake';
 
 export { CHAT_GIF_PROCESSING_MAX_FILE_BYTES } from '../../types/chat';
@@ -25,6 +26,7 @@ export type ChatAttachmentProcessingPlan =
   | {
       accepted: false;
       reason: string;
+      rejectionCode: MediaSizeRejectionCode;
     };
 
 export function getChatAttachmentProcessingPlan(file: {
@@ -40,6 +42,7 @@ export function getChatAttachmentProcessingPlan(file: {
     return {
       accepted: false,
       reason: plan.reason,
+      rejectionCode: plan.rejectionCode,
     };
   }
 

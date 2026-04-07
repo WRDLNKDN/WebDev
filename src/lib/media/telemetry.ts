@@ -1,3 +1,7 @@
+/**
+ * Client media telemetry → `/api/media/telemetry`. Ops & QA overview:
+ * docs/architecture/MEDIA_OBSERVABILITY_AND_QA.md
+ */
 import { authedFetch } from '../api/authFetch';
 import { API_BASE } from '../api/contentApiCore';
 import { supabase } from '../auth/supabaseClient';

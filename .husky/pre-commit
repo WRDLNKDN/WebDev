@@ -48,6 +48,8 @@ echo "✅ [STEP 3]: Types are valid."
 
 # --- 4. Lint Staged Files (fix first, then we verify) ---
 echo "🔍 [STEP 4]: Running lint-staged (prettier, eslint, markdownlint --fix)..."
+# Large staged TS batches can OOM eslint --fix (SIGKILL); raise heap before lint-staged.
+export NODE_OPTIONS="--max-old-space-size=8192 ${NODE_OPTIONS:-}"
 npx lint-staged
 # lint-staged runs markdownlint --fix on staged .md files so fixable issues
 # are applied before we run the full markdown check below.

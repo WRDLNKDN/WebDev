@@ -1,5 +1,8 @@
 # Moderation Guide: Content & Chat Reports
 
+**See also:**
+[Media moderation & safety (assets, quarantine, GIF policy)](architecture/MEDIA_MODERATION.md).
+
 Profile moderation has been removed — all members are auto-approved on join.
 This guide covers the remaining moderation systems.
 

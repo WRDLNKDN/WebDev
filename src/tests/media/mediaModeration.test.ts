@@ -54,4 +54,29 @@ describe('media moderation hooks', () => {
       retryable: false,
     });
   });
+
+  it('merges abuse report refs with explicit params overriding stored moderation', () => {
+    expect(
+      abuseReportIdFromResolve({
+        currentModeration: { abuseReport: { reportId: 'stored' } },
+        requestedModeration: {},
+        abuseReportRef: { reportId: 'explicit' },
+      }),
+    ).toBe('explicit');
+  });
+
+  it('preserves stored abuse report when no new ref is supplied', () => {
+    expect(
+      abuseReportIdFromResolve({
+        currentModeration: { abuseReport: { reportId: 'stored' } },
+        requestedModeration: {},
+      }),
+    ).toBe('stored');
+  });
 });
+
+function abuseReportIdFromResolve(
+  params: Parameters<typeof resolveMediaModeration>[0],
+): string | null | undefined {
+  return resolveMediaModeration(params).moderation.abuseReport?.reportId;
+}

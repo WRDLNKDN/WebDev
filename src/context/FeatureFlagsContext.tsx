@@ -10,7 +10,7 @@ import {
   useState,
 } from 'react';
 import { supabase } from '../lib/auth/supabaseClient';
-import { COMING_SOON_FLAG } from '../lib/featureFlags/keys';
+import { COMING_SOON_FLAG, STORE_FLAG } from '../lib/featureFlags/keys';
 import { isProduction, isUat, isUatHostname } from '../lib/utils/env';
 
 export type FeatureFlagsMap = Record<string, boolean>;
@@ -191,4 +191,17 @@ export function useProductionComingSoonMode(): boolean {
  */
 export function usePublicComingSoonMode(): boolean {
   return useProductionComingSoonMode();
+}
+
+/**
+ * Store link (Kickstarter + external storefront): show when the DB flag is on, and
+ * always on the real production site so the storefront stays linked even if
+ * `feature_flags.store` was turned off by mistake (UAT and local still respect the flag).
+ */
+export function useStoreNavEnabled(): boolean {
+  const flag = useFeatureFlag(STORE_FLAG);
+  if (isProduction && !isUatHostname()) {
+    return true;
+  }
+  return flag;
 }

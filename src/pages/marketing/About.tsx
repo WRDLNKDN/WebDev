@@ -1,10 +1,11 @@
 import { Box, Container, Link, Paper, Typography } from '@mui/material';
+import { LAYOUT_READING_CONTAINER_MAX_WIDTH } from '../../theme/layoutTokens';
 import { Link as RouterLink } from 'react-router-dom';
 
 export const About = () => {
   return (
     <Box sx={{ py: 6 }}>
-      <Container maxWidth="md">
+      <Container maxWidth={LAYOUT_READING_CONTAINER_MAX_WIDTH}>
         <Paper
           elevation={0}
           sx={{

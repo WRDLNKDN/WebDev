@@ -9,6 +9,7 @@ import {
 import { useEffect, useState } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import { supabase } from '../../lib/auth/supabaseClient';
+import { LAYOUT_READING_CONTAINER_MAX_WIDTH } from '../../theme/layoutTokens';
 
 export const Community = () => {
   const [memberSignedIn, setMemberSignedIn] = useState(false);
@@ -38,7 +39,7 @@ export const Community = () => {
 
   return (
     <Box sx={{ py: 6 }}>
-      <Container maxWidth="md">
+      <Container maxWidth={LAYOUT_READING_CONTAINER_MAX_WIDTH}>
         <Paper
           elevation={0}
           sx={{

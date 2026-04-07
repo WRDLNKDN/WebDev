@@ -171,6 +171,17 @@ describe('shared media renderers', () => {
     expect(mediaSx.maxHeight).toEqual({ xs: 240, sm: 320, md: 360 });
   });
 
+  it('spans feed portrait images across the post column instead of a narrow strip', () => {
+    const layout = getInlineMediaPresentation({
+      asset: { mediaType: 'image', width: 900, height: 1600 },
+      surface: 'feed',
+    });
+    const mediaSx = layout.mediaSx as { width?: unknown };
+
+    expect(layout.shape).toBe('portrait');
+    expect(mediaSx.width).toBe('100%');
+  });
+
   it('reports render failures through the shared media telemetry path', () => {
     const asset = createNormalizedAsset({
       assetId: 'asset-render-failure',

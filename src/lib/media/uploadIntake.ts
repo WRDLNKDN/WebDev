@@ -67,7 +67,7 @@ export type PreparedSharedUpload = {
 };
 
 type UploadDescriptor = {
-  name: string;
+  name?: string;
   size?: number;
   type?: string | null;
 };
@@ -143,7 +143,8 @@ const EXTENSION_TO_MIME: Record<string, string> = {
 
 const inFlightUploads = new Set<string>();
 
-function getFileExtension(name: string): string {
+function getFileExtension(name: string | undefined): string {
+  if (typeof name !== 'string' || !name.trim()) return '';
   const lower = name.toLowerCase().trim();
   const lastDot = lower.lastIndexOf('.');
   return lastDot >= 0 ? lower.slice(lastDot) : '';

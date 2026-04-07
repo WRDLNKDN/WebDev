@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "--- BOOT SEQUENCE (Environment Optimization) ---": "",
-    "dev": "npm run build && concurrently -n \"API,VITE,SUPA,HEALTH\" -c \"magenta,blue,green,cyan\" \"npm run api\" \"npx wait-on http://127.0.0.1:3001/api/health -t 60000 && (sleep 3 || true) && npm run vite\" \"npm run supabase:start\" \"npm run health:launch\"",
+    "dev": "npm run build && node scripts/check-backend-env.mjs && concurrently -n \"API,VITE,SUPA,HEALTH\" -c \"magenta,blue,green,cyan\" \"npm run api\" \"npx wait-on http://127.0.0.1:3001/api/health -t 180000 && (sleep 3 || true) && npm run vite\" \"npm run supabase:start\" \"npm run health:launch\"",
     "health:launch": "bash ./scripts/health-check.sh",
     "launch": "npm run health:launch",
     "vite": "vite --config config/vite/vite.config.ts",
@@ -33,6 +33,8 @@
     "test:e2e:preview:a11y": "npm run build && cross-env PLAYWRIGHT_PREVIEW=true PLAYWRIGHT_FRONTEND_ONLY=true playwright test -c config/playwright/playwright.config.ts src/tests/e2e/accessibility.spec.ts",
     "test:e2e:a11y": "playwright test -c config/playwright/playwright.config.ts src/tests/e2e/accessibility.spec.ts",
     "test:e2e:ui": "playwright test -c config/playwright/playwright.config.ts --ui",
+    "playwright:install": "playwright install --with-deps chromium chromium-headless-shell",
+    "playwright:install:all": "playwright install --with-deps chromium chromium-headless-shell firefox",
     "lighthouse:prod": "npx --yes lighthouse https://wrdlnkdn.vercel.app/ --only-categories=performance,accessibility,best-practices,seo --preset=desktop --quiet --chrome-flags=\"--headless\"",
     "lighthouse:prod:mobile": "npx --yes lighthouse https://wrdlnkdn.vercel.app/ --only-categories=performance,accessibility,best-practices,seo --form-factor=mobile --screenEmulation.mobile=true --quiet --chrome-flags=\"--headless\"",
     "e2e:serve": "concurrently -k -n VITE,API \"vite --config config/vite/vite.config.ts --host 127.0.0.1 --port 5173 --strictPort\" \"tsx backend/server.ts\"",
@@ -135,7 +137,7 @@
     "tsx": "4.21.0",
     "typescript": "6.0.2",
     "typescript-eslint": "8.58.0",
-    "vite": "8.0.7",
+    "vite": "8.0.5",
     "vitest": "4.1.3",
     "wait-on": "9.0.4"
   },

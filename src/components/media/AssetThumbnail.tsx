@@ -1,4 +1,4 @@
-import { Box, LinearProgress, Typography } from '@mui/material';
+import { Box, Typography } from '@mui/material';
 import type { SxProps, Theme } from '@mui/material/styles';
 import type { SystemStyleObject } from '@mui/system';
 import { useEffect, useRef } from 'react';
@@ -7,7 +7,8 @@ import {
   getNormalizedAssetThumbnailUrl,
   type NormalizedAsset,
 } from '../../lib/media/assets';
-import { describeNormalizedAssetStatus } from '../../lib/media/mediaStatus';
+import { normalizedAssetToMediaStatusInput } from '../../lib/media/mediaStatus';
+import { MediaPreviewStatusOverlay } from './MediaPreviewStatusOverlay';
 import { reportMediaTelemetryAsync } from '../../lib/media/telemetry';
 import {
   ProfileAvatar,
@@ -21,6 +22,9 @@ type AssetThumbnailProps = {
   loadingLabel?: string;
   sx?: SxProps<Theme>;
   mediaSx?: SxProps<Theme>;
+  onAssetRetry?: (() => void) | null;
+  assetRetryBusy?: boolean;
+  showAssetDiagnostics?: boolean;
 };
 
 type AssetInlinePreviewProps = {
@@ -30,6 +34,9 @@ type AssetInlinePreviewProps = {
   loadingLabel?: string;
   sx?: SxProps<Theme>;
   mediaSx?: SxProps<Theme>;
+  onAssetRetry?: (() => void) | null;
+  assetRetryBusy?: boolean;
+  showAssetDiagnostics?: boolean;
 };
 
 type AssetAvatarProps = Omit<ProfileAvatarProps, 'src'> & {
@@ -182,18 +189,17 @@ export function getInlineMediaPresentation(params: {
   const maxHeight = getInlineMediaSurfaceMaxHeight(surface);
   const isPortrait = shape === 'portrait';
   const isUnknown = shape === 'unknown';
-  const prefersFullWidth = !isPortrait;
+  /** Feed: always span the post column so portrait shots are not a narrow centered strip. */
+  const feedSpansPostColumn = surface === 'feed' && asset.mediaType !== 'doc';
+  const prefersFullWidth = !isPortrait || isUnknown || feedSpansPostColumn;
+  const mediaWidth =
+    asset.mediaType === 'doc' || prefersFullWidth ? '100%' : 'auto';
 
   return {
     shape,
     mediaSx: {
       display: 'block',
-      width:
-        asset.mediaType === 'doc'
-          ? '100%'
-          : prefersFullWidth || isUnknown
-            ? '100%'
-            : 'auto',
+      width: mediaWidth,
       height: 'auto',
       maxWidth: '100%',
       maxHeight,
@@ -217,6 +223,12 @@ function getMediaSizingBaseSx(
   }
 
   return THUMBNAIL_MEDIA_BASE_SX;
+}
+
+function sxPropsToArray(sx: SxProps<Theme> | undefined) {
+  if (sx == null) return [];
+  if (Array.isArray(sx)) return sx;
+  return [sx];
 }
 
 export const AssetFallbackNotice = ({
@@ -245,7 +257,7 @@ export const AssetFallbackNotice = ({
             textAlign: 'center',
             fontWeight: 600,
           },
-      ...(Array.isArray(sx) ? sx : sx ? [sx] : []),
+      ...sxPropsToArray(sx),
     ]}
   >
     {label}
@@ -422,27 +434,6 @@ function renderAssetVisual(params: {
   );
 }
 
-const ProcessingOverlay = ({ loadingLabel }: { loadingLabel?: string }) => (
-  <>
-    <LinearProgress
-      sx={{
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        height: 3,
-        borderRadius: 0,
-        bgcolor: 'rgba(255,255,255,0.08)',
-        '& .MuiLinearProgress-bar': { bgcolor: 'primary.light' },
-      }}
-    />
-    <AssetFallbackNotice
-      label={loadingLabel ?? 'Processing preview…'}
-      overlay
-    />
-  </>
-);
-
 type AssetRenderFrameProps = {
   asset: NormalizedAsset;
   alt: string;
@@ -452,6 +443,9 @@ type AssetRenderFrameProps = {
   frameSx: SystemStyleObject<Theme>;
   sx?: SxProps<Theme>;
   mediaSx?: SxProps<Theme>;
+  onAssetRetry?: (() => void) | null;
+  assetRetryBusy?: boolean;
+  showAssetDiagnostics?: boolean;
 };
 
 const AssetRenderFrame = ({
@@ -463,6 +457,9 @@ const AssetRenderFrame = ({
   frameSx,
   sx,
   mediaSx,
+  onAssetRetry = null,
+  assetRetryBusy = false,
+  showAssetDiagnostics = false,
 }: AssetRenderFrameProps) => {
   const resolvedSurface = surface ?? 'default';
   const loadReportedRef = useRef(false);
@@ -478,12 +475,16 @@ const AssetRenderFrame = ({
     asset.processingState,
   );
   const failed = asset.processingState === 'failed';
-  const assetStatus = describeNormalizedAssetStatus({
-    assetId: asset.assetId,
-    processingState: asset.processingState,
-    mimeType: asset.mimeType,
-    failureMessage: asset.failureMessage,
-  });
+  const baseStatusInput = normalizedAssetToMediaStatusInput(asset);
+  let processingStateInput: ReturnType<
+    typeof normalizedAssetToMediaStatusInput
+  > = null;
+  if (pending && baseStatusInput) {
+    processingStateInput = loadingLabel
+      ? { ...baseStatusInput, message: loadingLabel }
+      : baseStatusInput;
+  }
+  const failedStateInput = failed && baseStatusInput ? baseStatusInput : null;
   const usingFallbackDerivatives = !asset.displayUrl && !asset.thumbnailUrl;
   const resolvedFrameSx = compact
     ? frameSx
@@ -623,18 +624,19 @@ const AssetRenderFrame = ({
         onVisualError: handleVisualError,
       })}
 
-      {pending ? (
-        <ProcessingOverlay
-          loadingLabel={
-            loadingLabel ?? assetStatus?.title ?? 'Processing preview…'
-          }
+      {processingStateInput ? (
+        <MediaPreviewStatusOverlay
+          mode="processing"
+          state={processingStateInput}
         />
       ) : null}
-      {failed ? (
-        <AssetFallbackNotice
-          label={assetStatus?.title ?? 'Preview unavailable'}
-          tone="error"
-          overlay
+      {failedStateInput ? (
+        <MediaPreviewStatusOverlay
+          mode="failed"
+          state={failedStateInput}
+          onRetry={onAssetRetry}
+          retryBusy={assetRetryBusy}
+          showDiagnostics={showAssetDiagnostics}
         />
       ) : null}
     </Box>
@@ -648,6 +650,9 @@ export const AssetInlinePreview = ({
   loadingLabel,
   sx,
   mediaSx,
+  onAssetRetry = null,
+  assetRetryBusy = false,
+  showAssetDiagnostics = false,
 }: AssetInlinePreviewProps) => (
   <AssetRenderFrame
     asset={asset}
@@ -658,6 +663,9 @@ export const AssetInlinePreview = ({
     frameSx={INLINE_FRAME_BASE_SX}
     sx={sx}
     mediaSx={mediaSx}
+    onAssetRetry={onAssetRetry}
+    assetRetryBusy={assetRetryBusy}
+    showAssetDiagnostics={showAssetDiagnostics}
   />
 );
 
@@ -693,6 +701,9 @@ export const AssetThumbnail = ({
   loadingLabel,
   sx,
   mediaSx,
+  onAssetRetry = null,
+  assetRetryBusy = false,
+  showAssetDiagnostics = false,
 }: AssetThumbnailProps) => (
   <AssetRenderFrame
     asset={asset}
@@ -702,5 +713,8 @@ export const AssetThumbnail = ({
     frameSx={THUMBNAIL_FRAME_SX}
     sx={sx}
     mediaSx={mediaSx}
+    onAssetRetry={onAssetRetry}
+    assetRetryBusy={assetRetryBusy}
+    showAssetDiagnostics={showAssetDiagnostics}
   />
 );

@@ -84,7 +84,21 @@ export const THEME_COMPONENTS = {
       // Close / dismiss (and legacy delete/remove/trash) chrome: see createAppTheme → dismissIconButtonChrome in theme.ts.
       root: {
         '&:focus-visible': FOCUS_RING,
+        overflow: 'visible',
         padding: 12,
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        '& .MuiSvgIcon-root': {
+          flexShrink: 0,
+          display: 'block',
+        },
+      },
+      sizeSmall: {
+        padding: 8,
+        '& .MuiSvgIcon-root': {
+          fontSize: '1.25rem',
+        },
       },
     },
   },

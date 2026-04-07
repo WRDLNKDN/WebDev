@@ -7,13 +7,14 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
+import { LAYOUT_READING_CONTAINER_MAX_WIDTH } from '../../theme/layoutTokens';
 
 const GITHUB_ORG = 'https://github.com/WRDLNKDN';
 
 export const Platform = () => {
   return (
     <Box sx={{ py: 6 }}>
-      <Container maxWidth="md">
+      <Container maxWidth={LAYOUT_READING_CONTAINER_MAX_WIDTH}>
         <Paper
           elevation={0}
           sx={{

@@ -23,6 +23,7 @@ import { FeedCardImageDialog } from './feedCardImageDialog';
 import { FeedCardPostContent } from './feedCardPostContent';
 import { FeedCardRepostEmbed } from './feedCardRepostEmbed';
 import { FeedCardRepostMeta } from './feedCardRepostMeta';
+import { feedPostCardContentSx } from './feedPostLayout';
 import type { FeedCardProps, PreviewImageSource } from './feedCardTypes';
 export {
   hasRenderableContent,
@@ -227,6 +228,7 @@ export const FeedCard = ({
           createdAt: item.created_at,
           editedAt: isPostEdited ? item.edited_at : null,
           formatTime: formatPostTime,
+          tightHeader: true,
           children:
             item.kind === 'repost' ? (
               <FeedCardRepostMeta
@@ -239,6 +241,7 @@ export const FeedCard = ({
         actionMenu={{
           visible: !isEditingPost,
           ariaLabel: 'Post options',
+          menuDensity: 'subtle',
           items: [
             {
               label: item.viewer_saved ? 'Unsave' : 'Save',
@@ -310,6 +313,7 @@ export const FeedCard = ({
               : []),
           ],
         }}
+        contentSx={feedPostCardContentSx}
         sx={[
           {
             mb: { xs: 2.25, md: 2.5 },

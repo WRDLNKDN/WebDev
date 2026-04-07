@@ -4,12 +4,18 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import type { ReactElement } from 'react';
+import { createNormalizedAsset } from '../../lib/media/assets';
 import { describe, expect, it, vi } from 'vitest';
 import { MediaStatusBanner } from '../../components/media/MediaStatusBanner';
 import {
   describeMediaStatus,
   formatMediaDiagnosticsLabel,
+  normalizedAssetToMediaStatusInput,
 } from '../../lib/media/mediaStatus';
+import {
+  MediaPreviewStatusOverlay,
+  MEDIA_PREVIEW_STATUS_OVERLAY_TEST_ID,
+} from '../../components/media/MediaPreviewStatusOverlay';
 
 const theme = createTheme();
 
@@ -81,5 +87,40 @@ describe('shared media status', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
     expect(onRetry).toHaveBeenCalledTimes(1);
+  });
+
+  it('maps normalized assets to a deterministic media status input', () => {
+    const ready = createNormalizedAsset({
+      sourceType: 'upload',
+      mediaType: 'image',
+      processingState: 'ready',
+    });
+    expect(normalizedAssetToMediaStatusInput(ready)).toBeNull();
+
+    const optimizing = createNormalizedAsset({
+      sourceType: 'upload',
+      mediaType: 'image',
+      assetId: 'a1',
+      processingState: 'optimizing',
+      mimeType: 'image/webp',
+    });
+    expect(normalizedAssetToMediaStatusInput(optimizing)).toEqual({
+      stage: 'optimizing',
+      message: null,
+      diagnostics: { id: 'a1', mimeType: 'image/webp' },
+    });
+  });
+
+  it('renders preview overlay with shared banner test id', () => {
+    renderWithTheme(
+      <MediaPreviewStatusOverlay
+        mode="processing"
+        state={{ stage: 'uploading', message: 'Saving…' }}
+      />,
+    );
+    expect(
+      screen.getByTestId(MEDIA_PREVIEW_STATUS_OVERLAY_TEST_ID),
+    ).toBeTruthy();
+    expect(screen.getByTestId('media-status-banner')).toBeTruthy();
   });
 });

@@ -28,12 +28,11 @@
       "addLabels": ["renovate:automerge-safe", "github-actions"]
     },
     {
-      "description": "Auto-merge low-risk npm patch maintenance once CI passes.",
+      "description": "Keep npm patch maintenance reviewable by default.",
       "matchManagers": ["npm"],
       "matchUpdateTypes": ["patch", "pin", "digest"],
-      "automerge": true,
-      "automergeType": "pr",
-      "addLabels": ["renovate:automerge-safe", "npm"]
+      "automerge": false,
+      "addLabels": ["npm"]
     }
   ],
   "vulnerabilityAlerts": {

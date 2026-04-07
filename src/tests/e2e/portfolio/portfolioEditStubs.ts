@@ -156,7 +156,13 @@ export async function stubPortfolioDashboardRestRoutes(
     const method = route.request().method();
 
     if (method === 'GET') {
-      await fulfillPostgrest(route, [...mutableItems]);
+      const sorted = [...mutableItems].sort((a, b) => {
+        if (a.sort_order !== b.sort_order) {
+          return a.sort_order - b.sort_order;
+        }
+        return a.id.localeCompare(b.id);
+      });
+      await fulfillPostgrest(route, sorted);
       return;
     }
 

@@ -7,7 +7,7 @@ import {
 
 export function normalizeChatAttachmentMime(file: {
   type?: string | null;
-  name: string;
+  name?: string;
 }): string | null {
   const normalized = normalizeUploadMimeFromMetadata(file);
   if (
@@ -16,7 +16,7 @@ export function normalizeChatAttachmentMime(file: {
   ) {
     return normalized;
   }
-  const lowerName = file.name.toLowerCase();
+  const lowerName = (file.name ?? '').toLowerCase();
   return CHAT_ALLOWED_EXTENSIONS.find((allowedExt) =>
     lowerName.endsWith(allowedExt),
   )
@@ -27,7 +27,7 @@ export function normalizeChatAttachmentMime(file: {
 export function getChatAttachmentRejectionReason(file: {
   size: number;
   type?: string | null;
-  name: string;
+  name?: string;
 }): string | null {
   const normalized = normalizeChatAttachmentMime(file);
   if (!normalized)

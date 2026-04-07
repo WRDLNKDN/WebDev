@@ -1,5 +1,8 @@
-import { RESUME_PREVIEW_UNSUPPORTED_MESSAGE } from '../../../lib/portfolio/resumePreviewSupport';
 import { expect, test } from '../fixtures';
+
+/** Modal copy when Office embed is disabled for storage URLs (see supportsOfficeEmbed). */
+const SUPABASE_RESUME_MODAL_FALLBACK =
+  'Preview is unavailable here. Download the original file to view it.';
 
 test.describe('Portfolio resume preview modal', () => {
   test('shows unsupported preview fallback for Supabase resume documents and closes without navigation', async ({
@@ -54,7 +57,7 @@ test.describe('Portfolio resume preview modal', () => {
 
     await expect(page.getByTestId('portfolio-preview-fallback')).toBeVisible();
     await expect(
-      previewDialog.getByText(RESUME_PREVIEW_UNSUPPORTED_MESSAGE),
+      previewDialog.getByText(SUPABASE_RESUME_MODAL_FALLBACK),
     ).toBeVisible();
     await expect(page.getByTestId('portfolio-preview-frame')).toHaveCount(0);
 

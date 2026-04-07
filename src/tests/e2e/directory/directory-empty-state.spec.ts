@@ -158,7 +158,7 @@ test.describe('Directory empty state', () => {
       .toBeTruthy();
 
     await expect(
-      page.getByRole('progressbar', { name: /loading application/i }),
+      page.getByTestId('directory-page').getByRole('progressbar'),
     ).toBeVisible({ timeout: 8_000 });
     await expect(page.getByTestId('directory-empty-state')).toHaveCount(0);
     releaseDirectoryResponse();

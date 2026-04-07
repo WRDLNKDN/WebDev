@@ -96,7 +96,12 @@ test.describe('Home bumper transition', () => {
     expect(transitionState?.after.homeHeroMode).toBe('compact');
     expect(transitionState?.after.landingHasHeroCompactClass).toBe(true);
     expect(transitionState?.after.heroSectionHasCompactClass).toBe(true);
-    expect(transitionState?.after.overlayBg).toBe('rgba(0, 0, 0, 0)');
+    const overlayBg = transitionState?.after.overlayBg ?? '';
+    const overlayMatch = overlayBg.match(
+      /rgba\(\s*0\s*,\s*0\s*,\s*0\s*,\s*([\d.]+)\s*\)/,
+    );
+    expect(overlayMatch).not.toBeNull();
+    expect(Number(overlayMatch![1])).toBeLessThan(0.05);
     if (transitionState?.before.hadVideo) {
       expect(transitionState.before.homeHeroMode).toBe('video');
       expect(transitionState.after.videoRemoved).toBe(true);

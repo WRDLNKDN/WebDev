@@ -29,7 +29,7 @@ test.describe('Issue #609 - Edit Links modal grouping and alpha order', () => {
 
     const linksSection = page.getByTestId('dashboard-links-section');
     await expect(linksSection).toBeVisible({ timeout: 45_000 });
-    await linksSection.getByRole('button', { name: /add links/i }).click();
+    await linksSection.getByRole('button', { name: /add link/i }).click();
     await expect(
       page.getByRole('dialog', { name: /manage links/i }),
     ).toBeVisible();

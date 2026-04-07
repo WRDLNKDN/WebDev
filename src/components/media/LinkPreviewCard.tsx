@@ -60,10 +60,13 @@ export const LinkPreviewCard = ({
   preview,
   onDismiss,
   variant = 'feed',
+  flushTop = false,
 }: {
   preview: LinkPreviewPayload;
   onDismiss?: () => void;
   variant?: 'feed' | 'chat';
+  /** Parent supplies vertical spacing (e.g. tight feed layout). */
+  flushTop?: boolean;
 }) => {
   const asset = createNormalizedLinkAsset({
     url: preview.url,
@@ -71,13 +74,14 @@ export const LinkPreviewCard = ({
   });
   const thumbnailUrl = getNormalizedAssetThumbnailUrl(asset);
   const showThumbnail = variant === 'feed' || Boolean(preview.image?.trim());
+  const rootMarginTop = variant === 'chat' || flushTop ? 0 : 1.5;
 
   return (
     <Box
       sx={{
         position: 'relative',
         display: 'block',
-        mt: variant === 'chat' ? 0 : 1.5,
+        mt: rootMarginTop,
       }}
     >
       {onDismiss ? (

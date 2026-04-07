@@ -18,6 +18,7 @@ import {
   type PublicPlaylist,
 } from '../../lib/api/contentApi';
 import { toMessage } from '../../lib/utils/errors';
+import { LAYOUT_READING_CONTAINER_MAX_WIDTH } from '../../theme/layoutTokens';
 
 export const PlaylistsPage = () => {
   const [playlists, setPlaylists] = useState<PublicPlaylist[]>([]);
@@ -44,7 +45,7 @@ export const PlaylistsPage = () => {
 
   if (loading) {
     return (
-      <Container maxWidth="md" sx={{ py: 6 }}>
+      <Container maxWidth={LAYOUT_READING_CONTAINER_MAX_WIDTH} sx={{ py: 6 }}>
         <Typography color="text.secondary">Loading playlists…</Typography>
       </Container>
     );
@@ -52,14 +53,14 @@ export const PlaylistsPage = () => {
 
   if (error) {
     return (
-      <Container maxWidth="md" sx={{ py: 6 }}>
+      <Container maxWidth={LAYOUT_READING_CONTAINER_MAX_WIDTH} sx={{ py: 6 }}>
         <Typography color="error">{error}</Typography>
       </Container>
     );
   }
 
   return (
-    <Container maxWidth="md" sx={{ py: 6 }}>
+    <Container maxWidth={LAYOUT_READING_CONTAINER_MAX_WIDTH} sx={{ py: 6 }}>
       <Typography variant="h4" sx={{ mb: 4 }}>
         WRDLNKDN playlists
       </Typography>

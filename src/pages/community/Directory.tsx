@@ -30,6 +30,7 @@ import {
 } from '@mui/material';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { alpha, useTheme } from '@mui/material/styles';
+import { LAYOUT_INTRO_COPY_MAX_WIDTH_PX } from '../../theme/layoutTokens';
 import { Link as RouterLink, useSearchParams } from 'react-router-dom';
 import { BlockConfirmDialog } from '../../components/chat/dialogs/BlockConfirmDialog';
 import { DirectoryEmptyState } from '../../components/directory/DirectoryEmptyState';
@@ -890,7 +891,7 @@ export const Directory = () => {
                 variant="body2"
                 sx={{
                   color: isLight ? 'text.secondary' : 'rgba(219,230,244,0.72)',
-                  maxWidth: 680,
+                  maxWidth: LAYOUT_INTRO_COPY_MAX_WIDTH_PX,
                   lineHeight: 1.55,
                 }}
               >

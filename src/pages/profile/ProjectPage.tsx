@@ -24,6 +24,7 @@ import type {
   PortfolioItem,
   ProjectUploadFiles,
 } from '../../types/portfolio';
+import { LAYOUT_READING_CONTAINER_MAX_WIDTH } from '../../theme/layoutTokens';
 
 function isExternalUrl(url: string): boolean {
   const t = url.trim();
@@ -167,7 +168,7 @@ export const ProjectPage = () => {
   }
 
   return (
-    <Container maxWidth="md" sx={{ py: 4 }}>
+    <Container maxWidth={LAYOUT_READING_CONTAINER_MAX_WIDTH} sx={{ py: 4 }}>
       <Paper
         elevation={0}
         sx={{

@@ -1,3 +1,4 @@
+import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { defineConfig, devices } from '@playwright/test';
@@ -18,6 +19,48 @@ const PORT = 5173;
 const BASE_URL = `http://127.0.0.1:${PORT}`;
 const API_URL = 'http://127.0.0.1:3001/api/health';
 const isCI = process.env.CI === 'true';
+
+/**
+ * `channel: 'msedge'` uses the system Edge build at Playwright’s fixed paths (Linux:
+ * `/opt/microsoft/msedge/msedge`, which `playwright install msedge` only provisions on
+ * Ubuntu/Debian). Skip the project locally when that binary is missing so Fedora and
+ * similar environments do not fail every test at launch. CI always keeps the project
+ * so missing installs fail loudly in workflows that expect Edge.
+ */
+function isMsEdgeChannelRunnable(): boolean {
+  if (
+    process.env.PLAYWRIGHT_SKIP_MSEDGE === '1' ||
+    process.env.PLAYWRIGHT_SKIP_MSEDGE === 'true'
+  ) {
+    return false;
+  }
+  if (isCI) {
+    return true;
+  }
+  if (process.platform === 'win32') {
+    return true;
+  }
+  if (process.platform === 'darwin') {
+    try {
+      fs.accessSync(
+        '/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge',
+        fs.constants.X_OK,
+      );
+      return true;
+    } catch {
+      return false;
+    }
+  }
+  if (process.platform === 'linux') {
+    try {
+      fs.accessSync('/opt/microsoft/msedge/msedge', fs.constants.X_OK);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+  return false;
+}
 const hasBackendEnv = Boolean(
   process.env.SUPABASE_URL?.trim() &&
   process.env.SUPABASE_SERVICE_ROLE_KEY?.trim(),
@@ -44,7 +87,8 @@ const frontendCommand = usePreviewServer
     ? 'npm run e2e:serve:frontend'
     : 'PLAYWRIGHT_FRONTEND_ONLY=true npm run e2e:serve:frontend';
 const canReuseFrontendServer = !isCI && useBackendServer && !usePreviewServer;
-const LOCAL_WORKERS = 2;
+/** Local parallel runs; override with PLAYWRIGHT_LOCAL_WORKERS (e.g. 2 on low-RAM machines). */
+const LOCAL_WORKERS = Number(process.env.PLAYWRIGHT_LOCAL_WORKERS || '8');
 const CI_WORKERS = Number(process.env.PLAYWRIGHT_CI_WORKERS || '1');
 
 export default defineConfig({
@@ -132,15 +176,19 @@ export default defineConfig({
       },
       timeout: 90_000,
     },
-    {
-      name: 'msedge',
-      use: {
-        ...devices['Desktop Edge'],
-        channel: 'msedge',
-        actionTimeout: 20_000,
-        navigationTimeout: 60_000,
-      },
-      timeout: 90_000,
-    },
+    ...(isMsEdgeChannelRunnable()
+      ? [
+          {
+            name: 'msedge',
+            use: {
+              ...devices['Desktop Edge'],
+              channel: 'msedge' as const,
+              actionTimeout: 20_000,
+              navigationTimeout: 60_000,
+            },
+            timeout: 90_000,
+          },
+        ]
+      : []),
   ],
 });

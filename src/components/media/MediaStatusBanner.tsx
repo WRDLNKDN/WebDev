@@ -13,9 +13,14 @@ import {
   describeMediaStatus,
   type MediaStatusInput,
 } from '../../lib/media/mediaStatus';
+import {
+  MEDIA_STATUS_BANNER_TEST_ID,
+  normalizeMediaBannerState,
+  type SharedUploadState,
+} from '../../lib/media/mediaUx';
 
 type MediaStatusBannerProps = {
-  state: MediaStatusInput | null;
+  state: MediaStatusInput | SharedUploadState | null;
   onRetry?: (() => void) | null;
   retryBusy?: boolean;
   showDiagnostics?: boolean;
@@ -108,13 +113,15 @@ export const MediaStatusBanner = ({
   compact = false,
   sx,
 }: MediaStatusBannerProps) => {
-  if (!state) return null;
+  const normalized = normalizeMediaBannerState(state);
+  if (!normalized) return null;
 
-  const presentation = describeMediaStatus(state);
+  const presentation = describeMediaStatus(normalized);
   const resolvedSx = Array.isArray(sx) ? sx : sx ? [sx] : [];
 
   return (
     <Box
+      data-testid={MEDIA_STATUS_BANNER_TEST_ID}
       role="status"
       aria-live={presentation.ariaLive}
       sx={[

@@ -15,6 +15,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { AssetAvatar } from '../../components/media/AssetThumbnail';
 import { useChatRooms } from '../../hooks/useChat';
 import { supabase } from '../../lib/auth/supabaseClient';
+import { LAYOUT_READING_CONTAINER_MAX_WIDTH } from '../../theme/layoutTokens';
 import { createNormalizedGroupImageAsset } from '../../lib/media/assets';
 
 /**
@@ -59,7 +60,7 @@ export const GroupsPage = () => {
 
   return (
     <Box sx={{ py: 6 }}>
-      <Container maxWidth="md">
+      <Container maxWidth={LAYOUT_READING_CONTAINER_MAX_WIDTH}>
         <Paper
           elevation={0}
           sx={{

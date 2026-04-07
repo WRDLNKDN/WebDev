@@ -10,77 +10,8 @@ import {
   getFeedTotalReactionCount,
 } from '../../components/post/sharedReactions';
 import type { FeedItem, ReactionType } from '../../lib/api/feedsApi';
-import { INTERACTION_COLORS } from '../../theme/themeConstants';
 import type { FeedCardActions } from './feedCardTypes';
-
-const FEED_ACTION_MUTED_COLOR = 'rgba(255,255,255,0.65)';
-const FEED_ACTION_ACTIVE_COLOR = INTERACTION_COLORS.focus;
-const FEED_ACTION_HOVER_COLOR = INTERACTION_COLORS.focus;
-const FEED_ACTION_SELECTED_TEXT_SX = { fontWeight: 700 } as const;
-const FEED_ACTION_BUTTON_SX = {
-  textTransform: 'none',
-  minWidth: 0,
-  minHeight: { xs: 40, sm: 36 },
-  flexDirection: { xs: 'row', sm: 'row' },
-  gap: 0.625,
-  py: { xs: 0.6, sm: 0.45 },
-  px: { xs: 0.85, sm: 0.75 },
-  borderRadius: 2,
-  boxSizing: 'border-box',
-  transition:
-    'color 120ms ease, background-color 120ms ease, border-color 120ms ease, box-shadow 120ms ease',
-  color: FEED_ACTION_MUTED_COLOR,
-  border: '1px solid transparent',
-  backgroundColor: 'transparent',
-  lineHeight: 1,
-  '& .MuiButton-startIcon': {
-    margin: 0,
-  },
-  '& .MuiTouchRipple-root': {
-    display: 'none',
-  },
-  '& .MuiSvgIcon-root, & .MuiTypography-root': {
-    color: 'inherit',
-  },
-  '& .MuiSvgIcon-root': {
-    flexShrink: 0,
-  },
-  '& .MuiTypography-root': {
-    fontWeight: 600,
-    lineHeight: 1.1,
-  },
-  '&:focus-visible': {
-    outline: 'none',
-    borderColor: 'rgba(141,188,229,0.32)',
-    boxShadow: '0 0 0 1px rgba(56,132,210,0.14) inset',
-  },
-  '@media (hover: hover) and (pointer: fine)': {
-    '&:hover': {
-      bgcolor: 'rgba(56,132,210,0.08)',
-      borderColor: 'rgba(141,188,229,0.22)',
-      color: FEED_ACTION_HOVER_COLOR,
-    },
-  },
-} as const;
-
-const getActiveActionSx = (active: boolean) => ({
-  color: active ? FEED_ACTION_ACTIVE_COLOR : FEED_ACTION_MUTED_COLOR,
-  bgcolor: active ? 'rgba(56,132,210,0.12)' : 'transparent',
-  borderColor: active ? 'rgba(141,188,229,0.3)' : 'transparent',
-  boxShadow: active ? '0 0 0 1px rgba(56,132,210,0.08) inset' : 'none',
-  ...(active
-    ? {
-        '& .MuiTypography-root': FEED_ACTION_SELECTED_TEXT_SX,
-      }
-    : null),
-  '@media (hover: hover) and (pointer: fine)': {
-    '&:hover': {
-      bgcolor: active ? 'rgba(56,132,210,0.16)' : 'rgba(56,132,210,0.08)',
-      borderColor: active ? 'rgba(141,188,229,0.34)' : 'rgba(141,188,229,0.22)',
-      color: FEED_ACTION_HOVER_COLOR,
-    },
-  },
-});
+import { FEED_ACTION_BUTTON_SX, getActiveActionSx } from './feedActionStyles';
 
 type FeedCardEngagementActionsProps = {
   item: FeedItem;
@@ -140,7 +71,7 @@ export const FeedCardEngagementActions = ({
       {(totalReactions > 0 || commentCount > 0) && (
         <Box
           sx={{
-            mt: 1,
+            mt: 0.5,
             display: 'flex',
             alignItems: 'center',
             gap: 1,
@@ -206,7 +137,7 @@ export const FeedCardEngagementActions = ({
       )}
       <Box
         sx={{
-          mt: 2.15,
+          mt: 1.25,
           width: '100%',
           display: 'flex',
           flexDirection: 'row',
@@ -217,8 +148,8 @@ export const FeedCardEngagementActions = ({
           rowGap: 0.5,
           borderTop: 1,
           borderColor: 'divider',
-          pt: 1,
-          pb: 0.75,
+          pt: 0.65,
+          pb: 0.65,
           '& > *': {
             minHeight: { xs: 40, sm: 36 },
             display: 'flex',

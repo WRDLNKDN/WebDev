@@ -41,7 +41,9 @@ jobs:
         run: npm ci
 
       - name: 🎭 Install Playwright browsers
-        run: npx playwright install --with-deps chromium firefox msedge
+        run:
+          npx playwright install --with-deps chromium chromium-headless-shell
+          firefox msedge
 
       - name: ♿ Run accessibility suite (vite preview)
         run: npm run test:e2e:preview:a11y

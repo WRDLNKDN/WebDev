@@ -2,6 +2,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { expect, test } from '../fixtures';
 import { seedSignedInSession, USER_ID } from '../utils/auth';
+import { stubChatDmRoom } from '../utils/stubChatDmRoom';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const UPLOAD_FIXTURE = path.join(
@@ -43,126 +44,14 @@ const threadSendButton = (page: import('@playwright/test').Page) =>
     .getByTestId('chat-thread-column')
     .getByRole('button', { name: 'Send message' });
 
-function requestWantsSingleObject(route: import('@playwright/test').Route) {
-  return (
-    route
-      .request()
-      .headers()
-      ['accept']?.includes('application/vnd.pgrst.object+json') ?? false
-  );
-}
-
 test.describe('Chat file upload', () => {
   async function stubChatRoom(
     page: import('@playwright/test').Page,
     profileOverride?: Partial<{ handle: string; display_name: string | null }>,
   ) {
-    const messages: Array<Record<string, unknown>> = [];
-
-    await page.route('**/rest/v1/chat_rooms*', async (route) => {
-      const isSingle = requestWantsSingleObject(route);
-      const room = {
-        id: E2E_ROOM_ID,
-        room_type: 'dm',
-        name: null,
-        created_by: USER_ID,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      };
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify(isSingle ? room : [room]),
-      });
-    });
-
-    await page.route('**/rest/v1/chat_room_members*', async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify([
-          {
-            room_id: E2E_ROOM_ID,
-            user_id: USER_ID,
-            role: 'member',
-            joined_at: new Date().toISOString(),
-            left_at: null,
-          },
-          {
-            room_id: E2E_ROOM_ID,
-            user_id: 'other-user-1',
-            role: 'member',
-            joined_at: new Date().toISOString(),
-            left_at: null,
-          },
-        ]),
-      });
-    });
-
-    await page.route('**/rest/v1/profiles*', async (route) => {
-      const requestUrl = new URL(route.request().url());
-      const idFilter = requestUrl.searchParams.get('id');
-      const requestedId = idFilter?.startsWith('eq.')
-        ? idFilter.slice(3)
-        : null;
-      const profiles = [
-        {
-          id: USER_ID,
-          handle: 'member',
-          display_name: 'Member',
-          avatar: null,
-        },
-        {
-          id: 'other-user-1',
-          handle: profileOverride?.handle ?? 'nick',
-          display_name: profileOverride?.display_name ?? 'Nick Clark',
-          avatar: null,
-        },
-      ];
-      const matchedProfiles = requestedId
-        ? profiles.filter((profile) => profile.id === requestedId)
-        : profiles;
-      const isSingle = requestWantsSingleObject(route);
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify(
-          isSingle ? (matchedProfiles[0] ?? null) : matchedProfiles,
-        ),
-      });
-    });
-
-    await page.route('**/rest/v1/chat_messages*', async (route) => {
-      if (route.request().method() === 'POST') {
-        const payload = route.request().postDataJSON() as {
-          content?: string | null;
-          room_id?: string;
-          sender_id?: string;
-        };
-        const message = {
-          id: 'msg-e2e-1',
-          room_id: payload.room_id ?? E2E_ROOM_ID,
-          sender_id: payload.sender_id ?? USER_ID,
-          content: payload.content ?? null,
-          is_system_message: false,
-          is_deleted: false,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        };
-        messages.splice(0, messages.length, message);
-        await route.fulfill({
-          status: 201,
-          contentType: 'application/json',
-          body: JSON.stringify(message),
-        });
-        return;
-      }
-
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify(messages),
-      });
+    await stubChatDmRoom(page, E2E_ROOM_ID, {
+      includeSecondMember: true,
+      profileOverride,
     });
   }
 
@@ -341,7 +230,7 @@ test.describe('Chat file upload', () => {
       )
       .toMatchObject({
         objectFit: 'contain',
-        maxHeight: '520px',
+        maxHeight: '440px',
       });
   });
 

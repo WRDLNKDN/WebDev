@@ -19,6 +19,7 @@ import {
   type PlaylistItem,
 } from '../../lib/api/contentApi';
 import { toMessage } from '../../lib/utils/errors';
+import { LAYOUT_READING_CONTAINER_MAX_WIDTH } from '../../theme/layoutTokens';
 
 export const PlaylistDetailPage = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -53,7 +54,7 @@ export const PlaylistDetailPage = () => {
 
   if (!slug) {
     return (
-      <Container maxWidth="md" sx={{ py: 6 }}>
+      <Container maxWidth={LAYOUT_READING_CONTAINER_MAX_WIDTH} sx={{ py: 6 }}>
         <Typography color="error">Missing playlist slug</Typography>
       </Container>
     );
@@ -61,7 +62,7 @@ export const PlaylistDetailPage = () => {
 
   if (loading) {
     return (
-      <Container maxWidth="md" sx={{ py: 6 }}>
+      <Container maxWidth={LAYOUT_READING_CONTAINER_MAX_WIDTH} sx={{ py: 6 }}>
         <Typography color="text.secondary">Loading…</Typography>
       </Container>
     );
@@ -69,7 +70,7 @@ export const PlaylistDetailPage = () => {
 
   if (error) {
     return (
-      <Container maxWidth="md" sx={{ py: 6 }}>
+      <Container maxWidth={LAYOUT_READING_CONTAINER_MAX_WIDTH} sx={{ py: 6 }}>
         <Typography color="error">{error}</Typography>
         <Link
           component={RouterLink}
@@ -83,7 +84,7 @@ export const PlaylistDetailPage = () => {
   }
 
   return (
-    <Container maxWidth="md" sx={{ py: 6 }}>
+    <Container maxWidth={LAYOUT_READING_CONTAINER_MAX_WIDTH} sx={{ py: 6 }}>
       <Link
         component={RouterLink}
         to="/playlists"

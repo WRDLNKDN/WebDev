@@ -15,6 +15,12 @@ export type MediaPreviewStatusOverlayProps = {
   sx?: SxProps<Theme>;
 };
 
+function sxToArray(sx: SxProps<Theme> | undefined) {
+  if (sx == null) return [];
+  if (Array.isArray(sx)) return sx;
+  return [sx];
+}
+
 /**
  * Shared treatment for in-frame media previews: deterministic progress bar while
  * derivatives prepare, and the same banner vocabulary as inline upload surfaces.
@@ -27,11 +33,7 @@ export const MediaPreviewStatusOverlay = ({
   retryBusy = false,
   sx,
 }: MediaPreviewStatusOverlayProps) => {
-  const resolvedSx = sx
-    ? Array.isArray(sx)
-      ? sx
-      : [sx]
-    : [];
+  const resolvedSx = sxToArray(sx);
   const isProcessing = mode === 'processing';
   const retryHandler = mode === 'failed' ? onRetry : null;
 

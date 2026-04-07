@@ -27,12 +27,11 @@ export const MediaPreviewStatusOverlay = ({
   retryBusy = false,
   sx,
 }: MediaPreviewStatusOverlayProps) => {
-  let resolvedSx: SxProps<Theme>[] = [];
-  if (Array.isArray(sx)) {
-    resolvedSx = sx;
-  } else if (sx) {
-    resolvedSx = [sx];
-  }
+  const resolvedSx = sx
+    ? Array.isArray(sx)
+      ? sx
+      : [sx]
+    : [];
   const isProcessing = mode === 'processing';
   const retryHandler = mode === 'failed' ? onRetry : null;
 
@@ -51,7 +50,7 @@ export const MediaPreviewStatusOverlay = ({
           pointerEvents: 'none',
         },
         ...resolvedSx,
-      ]}
+      ] satisfies SxProps<Theme>}
     >
       {isProcessing ? (
         <LinearProgress

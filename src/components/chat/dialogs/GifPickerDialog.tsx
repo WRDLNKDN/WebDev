@@ -23,8 +23,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   getTrendingChatGifs,
   normalizeGifErrorMessage,
+  PLATFORM_GIPHY_GIF_CONTENT_FILTER,
   searchChatGifs,
-  type GifContentFilter,
 } from '../../../lib/chat/gifApi';
 import { reportMediaTelemetryAsync } from '../../../lib/media/telemetry';
 
@@ -51,27 +51,20 @@ export const GifPickerDialog = ({
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [contentFilter, setContentFilter] =
-    useState<GifContentFilter>('medium');
   const [results, setResults] = useState<
     Array<{ id: string; title: string; previewUrl: string; gifUrl: string }>
   >([]);
   const latestRequestIdRef = useRef(0);
   const [trendingUnavailable, setTrendingUnavailable] = useState(false);
-  const lastAttemptRef = useRef<{
-    query: string;
-    filter: GifContentFilter;
-  }>({
-    query: '',
-    filter: 'medium',
-  });
+  const lastAttemptRef = useRef<{ query: string }>({ query: '' });
 
   const loadGifs = useCallback(
-    async (q: string, filter: GifContentFilter = contentFilter) => {
+    async (q: string) => {
+      const filter = PLATFORM_GIPHY_GIF_CONTENT_FILTER;
       const trimmedQuery = q.trim();
       const requestId = latestRequestIdRef.current + 1;
       latestRequestIdRef.current = requestId;
-      lastAttemptRef.current = { query: trimmedQuery, filter };
+      lastAttemptRef.current = { query: trimmedQuery };
       setLoading(true);
       setError(null);
       setTrendingUnavailable(false);
@@ -142,7 +135,7 @@ export const GifPickerDialog = ({
         }
       }
     },
-    [contentFilter, telemetrySurface],
+    [telemetrySurface],
   );
 
   useEffect(() => {
@@ -166,21 +159,20 @@ export const GifPickerDialog = ({
     setLoading(false);
     setError(null);
     setResults([]);
-    setContentFilter('medium');
     setTrendingUnavailable(false);
-    lastAttemptRef.current = { query: '', filter: 'medium' };
+    lastAttemptRef.current = { query: '' };
   }, [open]);
 
   const handleSearch = useCallback(
-    (q: string, filter?: GifContentFilter) => {
-      loadGifs(q, filter ?? contentFilter).catch(() => {});
+    (q: string) => {
+      loadGifs(q).catch(() => {});
     },
-    [loadGifs, contentFilter],
+    [loadGifs],
   );
 
   const handleRetry = useCallback(() => {
-    const { query: lastQuery, filter: lastFilter } = lastAttemptRef.current;
-    loadGifs(lastQuery, lastFilter).catch(() => {});
+    const { query: lastQuery } = lastAttemptRef.current;
+    loadGifs(lastQuery).catch(() => {});
   }, [loadGifs]);
 
   const handlePick = useCallback(

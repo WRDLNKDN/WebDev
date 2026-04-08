@@ -6,6 +6,12 @@ export type ChatGifResult = {
 };
 export type GifContentFilter = 'off' | 'low' | 'medium' | 'high';
 
+/**
+ * Fixed GIPHY content tier for WRDLNKDN. The product does not expose per-session
+ * “rating” controls; moderation and safety are handled in the media pipeline.
+ */
+export const PLATFORM_GIPHY_GIF_CONTENT_FILTER: GifContentFilter = 'medium';
+
 /** GIPHY rating: g, pg, pg-13, r. We map our filter to these. Exported for unit tests. */
 export const GIPHY_RATING_MAP: Record<GifContentFilter, string> = {
   off: 'r',
@@ -157,7 +163,7 @@ export const normalizeGifErrorMessage = (message: string): string => {
 
 export async function getTrendingChatGifs(
   limit = 24,
-  contentFilter: GifContentFilter = 'medium',
+  contentFilter: GifContentFilter = PLATFORM_GIPHY_GIF_CONTENT_FILTER,
 ): Promise<ChatGifResult[]> {
   const params = new URLSearchParams();
   params.set('limit', String(limit));
@@ -168,7 +174,7 @@ export async function getTrendingChatGifs(
 export async function searchChatGifs(
   query: string,
   limit = 24,
-  contentFilter: GifContentFilter = 'medium',
+  contentFilter: GifContentFilter = PLATFORM_GIPHY_GIF_CONTENT_FILTER,
 ): Promise<ChatGifResult[]> {
   const params = new URLSearchParams();
   params.set('q', query.slice(0, 50));

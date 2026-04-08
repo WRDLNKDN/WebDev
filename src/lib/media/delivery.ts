@@ -1,3 +1,8 @@
+/**
+ * Platform media delivery + lifecycle policy (cache intents, retention, invalidation).
+ * Architecture overview: docs/architecture/MEDIA_DELIVERY_LAYER.md
+ * Moderation / quarantine: docs/architecture/MEDIA_MODERATION.md
+ */
 import type {
   PlatformMediaCacheProfile,
   PlatformMediaDeliveryMetadata,

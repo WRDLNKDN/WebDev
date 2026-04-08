@@ -86,6 +86,7 @@ const LayoutContent = () => {
       {showFooter && (
         <Box
           component="footer"
+          data-docked-footer
           sx={{
             flexShrink: 0,
             position: 'relative',

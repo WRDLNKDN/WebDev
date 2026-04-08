@@ -118,6 +118,18 @@ describe('shared upload intake', () => {
     });
   });
 
+  it('tags unsupported upload descriptors with a stable rejection code', () => {
+    const plan = getSharedUploadPlanFromDescriptor('feed_post_image', {
+      name: 'x.exe',
+      type: 'application/x-msdownload',
+      size: 100,
+    });
+    expect(plan.accepted).toBe(false);
+    if (!plan.accepted) {
+      expect(plan.rejectionCode).toBe('unsupported_file_type');
+    }
+  });
+
   it('preprocesses avatar uploads before executing the surface upload callback', async () => {
     const states: Array<{
       stage: string;

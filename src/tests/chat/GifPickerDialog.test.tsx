@@ -31,6 +31,7 @@ vi.mock('../../lib/chat/gifApi', () => ({
   searchChatGifs: gifApiMocks.searchChatGifs,
   getTrendingChatGifs: gifApiMocks.getTrendingChatGifs,
   normalizeGifErrorMessage: gifApiMocks.normalizeGifErrorMessage,
+  PLATFORM_GIPHY_GIF_CONTENT_FILTER: 'medium',
 }));
 
 vi.mock('../../lib/media/telemetry', () => ({

@@ -41,13 +41,14 @@ import { useNotificationsUnread } from '../../hooks/useNotificationsUnread';
 import {
   useFeatureFlag,
   usePublicComingSoonMode,
+  useStoreNavEnabled,
 } from '../../context/FeatureFlagsContext';
 import {
   DASHBOARD_FLAG,
   GAMES_FLAG,
   GROUPS_FLAG,
-  STORE_FLAG,
 } from '../../lib/featureFlags/keys';
+import { getStoreExternalUrl } from '../../lib/marketing/storefront';
 import { denseMenuPaperSxFromTheme } from '../../lib/ui/formSurface';
 import { getNavbarGlass } from '../../theme/candyStyles';
 import { NavbarDesktopAuthControls } from './navbar/NavbarDesktopAuthControls';
@@ -90,7 +91,7 @@ export const Navbar = () => {
   // ── Feature flags ──────────────────────────────────────────────────────────
   const comingSoon = usePublicComingSoonMode();
   const dashboardEnabled = useFeatureFlag(DASHBOARD_FLAG);
-  const storeEnabled = useFeatureFlag(STORE_FLAG);
+  const storeEnabled = useStoreNavEnabled();
   const gamesEnabled = useFeatureFlag(GAMES_FLAG);
   const groupsEnabled = useFeatureFlag(GROUPS_FLAG);
 
@@ -357,6 +358,27 @@ export const Navbar = () => {
                   }}
                 >
                   Kickstarter
+                </Button>
+                <Button
+                  component="a"
+                  href={getStoreExternalUrl()}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Store, opens storefront in a new tab"
+                  sx={{
+                    color: 'rgba(255,255,255,0.85)',
+                    textTransform: 'none',
+                    fontSize: isCompactDesktop ? '0.92rem' : '1rem',
+                    minWidth: 0,
+                    px: isCompactDesktop ? 1 : 1.25,
+                    py: 0.625,
+                    '&:hover': {
+                      bgcolor: 'rgba(56,132,210,0.14)',
+                      color: 'white',
+                    },
+                  }}
+                >
+                  Store
                 </Button>
               </Stack>
             )}

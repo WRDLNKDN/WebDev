@@ -140,12 +140,14 @@ export function runMediaSafetyCheck(params) {
     cleanNullableText(params.metadata?.provider, 120) ??
     (params.sourceType === 'gif_provider' ? 'giphy' : null);
 
-  const explicitDecision = normalizeProviderSafetyDecision(
-    params.inputSafetyHook,
-    { provider },
-  );
-  if (explicitDecision) {
-    return explicitDecision;
+  if (params.inputSafetyHook != null) {
+    const explicitDecision = normalizeProviderSafetyDecision(
+      params.inputSafetyHook,
+      { provider },
+    );
+    if (explicitDecision) {
+      return explicitDecision;
+    }
   }
 
   if (params.sourceType === 'gif_provider') {

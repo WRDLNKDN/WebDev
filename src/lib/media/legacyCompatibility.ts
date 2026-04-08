@@ -1,3 +1,7 @@
+/**
+ * Legacy media → unified {@link PlatformMediaAsset} compatibility layer, surface audit,
+ * rollout checklist, and backfill planning. Ops overview: docs/architecture/MEDIA_UNIFIED_ASSET_MIGRATION.md
+ */
 import type { LinkPreviewData } from '../linkPreview';
 import type { ChatMessageAttachment, ChatRoom } from '../../types/chat';
 import type { PortfolioItem } from '../../types/portfolio';

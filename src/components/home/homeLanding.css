@@ -986,8 +986,13 @@
   }
 }
 
-/* Hide footer initially, show after content appears */
-footer {
+/*
+ * Defer docked footer on Home only (see Home.tsx: data-home-footer-pending).
+ * Do not use a bare `footer { }` selector — homeLanding.css is bundled once and
+ * would hide the Layout footer on every route after visiting /.
+ */
+html[data-home-footer-pending='true']:not([data-footer-visible='true'])
+  [data-docked-footer] {
   opacity: 0;
   visibility: hidden;
   transition:
@@ -995,7 +1000,7 @@ footer {
     visibility 0s 1.1s;
 }
 
-html[data-footer-visible='true'] footer {
+html[data-footer-visible='true'] [data-docked-footer] {
   opacity: 1;
   visibility: visible;
   transition:

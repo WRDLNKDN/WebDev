@@ -814,15 +814,18 @@ export async function runSharedUploadIntake<T>(params: {
       throw new Error(preparedLimitFailure.message);
     }
 
+    let intakeMessage: string;
+    if (preparedPlan.mode === 'direct') {
+      intakeMessage = preparedPlan.uploadLabel;
+    } else {
+      intakeMessage = preparedPlan.helperText ?? preparedPlan.uploadLabel;
+    }
     params.onStateChange?.(
       createSharedUploadState({
         surface: params.surface,
         status: preparedPlan.mode === 'direct' ? 'uploading' : 'processing',
         stage: getExecutionStage(preparedPlan),
-        message:
-          preparedPlan.mode === 'direct'
-            ? preparedPlan.uploadLabel
-            : (preparedPlan.helperText ?? preparedPlan.uploadLabel),
+        message: intakeMessage,
         fingerprint,
         mimeType: preparedMime,
       }),

@@ -152,6 +152,10 @@ export const Home = () => {
     const el = videoRef.current;
     /* Wait for <video> mount; onLoadedData will call again — do not reveal early (matte + no poster flash). */
     if (!el) {
+      /* No `<video>` in DOM (e.g. poster-only / marketing + PRM) — still run handoff. */
+      if (prefersReducedMotion || videoFailed) {
+        finishHomeHeroTransition();
+      }
       return;
     }
     if (prefersReducedMotion || videoFailed) {
@@ -377,7 +381,16 @@ export const Home = () => {
     };
   }, []);
 
-  // Control footer visibility via data attribute (homeLanding.css hides footer until this is set).
+  // Scope deferred footer CSS to Home only (see homeLanding.css + Layout data-docked-footer).
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    document.documentElement.setAttribute('data-home-footer-pending', 'true');
+    return () => {
+      document.documentElement.removeAttribute('data-home-footer-pending');
+      document.documentElement.removeAttribute('data-footer-visible');
+    };
+  }, []);
+
   useEffect(() => {
     if (typeof document === 'undefined') return;
     if (showFooter) {
@@ -386,6 +399,42 @@ export const Home = () => {
       document.documentElement.removeAttribute('data-footer-visible');
     }
   }, [showFooter]);
+
+  /**
+   * When no `<video>` is mounted, `ensureVideoPlayback` never runs `finishHomeHeroTransition`
+   * (videoRef is null). That left `showFooter` false forever, so `data-footer-visible` was
+   * never set and homeLanding.css kept the docked footer hidden (UAT / PRM / poster paths).
+   */
+  useEffect(() => {
+    const showLocalGuestVideo =
+      !marketingHome && !prefersReducedMotion && !videoFailed;
+    const showMarketingHeroVideo =
+      marketingHome && !prefersReducedMotion && !videoFailed;
+    const renderHeroMotionVideo =
+      (showMarketingHeroVideo || showLocalGuestVideo) && !videoEnded;
+
+    const hasIntroFinished =
+      heroPhase === 'dimmed' ||
+      videoEnded ||
+      prefersReducedMotion ||
+      videoFailed;
+
+    if (showFooter || !hasIntroFinished || renderHeroMotionVideo) {
+      return;
+    }
+
+    const tid = window.setTimeout(() => {
+      setShowFooter(true);
+    }, HOME_HERO_FOOTER_DELAY_AFTER_UNMOUNT_MS);
+    return () => window.clearTimeout(tid);
+  }, [
+    marketingHome,
+    prefersReducedMotion,
+    videoFailed,
+    videoEnded,
+    heroPhase,
+    showFooter,
+  ]);
 
   // Onboarded Members → dashboard unless production “gates closed” (marketing-only prod).
   if (session && onboarded === true && !productionComingSoon) {

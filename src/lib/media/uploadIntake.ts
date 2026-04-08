@@ -569,12 +569,14 @@ function trackCompressionTelemetry(params: {
   const telemetryStage =
     params.plan.mode === 'gif_processing' ? 'converting' : 'optimizing';
   const outputBytes = params.outputBytes ?? null;
-  const compressionOutcome =
-    params.status === 'failed'
-      ? 'failed'
-      : params.status === 'ready'
-        ? 'succeeded'
-        : (params.status ?? null);
+  let compressionOutcome: string | null;
+  if (params.status === 'failed') {
+    compressionOutcome = 'failed';
+  } else if (params.status === 'ready') {
+    compressionOutcome = 'succeeded';
+  } else {
+    compressionOutcome = params.status ?? null;
+  }
   trackUploadIntakeTelemetry({
     eventName: params.eventName,
     stage: telemetryStage,

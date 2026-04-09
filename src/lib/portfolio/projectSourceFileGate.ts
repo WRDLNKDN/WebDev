@@ -40,14 +40,16 @@ const EXTENSION_TO_MIME: Record<string, string> = {
   '.mov': 'video/quicktime',
 };
 
-const PROJECT_FILE_EXTENSIONS = [
-  ...SUPPORTED_IMAGE_EXTENSIONS,
-  ...SUPPORTED_DOCUMENT_EXTENSIONS,
-  ...SUPPORTED_PRESENTATION_EXTENSIONS,
-  ...SUPPORTED_SPREADSHEET_EXTENSIONS,
-  ...SUPPORTED_TEXT_EXTENSIONS,
-  ...SUPPORTED_VIDEO_EXTENSIONS,
-].map((ext) => `.${ext}`);
+const PROJECT_FILE_EXTENSIONS = new Set(
+  [
+    ...SUPPORTED_IMAGE_EXTENSIONS,
+    ...SUPPORTED_DOCUMENT_EXTENSIONS,
+    ...SUPPORTED_PRESENTATION_EXTENSIONS,
+    ...SUPPORTED_SPREADSHEET_EXTENSIONS,
+    ...SUPPORTED_TEXT_EXTENSIONS,
+    ...SUPPORTED_VIDEO_EXTENSIONS,
+  ].map((ext) => `.${ext}`),
+);
 
 const IMAGE_MIME_TYPES = [
   'image/jpeg',
@@ -101,7 +103,7 @@ function isPortfolioSourceTypeAllowed(
   const extension = getFileExtensionDot(file.name);
   return (
     (detectedMime != null && ALLOWED_PORTFOLIO_SOURCE_MIME.has(detectedMime)) ||
-    PROJECT_FILE_EXTENSIONS.includes(extension)
+    PROJECT_FILE_EXTENSIONS.has(extension)
   );
 }
 

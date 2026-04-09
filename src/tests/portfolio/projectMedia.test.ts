@@ -46,6 +46,22 @@ describe('project media validation', () => {
     );
   });
 
+  it('accepts extension-only project sources when MIME is empty', () => {
+    const file = new File(['raw'], 'artifact.PDF', {
+      type: '',
+    });
+
+    expect(getProjectSourceFileError(file)).toBeNull();
+  });
+
+  it('accepts extension-only image project sources with uppercase extension', () => {
+    const file = new File(['raw'], 'artifact.WEBP', {
+      type: '',
+    });
+
+    expect(getProjectSourceFileError(file)).toBeNull();
+  });
+
   it('accepts transformable project source files above the 6MB target when they are still within the input ceiling', () => {
     const file = new File(
       [new Uint8Array(PROJECT_SOURCE_MAX_BYTES + 1)],

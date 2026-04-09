@@ -1,10 +1,20 @@
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { expect, test } from '../fixtures';
 import { seedSignedInSession, USER_ID } from '../utils/auth';
 import { fulfillPostgrest, parseEqParam } from '../utils/postgrestFulfill';
 import { stubAppSurface } from '../utils/stubAppSurface';
 import { selectResearchCategoryInProjectDialog } from './selectResearchCategory';
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const IMAGE_FIXTURE = path.resolve(
+  __dirname,
+  '../../../../public/assets/logo.png',
+);
+
 test.describe('Dashboard portfolio showcase management', () => {
+  test.describe.configure({ mode: 'serial' });
+
   test('creates, highlights, and deletes portfolio artifacts with public profile updates', async ({
     page,
     context,
@@ -169,6 +179,15 @@ test.describe('Dashboard portfolio showcase management', () => {
       await route.fulfill({ status: 204, body: '' });
     });
 
+    // Upload + delete both hit storage; delete also touches project-sources / portfolio-thumbnails.
+    await page.route('**/storage/v1/**', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ Key: 'storage-stub' }),
+      });
+    });
+
     await page.goto('/dashboard', { waitUntil: 'domcontentloaded' });
     await expect(page.getByTestId('app-main')).toBeVisible({
       timeout: 45_000,
@@ -190,6 +209,9 @@ test.describe('Dashboard portfolio showcase management', () => {
 
     await selectResearchCategoryInProjectDialog(page, dialog);
     await dialog.getByRole('textbox', { name: 'Project URL' }).click();
+    await dialog
+      .getByTestId('project-thumbnail-file-input')
+      .setInputFiles(IMAGE_FIXTURE);
 
     await dialog.getByRole('button', { name: /add to portfolio/i }).click();
     await expect(dialog).not.toBeVisible({ timeout: 10_000 });
@@ -199,6 +221,11 @@ test.describe('Dashboard portfolio showcase management', () => {
     });
     await expect(
       page.getByText('Launch artifact managed from dashboard.'),
+    ).toBeVisible();
+    await expect(
+      page
+        .locator('img[alt="Portfolio Launch"][src*="project-images"]')
+        .first(),
     ).toBeVisible();
 
     await page
@@ -230,6 +257,11 @@ test.describe('Dashboard portfolio showcase management', () => {
       page.getByTestId('portfolio-section-research').getByRole('button', {
         name: /portfolio launch/i,
       }),
+    ).toBeVisible();
+    await expect(
+      page
+        .locator('img[alt="Portfolio Launch"][src*="project-images"]')
+        .first(),
     ).toBeVisible();
 
     await page.goto('/dashboard', { waitUntil: 'domcontentloaded' });

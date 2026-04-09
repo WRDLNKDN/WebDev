@@ -26,7 +26,7 @@ export function resolveProjectThumbnailFields(params: {
   finalImageUrl: string | null;
   linkType: PortfolioLinkType;
   projectSourceUrl: string;
-  sourceFile?: File | undefined;
+  sourceFile?: File;
 }): {
   thumbnailStatus: 'pending' | null;
   thumbnailUrl: string | null;

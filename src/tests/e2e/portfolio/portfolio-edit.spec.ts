@@ -3,6 +3,7 @@ import { fileURLToPath } from 'node:url';
 import { expect, test } from '../fixtures';
 import {
   e2eLegacyPdfPortfolioItem,
+  e2ePortfolioDashboardItem,
   e2eStoredFilePortfolioItem,
   gotoDashboardExpectAppMain,
   seedPortfolioEditMemberSession,
@@ -20,6 +21,9 @@ const IMAGE_FIXTURE = path.resolve(
 );
 
 test.describe('Portfolio artifact editing', () => {
+  // One shared Vite server: parallel runs were starving the dashboard and timing out.
+  test.describe.configure({ mode: 'serial' });
+
   const expectUpdatedArtifactOnDashboard = async (
     page: import('@playwright/test').Page,
   ) => {
@@ -306,5 +310,63 @@ test.describe('Portfolio artifact editing', () => {
     await expect(
       page.getByRole('link', { name: 'Open project' }).first(),
     ).toHaveAttribute('href', 'https://www.google.com');
+  });
+
+  test('removing custom thumbnail falls back to generated/fallback preview on save', async ({
+    page,
+    context,
+  }) => {
+    await seedPortfolioEditMemberSession(page, context);
+
+    const customImageUrl =
+      'https://example.supabase.co/storage/v1/object/public/project-images/user-1/custom-thumb.png';
+    const portfolioItems = [
+      e2ePortfolioDashboardItem({
+        title: 'Custom Thumb Artifact',
+        description: 'Has custom thumbnail override.',
+        project_url: 'https://example.com/custom-thumb-artifact.pdf',
+        image_url: customImageUrl,
+        thumbnail_url:
+          'https://example.supabase.co/storage/v1/object/public/project-sources/user-1/project-source/asset/thumbnail.jpg',
+        thumbnail_status: 'generated',
+        normalized_url: 'https://example.com/custom-thumb-artifact.pdf',
+        resolved_type: 'pdf',
+      }),
+    ];
+
+    const capturedPatch = { current: null as Record<string, unknown> | null };
+    await stubPortfolioDashboardRestRoutes(
+      page,
+      portfolioItems,
+      { kind: 'mergeAndCapture', captured: capturedPatch },
+      PORTFOLIO_E2E_MEMBER_PROFILE,
+    );
+
+    await gotoDashboardExpectAppMain(page);
+    await expect(page.getByText('Custom Thumb Artifact')).toBeVisible({
+      timeout: 15_000,
+    });
+    await expect(
+      page.locator('img[alt="Custom Thumb Artifact"][src*="project-images"]'),
+    ).toHaveCount(1);
+
+    await page.getByLabel('Edit project Custom Thumb Artifact').click();
+    const dialog = page.getByRole('dialog');
+    await expect(dialog).toContainText(/edit project/i);
+    await dialog
+      .getByRole('button', { name: /remove thumbnail override/i })
+      .click();
+    await dialog.getByRole('button', { name: /save changes/i }).click();
+    await expect(dialog).not.toBeVisible({ timeout: 10_000 });
+
+    expect(capturedPatch.current).not.toBeNull();
+    expect(capturedPatch.current?.['image_url']).toBeNull();
+
+    await expect(
+      page.locator('img[alt="Custom Thumb Artifact"][src*="project-images"]'),
+    ).toHaveCount(0);
+    await expect(page.locator('img[alt="Custom Thumb Artifact"]')).toHaveCount(
+      1,
+    );
   });
 });

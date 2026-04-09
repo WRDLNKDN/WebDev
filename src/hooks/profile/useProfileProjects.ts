@@ -105,8 +105,6 @@ export function resolveProjectLinkFields(projectSourceUrl: string): {
   };
 }
 
-export { resolveProjectThumbnailFields };
-
 function getNextProjectSortOrder(projects: PortfolioItem[]): number {
   if (projects.length === 0) return 0;
   return (

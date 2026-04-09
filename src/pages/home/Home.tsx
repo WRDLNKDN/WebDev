@@ -384,19 +384,19 @@ export const Home = () => {
   // Scope deferred footer CSS to Home only (see homeLanding.css + Layout data-docked-footer).
   useEffect(() => {
     if (typeof document === 'undefined') return;
-    document.documentElement.setAttribute('data-home-footer-pending', 'true');
+    document.documentElement.dataset.homeFooterPending = 'true';
     return () => {
-      document.documentElement.removeAttribute('data-home-footer-pending');
-      document.documentElement.removeAttribute('data-footer-visible');
+      delete document.documentElement.dataset.homeFooterPending;
+      delete document.documentElement.dataset.footerVisible;
     };
   }, []);
 
   useEffect(() => {
     if (typeof document === 'undefined') return;
     if (showFooter) {
-      document.documentElement.setAttribute('data-footer-visible', 'true');
+      document.documentElement.dataset.footerVisible = 'true';
     } else {
-      document.documentElement.removeAttribute('data-footer-visible');
+      delete document.documentElement.dataset.footerVisible;
     }
   }, [showFooter]);
 
@@ -423,10 +423,10 @@ export const Home = () => {
       return;
     }
 
-    const tid = window.setTimeout(() => {
+    const tid = globalThis.setTimeout(() => {
       setShowFooter(true);
     }, HOME_HERO_FOOTER_DELAY_AFTER_UNMOUNT_MS);
-    return () => window.clearTimeout(tid);
+    return () => globalThis.clearTimeout(tid);
   }, [
     marketingHome,
     prefersReducedMotion,

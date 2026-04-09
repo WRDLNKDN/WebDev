@@ -1,9 +1,8 @@
 import { supabase } from '../../lib/auth/supabaseClient';
 import { normalizeProjectCategories } from '../../lib/portfolio/categoryUtils';
-import {
-  getProjectSourceFileError,
-  isProjectSourceStorageUrl,
-} from '../../lib/portfolio/projectMedia';
+import { isProjectSourceStorageUrl } from '../../lib/portfolio/projectMedia';
+import { assertCanUpdateProjectSource } from '../../lib/portfolio/projectSourceValidation';
+import { resolveProjectThumbnailFields } from '../../lib/portfolio/resolveProjectThumbnailFields';
 import { sanitizePortfolioUrlInput } from '../../lib/portfolio/linkValidation';
 import {
   getProjectImageStoragePathFromPublicUrl,
@@ -15,12 +14,10 @@ import type {
   PortfolioItem,
   ProjectUploadFiles,
 } from '../../types/portfolio';
-import { isExternalProjectUrl } from './useProfileHelpers';
 import {
   assertProjectUrlIsSafe,
   refreshProjectAfterThumbnailGeneration,
   resolveProjectLinkFields,
-  resolveProjectThumbnailFields,
   uploadProjectSourceUrl,
   uploadProjectThumbnailUrl,
 } from './useProfileProjects';
@@ -28,35 +25,6 @@ import {
 type Params = {
   setProjects: React.Dispatch<React.SetStateAction<PortfolioItem[]>>;
 };
-
-function assertCanUpdateProject(params: {
-  projectUrlTrimmed: string;
-  sourceFile?: ProjectUploadFiles['sourceFile'];
-  hasExistingStorageUrl: boolean;
-}) {
-  const { projectUrlTrimmed, sourceFile, hasExistingStorageUrl } = params;
-  const hasSourceFile = Boolean(sourceFile);
-  const hasProjectUrl = Boolean(projectUrlTrimmed);
-  if (hasSourceFile && hasProjectUrl) {
-    throw new Error(
-      'Choose either an uploaded file or a project URL, not both.',
-    );
-  }
-  if (!hasSourceFile && !hasProjectUrl) {
-    throw new Error('Add a file or a project URL before saving.');
-  }
-  if (sourceFile) {
-    const sourceError = getProjectSourceFileError(sourceFile);
-    if (sourceError) throw new Error(sourceError);
-    return;
-  }
-
-  const hasValidProjectUrl =
-    hasExistingStorageUrl || isExternalProjectUrl(projectUrlTrimmed);
-  if (!hasValidProjectUrl) {
-    throw new Error('Project URL must be an external URL (e.g. https://...).');
-  }
-}
 
 export const toggleProjectHighlightItem = async ({
   projectId,
@@ -112,7 +80,7 @@ export const updateProjectItem = async ({
 
   const projectUrlTrimmed = sanitizePortfolioUrlInput(updates.project_url);
   const hasExistingStorageUrl = isProjectSourceStorageUrl(projectUrlTrimmed);
-  assertCanUpdateProject({
+  assertCanUpdateProjectSource({
     projectUrlTrimmed,
     sourceFile,
     hasExistingStorageUrl,

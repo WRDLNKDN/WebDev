@@ -27,6 +27,11 @@ import {
   useTheme,
 } from '@mui/material';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { getProjectPreviewMediaUrl } from '../../../lib/portfolio/projectPreview';
+import {
+  PROJECT_SOURCE_MUTEX_ERROR,
+  PROJECT_SOURCE_REQUIRED_ERROR,
+} from '../../../lib/portfolio/projectSourceValidation';
 import {
   getProjectSourceFileError,
   getProjectThumbnailFileError,
@@ -158,6 +163,7 @@ export const AddProjectDialog = ({
     File | undefined
   >(undefined);
   const [previewLoadFailed, setPreviewLoadFailed] = useState(false);
+  const [sourcePreviewUrl, setSourcePreviewUrl] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [thumbnailError, setThumbnailError] = useState<string | null>(null);
@@ -251,6 +257,23 @@ export const AddProjectDialog = ({
     if (open) setUrlTouched(false);
   }, [open, initialProject, isEdit]);
 
+  useEffect(() => {
+    if (!selectedSourceFile) {
+      setSourcePreviewUrl(null);
+      return;
+    }
+    const mime = selectedSourceFile.type.toLowerCase();
+    if (!mime.startsWith('image/') && !mime.startsWith('video/')) {
+      setSourcePreviewUrl(null);
+      return;
+    }
+    const url = URL.createObjectURL(selectedSourceFile);
+    setSourcePreviewUrl(url);
+    return () => {
+      URL.revokeObjectURL(url);
+    };
+  }, [selectedSourceFile]);
+
   const handleChange =
     (field: keyof NewProject) =>
     (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -318,9 +341,17 @@ export const AddProjectDialog = ({
   const removeThumbnailOverride = () => {
     setThumbnailError(null);
     setSelectedThumbnailFile(undefined);
-    setPreviewUrl(null);
     setPreviewLoadFailed(false);
     setFormData((prev) => ({ ...prev, image_url: '' }));
+    if (isEdit && initialProject) {
+      const withoutCustom: PortfolioItem = {
+        ...initialProject,
+        image_url: null,
+      };
+      setPreviewUrl(getProjectPreviewMediaUrl(withoutCustom));
+    } else {
+      setPreviewUrl(null);
+    }
   };
 
   const handleSourceFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -494,9 +525,7 @@ export const AddProjectDialog = ({
       Boolean(projectSourceUrl) &&
       !submittingWithExistingStorageUrl
     ) {
-      setSubmitError(
-        'Choose either an uploaded file or a project URL, not both.',
-      );
+      setSubmitError(PROJECT_SOURCE_MUTEX_ERROR);
       return;
     }
     if (
@@ -504,7 +533,7 @@ export const AddProjectDialog = ({
       !submittingWithExternalUrl &&
       !submittingWithExistingStorageUrl
     ) {
-      setSubmitError('Add a file or a project URL before saving.');
+      setSubmitError(PROJECT_SOURCE_REQUIRED_ERROR);
       return;
     }
     if (submittingWithExternalUrl) {
@@ -736,7 +765,7 @@ export const AddProjectDialog = ({
                     mb: 0.75,
                   }}
                 >
-                  Optional Thumbnail
+                  Upload optional thumbnail
                 </Typography>
                 <Typography
                   variant="body2"
@@ -750,7 +779,7 @@ export const AddProjectDialog = ({
                 <Box
                   role="button"
                   tabIndex={0}
-                  aria-label="Upload optional thumbnail"
+                  aria-label="Upload optional thumbnail override"
                   aria-describedby={
                     thumbnailError
                       ? 'project-thumbnail-helper project-thumbnail-error'
@@ -1208,6 +1237,49 @@ export const AddProjectDialog = ({
                         >
                           {sourceFileHelperText}
                         </Typography>
+                        {sourcePreviewUrl ? (
+                          <Box
+                            data-testid="project-source-media-preview"
+                            sx={{
+                              mt: 1.25,
+                              width: '100%',
+                              maxWidth: 420,
+                              borderRadius: 1,
+                              overflow: 'hidden',
+                              border: '1px solid rgba(255,255,255,0.12)',
+                              bgcolor: 'rgba(0,0,0,0.35)',
+                            }}
+                          >
+                            {selectedSourceFile?.type
+                              .toLowerCase()
+                              .startsWith('video/') ? (
+                              <Box
+                                component="video"
+                                src={sourcePreviewUrl}
+                                controls
+                                muted
+                                playsInline
+                                sx={{
+                                  display: 'block',
+                                  width: '100%',
+                                  maxHeight: 220,
+                                }}
+                              />
+                            ) : (
+                              <Box
+                                component="img"
+                                src={sourcePreviewUrl}
+                                alt=""
+                                sx={{
+                                  display: 'block',
+                                  width: '100%',
+                                  maxHeight: 220,
+                                  objectFit: 'contain',
+                                }}
+                              />
+                            )}
+                          </Box>
+                        ) : null}
                       </Box>
                     ) : null}
 

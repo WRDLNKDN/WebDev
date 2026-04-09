@@ -1,8 +1,8 @@
 import { supabase } from '../../lib/auth/supabaseClient';
-import { deriveSiblingPublicUrl } from '../../lib/media/assets';
 import { getLinkType, normalizeGoogleUrl } from '../../lib/portfolio/linkUtils';
+import { assertCanAddProjectSource } from '../../lib/portfolio/projectSourceValidation';
+import { resolveProjectThumbnailFields } from '../../lib/portfolio/resolveProjectThumbnailFields';
 import {
-  getProjectSourceFileError,
   invokePortfolioThumbnailGeneration,
   toProjectUploadFieldError,
   uploadPublicProjectAsset,
@@ -24,43 +24,13 @@ import type {
   PortfolioItem,
   ProjectUploadFiles,
 } from '../../types/portfolio';
-import { ensureProfileExists, isExternalProjectUrl } from './useProfileHelpers';
+import { ensureProfileExists } from './useProfileHelpers';
 
 type CommonParams = {
   setProjects: React.Dispatch<React.SetStateAction<PortfolioItem[]>>;
 };
 
-type AddProjectInputValidationParams = {
-  projectUrlTrimmed: string;
-  sourceFile?: ProjectUploadFiles['sourceFile'];
-};
-
 type ProjectLinkType = ReturnType<typeof getLinkType>;
-
-function assertCanAddProject({
-  projectUrlTrimmed,
-  sourceFile,
-}: AddProjectInputValidationParams): void {
-  if (sourceFile && projectUrlTrimmed) {
-    throw new Error(
-      'Choose either an uploaded file or a project URL, not both.',
-    );
-  }
-  if (!sourceFile && !projectUrlTrimmed) {
-    throw new Error('Add a file or a project URL before saving.');
-  }
-  if (!sourceFile) {
-    if (!isExternalProjectUrl(projectUrlTrimmed)) {
-      throw new Error(
-        'Project URL must be an external URL (e.g. https://...).',
-      );
-    }
-    return;
-  }
-
-  const sourceError = getProjectSourceFileError(sourceFile);
-  if (sourceError) throw new Error(sourceError);
-}
 
 export async function uploadProjectSourceUrl(params: {
   userId: string;
@@ -135,28 +105,7 @@ export function resolveProjectLinkFields(projectSourceUrl: string): {
   };
 }
 
-export function resolveProjectThumbnailFields(params: {
-  finalImageUrl: string | null;
-  linkType: ProjectLinkType;
-  projectSourceUrl: string;
-  sourceFile?: ProjectUploadFiles['sourceFile'];
-}): {
-  thumbnailStatus: 'pending' | null;
-  thumbnailUrl: string | null;
-} {
-  const { finalImageUrl, linkType, projectSourceUrl, sourceFile } = params;
-  const sourceFileIsImage = Boolean(sourceFile && linkType === 'image');
-  const needsGeneratedThumbnail = !finalImageUrl && !sourceFileIsImage;
-  const derivedThumbnailUrl =
-    sourceFileIsImage && projectSourceUrl.includes('/original.')
-      ? deriveSiblingPublicUrl(projectSourceUrl, 'thumbnail', 'jpg')
-      : null;
-
-  return {
-    thumbnailStatus: needsGeneratedThumbnail ? 'pending' : null,
-    thumbnailUrl: finalImageUrl ? null : derivedThumbnailUrl,
-  };
-}
+export { resolveProjectThumbnailFields };
 
 function getNextProjectSortOrder(projects: PortfolioItem[]): number {
   if (projects.length === 0) return 0;
@@ -219,7 +168,7 @@ export const addProjectItem = async ({
   const sourceFile = files?.sourceFile;
 
   const projectUrlTrimmed = sanitizePortfolioUrlInput(newProject.project_url);
-  assertCanAddProject({ projectUrlTrimmed, sourceFile });
+  assertCanAddProjectSource({ projectUrlTrimmed, sourceFile });
 
   const projectSourceUrl = await uploadProjectSourceUrl({
     userId: session.user.id,

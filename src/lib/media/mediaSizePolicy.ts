@@ -145,9 +145,9 @@ export function getUploadSurfaceGuidance(
 ): string | null {
   switch (surface) {
     case 'portfolio_source':
-      return 'Project images and PDFs are optimized toward a 6 MB target and can start up to 15 MB. Other project files should already be 6 MB or smaller.';
+      return 'Aim for about 2 MB for the fastest uploads (resize images, convert to JPG or WEBP when helpful, export smaller PDFs). Inputs may start up to 15 MB where optimization applies; delivery often targets around 6 MB.';
     case 'portfolio_thumbnail':
-      return 'Optional thumbnails are optimized toward a 6 MB target and can start up to 15 MB.';
+      return 'Optional thumbnails: aim for about 2 MB; larger inputs are optimized when possible (up to 15 MB).';
     case 'profile_resume':
       return 'Word files must already be 6 MB or smaller. PDFs can start up to 15 MB and are optimized toward a 6 MB upload limit.';
     default:

@@ -566,8 +566,12 @@ function trackCompressionTelemetry(params: {
     return;
   }
 
-  const telemetryStage =
-    params.plan.mode === 'gif_processing' ? 'converting' : 'optimizing';
+  let telemetryStage: 'converting' | 'optimizing';
+  if (params.plan.mode === 'gif_processing') {
+    telemetryStage = 'converting';
+  } else {
+    telemetryStage = 'optimizing';
+  }
   const outputBytes = params.outputBytes ?? null;
   let compressionOutcome: string | null;
   if (params.status === 'failed') {

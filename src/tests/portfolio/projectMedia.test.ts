@@ -65,9 +65,7 @@ describe('project media validation', () => {
       { type: 'application/pdf' },
     );
 
-    expect(getProjectSourceFileError(file)).toContain(
-      'Project images and PDFs are optimized toward a 6 MB target',
-    );
+    expect(getProjectSourceFileError(file)).toMatch(/about 2 MB/i);
   });
 
   it('rejects unsupported thumbnail file types', () => {
@@ -97,9 +95,7 @@ describe('project media validation', () => {
       { type: 'image/png' },
     );
 
-    expect(getProjectThumbnailFileError(file)).toContain(
-      'Optional thumbnails are optimized toward a 6 MB target',
-    );
+    expect(getProjectThumbnailFileError(file)).toMatch(/about 2 MB/i);
   });
 
   it('detects public project source storage URLs', () => {

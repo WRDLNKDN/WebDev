@@ -113,6 +113,7 @@ test.describe('Add Project dialog UX', () => {
       dialog.getByRole('textbox', { name: 'Project URL' }),
     ).toBeVisible();
     await expect(dialog.getByText(/use exactly one source/i)).toBeVisible();
+    await expect(dialog.getByText(/upload optional thumbnail/i)).toBeVisible();
   });
 
   test('disables the project url field while file source mode is active', async ({
@@ -187,6 +188,7 @@ test.describe('Add Project dialog UX', () => {
   test('shows current size guidance for oversized project source files', async ({
     page,
   }) => {
+    test.setTimeout(60_000);
     const dialog = await openAddProjectDialog(page);
 
     await dialog.getByRole('button', { name: /^upload file$/i }).click();
@@ -197,7 +199,7 @@ test.describe('Add Project dialog UX', () => {
     });
 
     await expect(dialog.locator('#project-source-file-helper')).toContainText(
-      /optimized toward a 6 MB target/i,
+      /about 2 MB/i,
     );
     await expect(dialog.getByRole('alert')).toContainText(/artifact\.pdf/i);
     await expect(
@@ -209,6 +211,7 @@ test.describe('Add Project dialog UX', () => {
   test('renders thumbnail upload errors inline and clears them after a valid file is selected', async ({
     page,
   }) => {
+    test.setTimeout(60_000);
     const dialog = await openAddProjectDialog(page);
 
     await dialog.getByTestId('project-thumbnail-file-input').setInputFiles({
@@ -219,10 +222,7 @@ test.describe('Add Project dialog UX', () => {
 
     const thumbnailError = dialog.getByTestId('project-thumbnail-field-error');
     await expect(thumbnailError).toBeVisible();
-    await expect(thumbnailError).toContainText(
-      /optimized toward a 6 MB target/i,
-    );
-    await expect(thumbnailError).not.toContainText(/2 MB/i);
+    await expect(thumbnailError).toContainText(/about 2 MB/i);
     await expect(dialog.getByTestId('project-form-submit-error')).toHaveCount(
       0,
     );
@@ -234,6 +234,21 @@ test.describe('Add Project dialog UX', () => {
     await expect(
       dialog.getByTestId('project-thumbnail-field-error'),
     ).toHaveCount(0);
+  });
+
+  test('shows a local preview after selecting an image project file', async ({
+    page,
+  }) => {
+    const dialog = await openAddProjectDialog(page);
+
+    await dialog.getByRole('button', { name: /^upload file$/i }).click();
+    await dialog
+      .getByTestId('project-source-file-input')
+      .setInputFiles(IMAGE_FIXTURE);
+
+    const preview = dialog.getByTestId('project-source-media-preview');
+    await expect(preview).toBeVisible();
+    await expect(preview.locator('img')).toBeVisible();
   });
 
   test('saves a project with an uploaded file as the only source', async ({

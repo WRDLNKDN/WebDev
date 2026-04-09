@@ -64,6 +64,30 @@ describe('resolveProjectThumbnailFields', () => {
     expect(r.thumbnailUrl).toBeNull();
     expect(r.thumbnailStatus).toBeNull();
   });
+
+  it('does not derive thumbnail when uploaded image source is not structured original path', () => {
+    const file = new File(['x'], 'photo.png', { type: 'image/png' });
+    const r = resolveProjectThumbnailFields({
+      finalImageUrl: null,
+      linkType: 'image',
+      projectSourceUrl:
+        'https://cdn.test/storage/v1/object/public/project-sources/u/p/asset/display.webp',
+      sourceFile: file,
+    });
+    expect(r.thumbnailStatus).toBeNull();
+    expect(r.thumbnailUrl).toBeNull();
+  });
+
+  it('keeps custom thumbnail for direct image links without pending generation', () => {
+    const r = resolveProjectThumbnailFields({
+      finalImageUrl: 'https://cdn.test/project-images/u/thumb/display.webp',
+      linkType: 'image',
+      projectSourceUrl: 'https://example.com/banner.png',
+      sourceFile: undefined,
+    });
+    expect(r.thumbnailStatus).toBeNull();
+    expect(r.thumbnailUrl).toBeNull();
+  });
 });
 
 describe('linkTypeRequiresServerThumbnail', () => {

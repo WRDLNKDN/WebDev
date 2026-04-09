@@ -27,6 +27,15 @@ describe('projectSourceValidation', () => {
     ).toThrow(PROJECT_SOURCE_REQUIRED_ERROR);
   });
 
+  it('treats whitespace-only URL as empty', () => {
+    expect(() =>
+      assertCanAddProjectSource({
+        projectUrlTrimmed: '   ',
+        sourceFile: undefined,
+      }),
+    ).toThrow(PROJECT_SOURCE_REQUIRED_ERROR);
+  });
+
   it('allows add with external URL only', () => {
     expect(() =>
       assertCanAddProjectSource({
@@ -60,6 +69,16 @@ describe('projectSourceValidation', () => {
       assertCanUpdateProjectSource({
         projectUrlTrimmed:
           'https://cdn.test/storage/v1/object/public/project-sources/u/a/original.png',
+        sourceFile: undefined,
+        hasExistingStorageUrl: true,
+      }),
+    ).not.toThrow();
+  });
+
+  it('allows update with existing storage source even when URL field is empty', () => {
+    expect(() =>
+      assertCanUpdateProjectSource({
+        projectUrlTrimmed: '',
         sourceFile: undefined,
         hasExistingStorageUrl: true,
       }),

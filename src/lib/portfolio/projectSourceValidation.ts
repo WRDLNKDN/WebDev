@@ -13,7 +13,7 @@ export const PROJECT_URL_EXTERNAL_REQUIRED_ERROR =
 
 export function assertCanAddProjectSource(params: {
   projectUrlTrimmed: string;
-  sourceFile?: File | undefined;
+  sourceFile?: File;
 }): void {
   const hasUrl = Boolean(params.projectUrlTrimmed.trim());
   const hasFile = Boolean(params.sourceFile);
@@ -36,7 +36,7 @@ export function assertCanAddProjectSource(params: {
 
 export function assertCanUpdateProjectSource(params: {
   projectUrlTrimmed: string;
-  sourceFile?: File | undefined;
+  sourceFile?: File;
   hasExistingStorageUrl: boolean;
 }): void {
   const hasUrl = Boolean(params.projectUrlTrimmed.trim());

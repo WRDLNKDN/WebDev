@@ -47,7 +47,7 @@ jobs:
           fi
 
       - name: Reassign In Review items to their original creator
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         env:
           GH_PROJECT_OWNER_TYPE:
             ${{ github.event.inputs.owner_type || secrets.GH_PROJECT_OWNER_TYPE

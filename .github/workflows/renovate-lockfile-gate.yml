@@ -51,7 +51,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: 🔍 Check PR files
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           script: |
             const pr = context.payload.pull_request;
@@ -93,7 +93,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: 🔁 Enable native auto-merge
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           github-token: ${{ github.token }}
           script: |

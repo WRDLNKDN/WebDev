@@ -57,6 +57,8 @@ export const GifPickerDialog = ({
   const latestRequestIdRef = useRef(0);
   const [trendingUnavailable, setTrendingUnavailable] = useState(false);
   const lastAttemptRef = useRef<{ query: string }>({ query: '' });
+  /** One trending bootstrap per dialog open (avoids duplicate open telemetry / fetch if deps churn). */
+  const initialTrendingDoneForOpenRef = useRef(false);
 
   const loadGifs = useCallback(
     async (q: string) => {
@@ -138,23 +140,31 @@ export const GifPickerDialog = ({
     [telemetrySurface],
   );
 
+  // Load trending once when the dialog opens — not whenever `results` becomes empty.
+  // A failed search sets `results` to []; tying this effect to `results.length === 0`
+  // re-fired `loadGifs('')` (trending), racing retries and leaving Search / Try again ineffective.
   useEffect(() => {
-    if (open && results.length === 0) {
-      reportMediaTelemetryAsync({
-        eventName: 'gif_picker_opened',
-        stage: 'preview',
-        surface: telemetrySurface,
-        requestId: `open:${Date.now()}`,
-        pipeline: 'gif_picker',
-        status: 'started',
-      });
-      void loadGifs('');
+    if (!open) {
+      initialTrendingDoneForOpenRef.current = false;
+      return;
     }
-  }, [open, loadGifs, results.length, telemetrySurface]);
+    if (initialTrendingDoneForOpenRef.current) return;
+    initialTrendingDoneForOpenRef.current = true;
+    reportMediaTelemetryAsync({
+      eventName: 'gif_picker_opened',
+      stage: 'preview',
+      surface: telemetrySurface,
+      requestId: `open:${Date.now()}`,
+      pipeline: 'gif_picker',
+      status: 'started',
+    });
+    void loadGifs('');
+  }, [open, loadGifs, telemetrySurface]);
 
   useEffect(() => {
     if (open) return;
     latestRequestIdRef.current += 1;
+    initialTrendingDoneForOpenRef.current = false;
     setQuery('');
     setLoading(false);
     setError(null);

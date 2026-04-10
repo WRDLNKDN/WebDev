@@ -138,17 +138,6 @@ export const registerAdvertiseRequestRoute = (
         });
       }
 
-      const resendKey = process.env.RESEND_API_KEY;
-      if (!resendKey) {
-        console.warn(
-          '[advertise/request] RESEND_API_KEY not set; cannot send email',
-        );
-        return res.status(503).json({
-          error: 'Service unavailable',
-          message: 'Email service is not configured. Please try again later.',
-        });
-      }
-
       const ext = iconFile.mimetype === 'image/svg+xml' ? '.svg' : '.png';
       const storagePath = `inquiry/${crypto.randomUUID()}${ext}`;
       const { error: uploadErr } = await adminSupabase.storage
@@ -162,6 +151,41 @@ export const registerAdvertiseRequestRoute = (
         return res.status(500).json({
           error: 'Upload failed',
           message: 'Please try again later.',
+        });
+      }
+
+      const resendKey = process.env.RESEND_API_KEY?.trim();
+      if (!resendKey) {
+        const { error: insertErr } = await adminSupabase
+          .from('advertiser_inquiries')
+          .insert({
+            name: parsed.name,
+            email: parsed.email,
+            destination_url: parsed.destinationUrl,
+            message: parsed.message,
+            ad_copy_description: parsed.adCopyDescription,
+            icon_storage_path: storagePath,
+            source_ip: ip === 'unknown' ? null : ip.slice(0, 128),
+            email_delivered: false,
+          });
+        if (insertErr) {
+          console.error(
+            '[advertise/request] Inquiry queue insert error:',
+            insertErr,
+          );
+          return res.status(500).json({
+            error: 'Server error',
+            message: 'Please try again later.',
+          });
+        }
+        console.warn(
+          '[advertise/request] RESEND_API_KEY unset; inquiry stored in advertiser_inquiries for ops follow-up',
+        );
+        return res.status(200).json({
+          ok: true,
+          message:
+            'Thanks — we received your request. Our team will follow up shortly.',
+          delivery: 'queued',
         });
       }
 

@@ -108,6 +108,7 @@ declare
     'chat_audit_log',
     'chat_moderators',
     'feed_advertisers',
+    'advertiser_inquiries',
     'feed_ad_events',
     'community_partners',
     'notifications',
@@ -1162,6 +1163,13 @@ grant select on table public.feed_advertisers to authenticated;
 grant select, insert, update, delete on table public.feed_advertisers to authenticated;
 
 -- -----------------------------
+-- advertiser_inquiries: API (service role) only — no anon/authenticated access
+-- -----------------------------
+alter table if exists public.advertiser_inquiries enable row level security;
+
+revoke all on table public.advertiser_inquiries from anon, authenticated;
+
+-- -----------------------------
 -- feed_ad_events: authenticated insert own, admin read
 -- -----------------------------
 alter table if exists public.feed_ad_events enable row level security;
@@ -1643,6 +1651,7 @@ declare
     'chat_audit_log',
     'chat_moderators',
     'feed_advertisers',
+    'advertiser_inquiries',
     'feed_ad_events',
     'community_partners',
     'notifications',

@@ -103,11 +103,11 @@ Supabase project your frontend uses.
 
 **Vercel** → UAT project → Settings → Environment Variables — add:
 
-| Variable                    | UAT value                                                                                                                                                                      |
-| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `SUPABASE_URL`              | `https://lgxwseyzoefxggxijatp.supabase.co`                                                                                                                                     |
-| `SUPABASE_SERVICE_ROLE_KEY` | UAT service_role key from Supabase Dashboard → Settings → API                                                                                                                  |
-| `RESEND_API_KEY`            | **Required for Advertise form.** Resend.com API key so submissions are emailed to <info@wrdlnkdn.com>. If unset, the form returns 503 and the UI shows a mailto fallback link. |
+| Variable                    | UAT value                                                                                                                                                                                                                                                                                                            |
+| --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `SUPABASE_URL`              | `https://lgxwseyzoefxggxijatp.supabase.co`                                                                                                                                                                                                                                                                           |
+| `SUPABASE_SERVICE_ROLE_KEY` | UAT service_role key from Supabase Dashboard → Settings → API                                                                                                                                                                                                                                                        |
+| `RESEND_API_KEY`            | **Optional but recommended.** Resend.com API key so Advertise submissions are emailed to <info@wrdlnkdn.com>. If unset, the API still accepts the form and stores rows in Supabase `public.advertiser_inquiries` (`email_delivered = false`) for ops follow-up; apply the canonical migrations so this table exists. |
 
 Get the service_role key: Supabase Dashboard → Project Settings → API →
 **service_role** (secret). **Never** expose this in frontend code.
@@ -180,22 +180,27 @@ If you are logged in but `/api/feeds` (or other `/api/*`) returns 401:
 ## Troubleshooting: Advertise form "email not configured"
 
 If submitting the **Advertise With Us** form returns an error like "Email
-service is not configured":
+service is not configured" (HTTP **503**):
 
-1. **Cause:** The backend uses [Resend](https://resend.com) to send the inquiry
-   to <info@wrdlnkdn.com>. The env var `RESEND_API_KEY` is not set (or is
-   invalid) in the UAT Vercel project.
+1. **Likely cause:** The deployed API is an older build that still required
+   `RESEND_API_KEY`, or the request failed before the DB queue path could run.
 
-2. **Fix:** In Vercel → UAT project → Settings → Environment Variables, add:
-   - **Name:** `RESEND_API_KEY`
-   - **Value:** Your Resend API key (create one at resend.com; use the same key
-     as prod if desired).
-   - **Environment:** Production (or the environment you use for UAT).
+2. **Expected behavior (current app):** Without `RESEND_API_KEY`, after icon
+   upload the API inserts into `public.advertiser_inquiries` and returns **200**
+   with a success message. Ops can review rows in the Supabase Dashboard (Table
+   Editor) and contact the member from there, or set `RESEND_API_KEY` for
+   automatic email to <info@wrdlnkdn.com>.
 
-3. **Redeploy** after adding the variable so the API server picks it up.
+3. **If you still see 503 after deploy:** Redeploy the latest backend so the
+   queue path is live, and confirm UAT has run `db push` (or equivalent) so
+   `advertiser_inquiries` exists — otherwise insert fails and the user may see a
+   generic server error.
 
-4. **Fallback:** Until `RESEND_API_KEY` is set, the form shows the error and a
-   link to **<info@wrdlnkdn.com>** so users can still contact you by email.
+4. **Optional — enable Resend:** In Vercel → UAT → Environment Variables, add
+   `RESEND_API_KEY`, then redeploy.
+
+5. **UI mailto:** The modal still shows a mailto link to **<info@wrdlnkdn.com>**
+   when the backend returns **503** (legacy or misconfiguration).
 
 ## Verifying Supabase / RLS
 

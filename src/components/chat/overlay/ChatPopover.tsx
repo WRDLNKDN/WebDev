@@ -22,6 +22,7 @@ import { dmTypingThreadProps } from '../../../lib/chat/dmTypingThreadProps';
 import { chatOtherMemberDisplayName } from '../../../lib/chat/otherMemberDisplayName';
 import { useUatBannerOffset } from '../../../lib/utils/useUatBannerOffset';
 import { useAppToast } from '../../../context/AppToastContext';
+import { MESSAGE_INPUT_FLOATING_SURFACE } from '../../../lib/chat/messageInputFloatingSurface';
 import { roomMembersToMentionable } from '../../../lib/chat/groupMentionMembers';
 import { getGlassCard } from '../../../theme/candyStyles';
 import {
@@ -253,6 +254,7 @@ export const ChatPopover = ({
         {!error && (
           <Box sx={{ flexShrink: 0 }}>
             <MessageInput
+              {...MESSAGE_INPUT_FLOATING_SURFACE}
               onSend={sendMessage}
               onTyping={startTyping}
               onStopTyping={stopTyping}

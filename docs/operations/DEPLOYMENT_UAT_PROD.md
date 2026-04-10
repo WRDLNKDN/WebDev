@@ -332,6 +332,29 @@ If the CLI keeps failing, apply SQL directly:
 3. (Optional) Run `supabase/seed/seed.sql` for admin allowlist and other seed
    data
 
+### One-off: notifications **Clear All** (recipient `DELETE`)
+
+Repo migration `20260121180005_rls.sql` includes
+`notifications_recipient_delete` and `grant delete` on `public.notifications`.
+If UAT or PROD was linked **before** that change landed, **Clear All** on the
+notifications page fails silently until you align the database.
+
+Run in **SQL Editor** on the affected project (UAT and/or PROD):
+
+```sql
+drop policy if exists notifications_recipient_delete on public.notifications;
+
+create policy notifications_recipient_delete
+  on public.notifications for delete to authenticated
+  using ((select auth.uid()) = recipient_id);
+
+revoke all on table public.notifications from anon, authenticated;
+grant select, update, delete on table public.notifications to authenticated;
+```
+
+Re-run the `revoke` / `grant` lines only if you need to refresh privileges; they
+match the rest of that migration’s notifications block.
+
 ### Common failures
 
 | Symptom                            | Fix                                                                         |

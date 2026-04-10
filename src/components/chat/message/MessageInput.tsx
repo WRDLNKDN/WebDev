@@ -39,6 +39,10 @@ import {
   normalizeChatAttachmentMime,
 } from '../../../lib/chat/attachmentValidation';
 import { getChatAttachmentProcessingPlan } from '../../../lib/chat/attachmentProcessing';
+import {
+  fetchProviderGifAsBlob,
+  ProviderGifFetchError,
+} from '../../../lib/chat/gifDownload';
 import { GifPickerDialog } from '../dialogs/GifPickerDialog';
 import { MediaStatusBanner } from '../../media/MediaStatusBanner';
 import {
@@ -98,6 +102,12 @@ type MessageInputProps = {
   /** When set, composer is in reply mode (Discord-style thread reply). */
   replyTo?: MessageReplyDraft | null;
   onCancelReply?: () => void;
+  /**
+   * Hides the narrow-viewport "More options" (⋯) control, which only toggles the
+   * same expand state as the chevron beside the input. Use in floating surfaces
+   * (e.g. Directory chat popover) where it reads as a broken menu.
+   */
+  hideNarrowMoreOptions?: boolean;
 };
 
 export const MessageInput = ({
@@ -112,6 +122,7 @@ export const MessageInput = ({
   roomId,
   replyTo = null,
   onCancelReply,
+  hideNarrowMoreOptions = false,
 }: MessageInputProps) => {
   const theme = useTheme();
   const isNarrowViewport = useMediaQuery(theme.breakpoints.down('sm'));
@@ -198,9 +209,7 @@ export const MessageInput = ({
     setProcessingMessage(null);
     setUploadState(null);
     try {
-      const res = await fetch(gifUrl);
-      if (!res.ok) throw new Error('gif fetch failed');
-      const blob = await res.blob();
+      const blob = await fetchProviderGifAsBlob(gifUrl);
       const safeTitle = (title ?? 'gif')
         .replace(/[^a-zA-Z0-9_-]+/g, '-')
         .slice(0, 40);
@@ -226,8 +235,12 @@ export const MessageInput = ({
         return;
       }
       setPendingAttachment({ file, mime, plan });
-    } catch {
+    } catch (e) {
       setProcessingMessage(null);
+      if (e instanceof ProviderGifFetchError) {
+        setError(e.message);
+        return;
+      }
       setError("We couldn't add that GIF. Please try another one.");
     }
   };
@@ -776,7 +789,7 @@ export const MessageInput = ({
             justifyContent: { xs: 'space-between', sm: 'flex-end' },
           }}
         >
-          {isNarrowViewport ? (
+          {isNarrowViewport && !hideNarrowMoreOptions ? (
             <Tooltip
               title={expanded ? 'Collapse composer options' : 'More options'}
             >

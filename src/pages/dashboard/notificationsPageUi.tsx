@@ -347,6 +347,7 @@ type NotificationsViewProps = {
   loading: boolean;
   unreadCount: number;
   markingRead: boolean;
+  clearingAll: boolean;
   dismissingId: string | null;
   markAllAsRead: () => void;
   clearAll: () => void;
@@ -366,6 +367,7 @@ export const NotificationsView = ({
   loading,
   unreadCount,
   markingRead,
+  clearingAll,
   dismissingId,
   markAllAsRead,
   clearAll,
@@ -406,10 +408,11 @@ export const NotificationsView = ({
               variant="outlined"
               color="error"
               onClick={clearAll}
-              disabled={loading || markingRead}
+              disabled={loading || markingRead || clearingAll}
+              aria-busy={clearingAll}
               sx={{ textTransform: 'none' }}
             >
-              Clear All
+              {clearingAll ? 'Clearing…' : 'Clear All'}
             </Button>
           )}
         </Stack>

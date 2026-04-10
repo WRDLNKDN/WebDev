@@ -208,7 +208,7 @@ export const DirectoryRowActions = ({
             variant="contained"
             size="small"
             component={RouterLink}
-            to={`/chat?with=${member.id}`}
+            to={`/chat?with=${encodeURIComponent(member.id)}&returnTo=${encodeURIComponent('/directory')}`}
             startIcon={<ChatIcon />}
             sx={primaryButtonSx}
           >

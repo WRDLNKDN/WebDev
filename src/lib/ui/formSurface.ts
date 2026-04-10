@@ -44,6 +44,12 @@ export const FORM_SECTION_HEADING_SX = {
   lineHeight: 1.2,
 } as const;
 
+/** Vertical gap between label+control groups in Edit Profile section panels (theme spacing). */
+export const EDIT_PROFILE_FIELD_GROUP_SPACING = 2.5;
+
+/** Space below uppercase field labels before the input (theme spacing). */
+export const EDIT_PROFILE_LABEL_TO_INPUT_MB = 0.75;
+
 export const FORM_OUTLINED_FIELD_SX = {
   '& .MuiOutlinedInput-root': {
     color: '#FFFFFF',

@@ -17,7 +17,12 @@ import { createReplicateAdapter } from './weirdling/replicateAdapter.js';
 import { validateAiAvatarImageUrl } from './weirdling/validateAiAvatarImage.js';
 import { validateWeirdlingResponse } from './weirdling/validate.js';
 import { checkRateLimit } from './weirdling/rateLimit.js';
-import { getFirstUrl, fetchLinkPreview } from './linkPreview.js';
+import {
+  getFirstUrl,
+  fetchLinkPreview,
+  mergeLinkPreviewOverrides,
+  normalizeHttpUrl,
+} from './linkPreview.js';
 import { checkDirectoryRateLimit } from './directory/rateLimit.js';
 import {
   logDirectoryRequest,
@@ -1147,6 +1152,25 @@ const FEED_EMOJI_REACTION_FILTER = FEED_EMOJI_REACTION_TYPES.map(
   (type) => `payload->>type.eq.${type}`,
 ).join(',');
 
+/** Optional UUID from client for idempotent feed post creation (retry after timeout). */
+function parseClientPostId(body) {
+  const raw =
+    typeof body?.id === 'string'
+      ? body.id.trim()
+      : typeof body?.client_post_id === 'string'
+        ? body.client_post_id.trim()
+        : '';
+  if (!raw) return null;
+  if (
+    !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+      raw,
+    )
+  ) {
+    return null;
+  }
+  return raw.toLowerCase();
+}
+
 app.get('/api/feeds', requireAuth, async (req, res) => {
   try {
     const userId = req.userId;
@@ -1310,8 +1334,14 @@ app.post('/api/feeds', requireAuth, async (req, res) => {
     const payload2 = { body: text };
     const firstUrl = getFirstUrl(text);
     if (firstUrl) {
-      const linkPreview = await fetchLinkPreview(firstUrl);
-      if (linkPreview) payload2.link_preview = linkPreview;
+      let linkPreview = await fetchLinkPreview(firstUrl);
+      if (linkPreview) {
+        const o = body.link_preview_overrides;
+        if (o && typeof o === 'object' && !Array.isArray(o)) {
+          linkPreview = mergeLinkPreviewOverrides(linkPreview, o);
+        }
+        payload2.link_preview = linkPreview;
+      }
     }
     const imagesRaw = body.images;
     if (
@@ -1330,13 +1360,40 @@ app.post('/api/feeds', requireAuth, async (req, res) => {
         scheduledAt = d.toISOString();
       }
     }
-    const { error: error2 } = await adminSupabase.from('feed_items').insert({
+    const clientPostId = parseClientPostId(body);
+    const insertRow = {
       user_id: userId,
       kind: 'post',
       payload: payload2,
       ...(scheduledAt && { scheduled_at: scheduledAt }),
-    });
+    };
+    if (clientPostId) insertRow.id = clientPostId;
+
+    const { error: error2 } = await adminSupabase
+      .from('feed_items')
+      .insert(insertRow);
     if (error2) {
+      if (error2.code === '23505' && clientPostId) {
+        const { data: existingRow, error: existingErr } = await adminSupabase
+          .from('feed_items')
+          .select('user_id, kind')
+          .eq('id', clientPostId)
+          .maybeSingle();
+        if (
+          !existingErr &&
+          existingRow &&
+          existingRow.user_id === userId &&
+          existingRow.kind === 'post'
+        ) {
+          return res.status(200).json({ ok: true, deduplicated: true });
+        }
+        return sendApiError(
+          res,
+          409,
+          'This post id is already in use. Close the composer and try again.',
+        );
+      }
+      console.error('[POST /api/feeds] feed_items post insert:', error2);
       return sendApiError(res, 500, 'Server error');
     }
     return res.status(201).json({ ok: true });
@@ -1452,6 +1509,14 @@ app.post('/api/feeds', requireAuth, async (req, res) => {
   }
   const payload = { url };
   if (label) payload.label = label;
+  let linkPreview = await fetchLinkPreview(url);
+  if (linkPreview) {
+    const o = body.link_preview_overrides;
+    if (o && typeof o === 'object' && !Array.isArray(o)) {
+      linkPreview = mergeLinkPreviewOverrides(linkPreview, o);
+    }
+    payload.link_preview = linkPreview;
+  }
   const { error } = await adminSupabase.from('feed_items').insert({
     user_id: userId,
     kind: 'external_link',
@@ -1484,13 +1549,42 @@ app.patch('/api/feeds/items/:postId', requireAuth, async (req, res) => {
   if (existing.kind !== 'post') {
     return sendApiError(res, 400, 'Only post items can be edited');
   }
-  const payload = existing.payload ?? {};
+  const payload = { ...(existing.payload ?? {}) };
   payload.body = text;
   const firstUrl = getFirstUrl(text);
   if (firstUrl) {
-    const linkPreview = await fetchLinkPreview(firstUrl);
-    if (linkPreview) payload.link_preview = linkPreview;
-    else delete payload.link_preview;
+    const fresh = await fetchLinkPreview(firstUrl);
+    if (!fresh) {
+      delete payload.link_preview;
+    } else {
+      const hasOverridesKey = Object.prototype.hasOwnProperty.call(
+        reqBody,
+        'link_preview_overrides',
+      );
+      let next = fresh;
+      if (hasOverridesKey) {
+        const o = reqBody.link_preview_overrides;
+        if (o && typeof o === 'object' && !Array.isArray(o)) {
+          next = mergeLinkPreviewOverrides(fresh, o);
+        } else {
+          next = { ...fresh };
+          delete next.overrides;
+        }
+      } else {
+        const prev = existing.payload?.link_preview;
+        const prevNorm = prev?.url ? normalizeHttpUrl(prev.url) : null;
+        const freshNorm = normalizeHttpUrl(fresh.url);
+        if (
+          prev?.overrides &&
+          prevNorm &&
+          freshNorm &&
+          prevNorm.href === freshNorm.href
+        ) {
+          next = mergeLinkPreviewOverrides(fresh, prev.overrides);
+        }
+      }
+      payload.link_preview = next;
+    }
   } else {
     delete payload.link_preview;
   }
@@ -1955,6 +2049,9 @@ app.get('/api/link-preview', requireAuth, async (req, res) => {
   const rawUrl = typeof req.query.url === 'string' ? req.query.url.trim() : '';
   if (!rawUrl) return sendApiError(res, 400, 'Missing url');
   const preview = await fetchLinkPreview(rawUrl);
+  if (!preview) {
+    return sendApiError(res, 400, 'Invalid or unsupported URL');
+  }
   return res.json({ ok: true, data: preview });
 });
 app.post('/api/media/assets', requireAuth, async (req, res) => {

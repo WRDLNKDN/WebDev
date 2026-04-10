@@ -164,12 +164,13 @@ test.describe('Chat redirect', () => {
     await stubAppSurface(page);
     await stubChatFromDirectoryFlow(page);
 
-    await page.goto('/chat?with=' + WITH_USER_ID, {
-      waitUntil: 'domcontentloaded',
-    });
+    await page.goto(
+      `/chat?with=${encodeURIComponent(WITH_USER_ID)}&returnTo=${encodeURIComponent('/directory')}`,
+      { waitUntil: 'domcontentloaded' },
+    );
 
     await expect
-      .poll(async () => new URL(page.url()).pathname === '/feed', {
+      .poll(async () => new URL(page.url()).pathname === '/directory', {
         timeout: 15_000,
       })
       .toBeTruthy();
@@ -180,5 +181,43 @@ test.describe('Chat redirect', () => {
 
     await messageInput.fill('Hello from E2E');
     await expect(messageInput).toHaveValue('Hello from E2E');
+  });
+
+  test('Directory chat popover composer has no redundant More options on narrow viewports', async ({
+    page,
+    context,
+  }) => {
+    await seedSignedInSession(context);
+    await stubAppSurface(page);
+    await stubChatFromDirectoryFlow(page);
+
+    await page.goto(
+      `/chat?with=${encodeURIComponent(WITH_USER_ID)}&returnTo=${encodeURIComponent('/directory')}`,
+      { waitUntil: 'domcontentloaded' },
+    );
+
+    await expect
+      .poll(async () => new URL(page.url()).pathname === '/directory', {
+        timeout: 15_000,
+      })
+      .toBeTruthy();
+
+    await expect(
+      page.getByRole('textbox', { name: 'Message' }).first(),
+    ).toBeVisible({ timeout: 10_000 });
+
+    // Narrow after redirect: full-page /chat→/directory flow can time out if the
+    // viewport is phone-sized from the first paint (layout / redirect timing).
+    await page.setViewportSize({ width: 390, height: 844 });
+
+    await expect(
+      page.getByRole('button', { name: 'More options' }),
+    ).toHaveCount(0);
+    await expect(
+      page.getByRole('button', { name: 'Attach image or GIF' }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole('button', { name: 'Send message' }),
+    ).toBeVisible();
   });
 });

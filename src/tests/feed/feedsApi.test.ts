@@ -9,6 +9,7 @@ vi.mock('../../lib/api/authFetch', () => ({
 }));
 
 import {
+  createFeedPost,
   deleteFeedComment,
   deleteFeedPost,
   editFeedComment,
@@ -88,6 +89,37 @@ describe('feedsApi mutation routes', () => {
       { method: 'DELETE' },
       expect.objectContaining({
         accessToken: 'token-4',
+      }),
+    );
+  });
+
+  it('creates a post with client_post_id for idempotent retries', async () => {
+    authedFetchMock.mockResolvedValue(
+      new Response(JSON.stringify({ ok: true }), {
+        status: 201,
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    );
+
+    await createFeedPost({
+      body: 'Hello world',
+      accessToken: 'token-post',
+      clientPostId: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+    });
+
+    expect(authedFetchMock).toHaveBeenCalledWith(
+      expect.stringMatching(/\/api\/feeds$/),
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          kind: 'post',
+          body: 'Hello world',
+          client_post_id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+        }),
+      },
+      expect.objectContaining({
+        accessToken: 'token-post',
+        includeJsonContentType: true,
       }),
     );
   });

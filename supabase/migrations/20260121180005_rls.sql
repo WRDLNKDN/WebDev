@@ -1239,6 +1239,7 @@ alter table if exists public.notifications enable row level security;
 
 drop policy if exists notifications_recipient_select on public.notifications;
 drop policy if exists notifications_recipient_update on public.notifications;
+drop policy if exists notifications_recipient_delete on public.notifications;
 
 create policy notifications_recipient_select
   on public.notifications for select to authenticated
@@ -1249,8 +1250,12 @@ create policy notifications_recipient_update
   using ((select auth.uid()) = recipient_id)
   with check ((select auth.uid()) = recipient_id);
 
+create policy notifications_recipient_delete
+  on public.notifications for delete to authenticated
+  using ((select auth.uid()) = recipient_id);
+
 revoke all on table public.notifications from anon, authenticated;
-grant select, update on table public.notifications to authenticated;
+grant select, update, delete on table public.notifications to authenticated;
 
 -- -----------------------------
 -- events: authenticated read; host/create/update own

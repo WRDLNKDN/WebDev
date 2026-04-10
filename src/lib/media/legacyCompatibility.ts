@@ -869,7 +869,18 @@ function createLinkPreviewAsset(
 ): PlatformMediaAsset {
   const preview = record.preview ?? null;
   const url = cleanUrl(record.url);
-  const previewImage = cleanUrl(preview?.image);
+  const previewImage =
+    cleanUrl(preview?.overrides?.image) ?? cleanUrl(preview?.image);
+  const effectiveTitle =
+    cleanText(preview?.overrides?.title) ??
+    cleanText(record.title) ??
+    cleanText(preview?.title) ??
+    url;
+  const effectiveDescription =
+    cleanText(preview?.overrides?.description) ??
+    cleanText(record.description) ??
+    cleanText(preview?.description) ??
+    null;
   const ownerId = extractOwnerId({
     ownerId: record.ownerId,
     url,
@@ -879,9 +890,8 @@ function createLinkPreviewAsset(
   const metadata: PlatformMediaMetadata = {
     surface: record.surface ?? 'feed',
     parentType: record.surface === 'chat' ? 'chat_message' : 'feed_item',
-    title: cleanText(record.title) ?? cleanText(preview?.title) ?? url,
-    description:
-      cleanText(record.description) ?? cleanText(preview?.description) ?? null,
+    title: effectiveTitle,
+    description: effectiveDescription,
     ogImageUrl: previewImage,
     provider: cleanText(preview?.siteName),
   };
@@ -937,7 +947,7 @@ function createLinkPreviewAsset(
       fallback: {
         thumbnailUrl: buildFallbackThumbnail({
           mediaType: 'doc',
-          title: cleanText(preview?.title) ?? cleanText(record.title) ?? url,
+          title: effectiveTitle ?? url,
         }),
       },
       delivery,

@@ -2,7 +2,11 @@ import CloseIcon from '@mui/icons-material/Close';
 import { Box, IconButton, Link, Paper, Typography } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import type { SxProps, Theme } from '@mui/material/styles';
-import type { LinkPreviewData } from '../../lib/linkPreview';
+import { useEffect, useMemo, useState } from 'react';
+import {
+  getEffectiveLinkPreviewImage,
+  type LinkPreviewData,
+} from '../../lib/linkPreview';
 import {
   createNormalizedLinkAsset,
   getNormalizedAssetThumbnailUrl,
@@ -68,13 +72,34 @@ export const LinkPreviewCard = ({
   /** Parent supplies vertical spacing (e.g. tight feed layout). */
   flushTop?: boolean;
 }) => {
+  const [imageFailed, setImageFailed] = useState(false);
+  useEffect(() => {
+    setImageFailed(false);
+  }, [preview.url, preview.image, preview.overrides?.image]);
+
+  const previewForAsset = useMemo(() => {
+    if (!imageFailed) return preview;
+    return {
+      ...preview,
+      image: undefined,
+      overrides: preview.overrides
+        ? { ...preview.overrides, image: undefined }
+        : undefined,
+    };
+  }, [preview, imageFailed]);
+
   const asset = createNormalizedLinkAsset({
-    url: preview.url,
-    preview,
+    url: previewForAsset.url,
+    preview: previewForAsset,
   });
   const thumbnailUrl = getNormalizedAssetThumbnailUrl(asset);
-  const showThumbnail = variant === 'feed' || Boolean(preview.image?.trim());
+  const showThumbnail =
+    variant === 'feed' ||
+    Boolean(getEffectiveLinkPreviewImage(previewForAsset));
   const rootMarginTop = variant === 'chat' || flushTop ? 0 : 1.5;
+  const previewAlt = asset.title?.trim()
+    ? `Link preview: ${asset.title.trim()}`
+    : 'Link preview';
 
   return (
     <Box
@@ -122,9 +147,12 @@ export const LinkPreviewCard = ({
           {showThumbnail ? (
             <InlineImageRenderer
               src={thumbnailUrl}
-              alt=""
+              alt={previewAlt}
               objectFit="cover"
               sx={linkPreviewImageSx(variant)}
+              onError={() => {
+                setImageFailed(true);
+              }}
             />
           ) : null}
           <Box
@@ -152,6 +180,16 @@ export const LinkPreviewCard = ({
                 }}
               >
                 {asset.description}
+              </Typography>
+            ) : null}
+            {preview.degraded ? (
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                component="p"
+                sx={{ mt: 0.5, mb: 0 }}
+              >
+                Preview details unavailable — showing the link only.
               </Typography>
             ) : null}
             <Typography

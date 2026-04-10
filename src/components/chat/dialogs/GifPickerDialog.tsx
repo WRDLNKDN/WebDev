@@ -1,6 +1,7 @@
 /**
- * Shared GIF picker dialog for Posts, Comments, and Chat.
- * Uses GIPHY API via gifApi.
+ * Shared GIF picker for Feed, comments, and Chat (GIPHY via `gifApi`).
+ * Content tier is platform-fixed (no member rating UI). Grid prefers still
+ * previews; picks use downsized playback URLs — chat then transcodes on upload.
  */
 
 import CloseIcon from '@mui/icons-material/Close';
@@ -324,6 +325,17 @@ export const GifPickerDialog = ({
                   ? 'Trending GIFs are unavailable right now. Try searching above.'
                   : 'Search above to find a GIF.'}
             </Typography>
+            {(trendingUnavailable || query.trim()) && (
+              <Button
+                size="small"
+                variant="outlined"
+                sx={{ mt: 1.5 }}
+                onClick={handleRetry}
+                disabled={loading}
+              >
+                Try again
+              </Button>
+            )}
           </Box>
         ) : (
           <Box
@@ -355,6 +367,8 @@ export const GifPickerDialog = ({
                   component="img"
                   src={gif.previewUrl}
                   alt={gif.title || 'GIF'}
+                  loading="lazy"
+                  decoding="async"
                   sx={{
                     width: '100%',
                     height: cellHeight,

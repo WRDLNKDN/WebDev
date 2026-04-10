@@ -1,3 +1,4 @@
+import type { LinkPreviewOverrides } from '../linkPreview';
 import { API_BASE, postFeed, requestNoContent } from './feedsApiCore';
 import type { ReactionType } from './feedsApiTypes';
 
@@ -6,12 +7,22 @@ export async function createFeedPost(params: {
   images?: string[];
   scheduledAt?: string | null;
   accessToken?: string | null;
+  /** Same UUID on retry so the API can dedupe if the first write succeeded but the client errored. */
+  clientPostId?: string | null;
+  /** Optional unfurl overrides merged server-side after OG fetch. */
+  linkPreviewOverrides?: LinkPreviewOverrides | null;
 }): Promise<void> {
   const text = params.body.trim();
   if (!text) throw new Error('Post body is required');
   const body: Record<string, unknown> = { kind: 'post', body: text };
   if (params.images?.length) body.images = params.images;
   if (params.scheduledAt) body.scheduled_at = params.scheduledAt;
+  if (params.clientPostId?.trim()) {
+    body.client_post_id = params.clientPostId.trim();
+  }
+  if (Object.prototype.hasOwnProperty.call(params, 'linkPreviewOverrides')) {
+    body.link_preview_overrides = params.linkPreviewOverrides;
+  }
   await postFeed(body, params.accessToken ?? null);
 }
 
@@ -19,11 +30,15 @@ export async function createFeedExternalLink(params: {
   url: string;
   label?: string;
   accessToken?: string | null;
+  linkPreviewOverrides?: LinkPreviewOverrides | null;
 }): Promise<void> {
   const url = params.url.trim();
   if (!url) throw new Error('URL is required');
   const body: Record<string, unknown> = { kind: 'external_link', url };
   if (params.label && params.label.trim()) body.label = params.label.trim();
+  if (Object.prototype.hasOwnProperty.call(params, 'linkPreviewOverrides')) {
+    body.link_preview_overrides = params.linkPreviewOverrides;
+  }
   await postFeed(body, params.accessToken ?? null);
 }
 
@@ -115,15 +130,21 @@ export async function editFeedPost(params: {
   postId: string;
   body: string;
   accessToken?: string | null;
+  /** When set (including null), sent to the API to merge or clear stored overrides. */
+  linkPreviewOverrides?: LinkPreviewOverrides | null;
 }): Promise<void> {
   const postId = params.postId.trim();
   const body = params.body.trim();
   if (!postId) throw new Error('Post id is required');
   if (!body) throw new Error('Post body is required');
   const url = `${API_BASE}/api/feeds/items/${encodeURIComponent(postId)}`;
+  const payload: Record<string, unknown> = { body };
+  if (Object.prototype.hasOwnProperty.call(params, 'linkPreviewOverrides')) {
+    payload.link_preview_overrides = params.linkPreviewOverrides;
+  }
   await requestNoContent(
     url,
-    { method: 'PATCH', body: JSON.stringify({ body }) },
+    { method: 'PATCH', body: JSON.stringify(payload) },
     params.accessToken ?? null,
   );
 }

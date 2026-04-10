@@ -1,13 +1,31 @@
 import { authedFetch } from './api/authFetch';
 import { API_BASE, parseJsonResponse } from './api/feedsApiCore';
 
+/** Author overrides persisted on feed payloads; values win over fetched OG fields when set. */
+export type LinkPreviewOverrides = {
+  title?: string;
+  description?: string;
+  image?: string;
+};
+
 export type LinkPreviewData = {
   url: string;
   title?: string;
   description?: string;
   image?: string;
   siteName?: string;
+  degraded?: boolean;
+  overrides?: LinkPreviewOverrides;
 };
+
+export function getEffectiveLinkPreviewImage(
+  preview: LinkPreviewData,
+): string | undefined {
+  const fromOverride = preview.overrides?.image?.trim();
+  if (fromOverride) return fromOverride;
+  const fromOg = preview.image?.trim();
+  return fromOg || undefined;
+}
 
 export { extractUrlsFromText, getFirstUrlFromText } from './urlPreviewText';
 

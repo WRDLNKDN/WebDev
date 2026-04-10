@@ -154,9 +154,16 @@ test.describe('MVP route smoke', () => {
       waitUntil: 'domcontentloaded',
     });
     await expect(page.getByTestId('app-main')).toBeVisible({ timeout: 25_000 });
+    await expect(page.getByTestId('notifications-activity-page')).toBeVisible({
+      timeout: 25_000,
+    });
     await expect(
       page.getByRole('heading', { name: 'Notifications' }),
     ).toBeVisible({ timeout: 25_000 });
+    const activity = page.getByTestId('notifications-activity-page');
+    await expect(
+      activity.getByRole('progressbar', { name: 'Loading' }),
+    ).toHaveCount(0);
   });
 
   test('settings notifications route loads', async ({ page }) => {

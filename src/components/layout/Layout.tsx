@@ -87,12 +87,17 @@ const LayoutContent = () => {
         <Box
           component="footer"
           data-docked-footer
-          sx={{
+          sx={(theme) => ({
             flexShrink: 0,
             position: 'relative',
-            /* Above `.app-scroll-container` (z-index 1) so footer menus are not covered by main content. */
-            zIndex: 2,
-          }}
+            isolation: 'isolate',
+            /**
+             * Match app-bar tier so footer dropdowns stay above the primary scroll
+             * column. Main pages use backdrop blur / elevated surfaces (e.g. Directory)
+             * that can otherwise composite above a sibling with z-index 2.
+             */
+            zIndex: theme.zIndex.appBar,
+          })}
         >
           <Suspense fallback={null}>
             <Footer />

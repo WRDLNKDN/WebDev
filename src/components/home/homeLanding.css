@@ -90,18 +90,24 @@
     max(0.75rem, env(safe-area-inset-right, 0px));
 }
 
+/* Keep headline + CTAs anchored under the nav (not vertically centered in a tall hero),
+   so the sign-in story reads as an overlay from first paint — same vertical band as compact. */
 .home-landing--marketing-video-phase
   .home-landing__hero:not(.home-landing__hero--compact),
 .home-landing--coming-soon
   .home-landing__hero:not(.home-landing__hero--compact) {
-  padding-top: clamp(0.5rem, 3dvh, 1.5rem);
-  padding-bottom: clamp(0.5rem, 3dvh, 2rem);
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: var(--hero-copy-pad-top);
+  padding-bottom: clamp(0.75rem, 4dvh, 2rem);
 }
 
 .home-landing__hero--coming-soon {
   flex: 1 1 auto;
   align-self: stretch;
-  min-height: min(88dvh, calc(100dvh - 9rem));
+  /* Slightly shorter than legacy 88dvh so below-the-fold content isn’t pushed down
+     while the intro video plays; copy stays in the upper band via flex-start + pad-top. */
+  min-height: min(76dvh, calc(100dvh - 8.5rem));
   width: 100%;
 }
 
@@ -776,6 +782,11 @@
  */
 .home-landing__cta-stack--hero {
   gap: 0.75rem;
+}
+
+.home-landing__cta-stack--hero-pending {
+  opacity: 0.72;
+  pointer-events: none;
 }
 
 .home-landing__button--hero-primary {

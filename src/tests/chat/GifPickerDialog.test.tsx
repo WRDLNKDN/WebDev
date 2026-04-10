@@ -109,6 +109,83 @@ describe('GifPickerDialog', () => {
     );
   });
 
+  it('does not re-fetch trending when a search fails after trending loaded; Try again can recover', async () => {
+    gifApiMocks.getTrendingChatGifs.mockResolvedValueOnce([
+      {
+        id: 'trend-1',
+        title: 'Trending One',
+        previewUrl: 'https://example.com/t1p.gif',
+        gifUrl: 'https://example.com/t1.gif',
+      },
+    ]);
+    gifApiMocks.searchChatGifs
+      .mockRejectedValueOnce(new Error('GIF search failed (500).'))
+      .mockResolvedValueOnce([
+        {
+          id: 'retry-ok',
+          title: 'After Retry',
+          previewUrl: 'https://example.com/rp.gif',
+          gifUrl: 'https://example.com/r.gif',
+        },
+      ]);
+
+    await act(async () => {
+      root.render(
+        <GifPickerDialog open onClose={() => {}} onPick={() => {}} />,
+      );
+    });
+
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(gifApiMocks.getTrendingChatGifs).toHaveBeenCalledTimes(1);
+    expect(document.body.querySelector('img[alt="Trending One"]')).toBeTruthy();
+
+    const input = document.body.querySelector(
+      'input[placeholder="Search GIFs"]',
+    ) as HTMLInputElement | null;
+    expect(input).toBeTruthy();
+
+    await act(async () => {
+      if (input) setInputValue(input, 'cats');
+    });
+
+    const searchButton = Array.from(
+      document.body.querySelectorAll('button'),
+    ).find((button) => button.textContent?.trim() === 'Search');
+    expect(searchButton).toBeTruthy();
+
+    await act(async () => {
+      searchButton?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(gifApiMocks.getTrendingChatGifs).toHaveBeenCalledTimes(1);
+    expect(gifApiMocks.searchChatGifs).toHaveBeenCalledWith(
+      'cats',
+      24,
+      'medium',
+    );
+
+    const tryAgain = Array.from(document.body.querySelectorAll('button')).find(
+      (button) => button.textContent?.trim() === 'Try again',
+    );
+    expect(tryAgain).toBeTruthy();
+
+    await act(async () => {
+      tryAgain?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(document.body.querySelector('img[alt="After Retry"]')).toBeTruthy();
+    expect(gifApiMocks.searchChatGifs).toHaveBeenCalledTimes(2);
+    expect(gifApiMocks.getTrendingChatGifs).toHaveBeenCalledTimes(1);
+  });
+
   it('runs a fresh search after a failure and shows recovered results', async () => {
     gifApiMocks.getTrendingChatGifs.mockRejectedValueOnce(
       new Error('GIF search failed. Check your connection or try again.'),

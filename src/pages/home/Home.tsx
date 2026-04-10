@@ -250,15 +250,12 @@ export const Home = () => {
       if (authStartedRef.current) return;
       authStartedRef.current = true;
       const runLoadAuth = () => void loadAuthState();
-      // Likely signed-in: resolve session on a microtask so hero never flashes guest CTAs.
-      // Otherwise defer to idle / timeout to protect LCP for true guests.
-      if (typeof window !== 'undefined' && hasStoredAuthTokensSync()) {
+      // Resolve session on a microtask for everyone. Idle-deferring guests without
+      // tokens delayed `authInitialCheckDone`, which paired with `storageAuthHint` left
+      // the hero CTA stack empty long enough to feel like “no Join/Sign-in until the
+      // video ends” (especially with restored tabs / slow idle).
+      if (typeof window !== 'undefined') {
         queueMicrotask(runLoadAuth);
-      } else if (
-        typeof window !== 'undefined' &&
-        'requestIdleCallback' in window
-      ) {
-        requestIdleCallback(runLoadAuth);
       } else {
         setTimeout(runLoadAuth, 0);
       }
@@ -610,14 +607,13 @@ export const Home = () => {
                       </Link>
                     ) : null}
                   </div>
-                ) : storageAuthHint && !authInitialCheckDone ? (
-                  <div
-                    className="home-landing__cta-stack"
-                    aria-busy="true"
-                    aria-label="Checking session"
-                  />
                 ) : (
-                  <GuestView buttonsOnly />
+                  <GuestView
+                    buttonsOnly
+                    actionsDisabled={
+                      Boolean(storageAuthHint) && !authInitialCheckDone
+                    }
+                  />
                 )}
               </div>
             </div>

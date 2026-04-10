@@ -2512,6 +2512,26 @@ on conflict (id) do update set
   file_size_limit = excluded.file_size_limit,
   allowed_mime_types = excluded.allowed_mime_types;
 
+-- Advertise form: persisted when email (Resend) is unavailable; service role inserts from API.
+create table if not exists public.advertiser_inquiries (
+  id uuid primary key default gen_random_uuid(),
+  created_at timestamptz not null default now(),
+  name text not null,
+  email text not null,
+  destination_url text not null,
+  message text not null,
+  ad_copy_description text not null,
+  icon_storage_path text not null,
+  source_ip text,
+  email_delivered boolean not null default false
+);
+
+create index if not exists idx_advertiser_inquiries_created_at
+  on public.advertiser_inquiries (created_at desc);
+
+comment on table public.advertiser_inquiries is
+  'Public Advertise form submissions. Rows with email_delivered=false were queued without Resend (e.g. UAT); ops can email info@wrdlnkdn.com from Supabase or enable RESEND_API_KEY.';
+
 -- -----------------------------
 -- Content: submissions, playlists, audit_log (community video workflow)
 -- -----------------------------

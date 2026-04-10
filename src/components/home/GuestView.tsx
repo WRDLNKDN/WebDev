@@ -9,6 +9,8 @@ interface GuestViewProps {
   onAuth?: (provider: 'google' | 'azure') => Promise<void>;
   /** When true, only render buttons (for hero backdrop layout). */
   buttonsOnly?: boolean;
+  /** When true, hero CTAs stay visible but are non-interactive (session restore in flight). */
+  actionsDisabled?: boolean;
   /** When true, use high-contrast opaque styles for CTAs (hero). */
   highContrast?: boolean;
 }
@@ -19,6 +21,7 @@ interface GuestViewProps {
  */
 export const GuestView = ({
   buttonsOnly = false,
+  actionsDisabled = false,
   highContrast = true,
 }: GuestViewProps) => {
   const navigate = useNavigate();
@@ -42,15 +45,26 @@ export const GuestView = ({
 
   if (buttonsOnly) {
     return (
-      <div className="home-landing__cta-stack home-landing__cta-stack--hero">
+      <div
+        className={[
+          'home-landing__cta-stack',
+          'home-landing__cta-stack--hero',
+          actionsDisabled ? 'home-landing__cta-stack--hero-pending' : '',
+        ]
+          .filter(Boolean)
+          .join(' ')}
+        aria-busy={actionsDisabled ? true : undefined}
+        aria-label={actionsDisabled ? 'Checking session' : undefined}
+      >
         <Link
           to="/join"
           className="home-landing__button home-landing__button--hero-primary"
           role="button"
-          aria-disabled={joinLoading}
+          aria-disabled={joinLoading || actionsDisabled}
+          tabIndex={actionsDisabled ? -1 : undefined}
           onClick={(event) => {
             event.preventDefault();
-            if (!joinLoading) {
+            if (!joinLoading && !actionsDisabled) {
               void goToJoin();
             }
           }}
@@ -61,9 +75,15 @@ export const GuestView = ({
           to="/signin"
           className="home-landing__link-button home-landing__link-button--hero-secondary"
           aria-label="Already a member? Sign In"
-          onClick={() =>
-            trackEvent('hero_sign_in_cta_click', { source: 'hero' })
-          }
+          aria-disabled={actionsDisabled ? true : undefined}
+          tabIndex={actionsDisabled ? -1 : undefined}
+          onClick={(e) => {
+            if (actionsDisabled) {
+              e.preventDefault();
+              return;
+            }
+            trackEvent('hero_sign_in_cta_click', { source: 'hero' });
+          }}
         >
           Already a member? Sign In
         </Link>

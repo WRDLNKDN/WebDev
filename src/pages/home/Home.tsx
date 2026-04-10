@@ -179,6 +179,7 @@ export const Home = () => {
   useEffect(() => {
     let mounted = true;
     let unsubscribe: (() => void) | null = null;
+    const browserWindow = globalThis.window;
 
     const loadAuthState = async () => {
       try {
@@ -254,10 +255,10 @@ export const Home = () => {
       // tokens delayed `authInitialCheckDone`, which paired with `storageAuthHint` left
       // the hero CTA stack empty long enough to feel like “no Join/Sign-in until the
       // video ends” (especially with restored tabs / slow idle).
-      if (typeof window !== 'undefined') {
-        queueMicrotask(runLoadAuth);
-      } else {
+      if (typeof browserWindow === 'undefined') {
         setTimeout(runLoadAuth, 0);
+      } else {
+        queueMicrotask(runLoadAuth);
       }
       void (async () => {
         const supabase = await getSupabase();
@@ -285,10 +286,10 @@ export const Home = () => {
 
     const triggerAuthBootstrap = () => {
       startAuth();
-      window.removeEventListener('pointerdown', triggerAuthBootstrap);
-      window.removeEventListener('pointermove', triggerAuthBootstrap);
-      window.removeEventListener('keydown', triggerAuthBootstrap);
-      window.removeEventListener('focus', triggerAuthBootstrap);
+      browserWindow?.removeEventListener('pointerdown', triggerAuthBootstrap);
+      browserWindow?.removeEventListener('pointermove', triggerAuthBootstrap);
+      browserWindow?.removeEventListener('keydown', triggerAuthBootstrap);
+      browserWindow?.removeEventListener('focus', triggerAuthBootstrap);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
     const handleVisibilityChange = () => {
@@ -299,23 +300,23 @@ export const Home = () => {
 
     triggerAuthBootstrap();
 
-    window.addEventListener('pointerdown', triggerAuthBootstrap, {
+    browserWindow?.addEventListener('pointerdown', triggerAuthBootstrap, {
       passive: true,
     });
-    window.addEventListener('pointermove', triggerAuthBootstrap, {
+    browserWindow?.addEventListener('pointermove', triggerAuthBootstrap, {
       passive: true,
       once: true,
     });
-    window.addEventListener('keydown', triggerAuthBootstrap);
-    window.addEventListener('focus', triggerAuthBootstrap);
+    browserWindow?.addEventListener('keydown', triggerAuthBootstrap);
+    browserWindow?.addEventListener('focus', triggerAuthBootstrap);
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
       mounted = false;
-      window.removeEventListener('pointerdown', triggerAuthBootstrap);
-      window.removeEventListener('pointermove', triggerAuthBootstrap);
-      window.removeEventListener('keydown', triggerAuthBootstrap);
-      window.removeEventListener('focus', triggerAuthBootstrap);
+      browserWindow?.removeEventListener('pointerdown', triggerAuthBootstrap);
+      browserWindow?.removeEventListener('pointermove', triggerAuthBootstrap);
+      browserWindow?.removeEventListener('keydown', triggerAuthBootstrap);
+      browserWindow?.removeEventListener('focus', triggerAuthBootstrap);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       unsubscribe?.();
     };

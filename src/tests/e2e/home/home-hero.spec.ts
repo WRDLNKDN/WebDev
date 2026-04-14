@@ -86,9 +86,11 @@ test.describe('Home hero', () => {
   }) => {
     await page.goto('/', { waitUntil: 'domcontentloaded' });
 
-    await expect(page.getByRole('link', { name: 'Go to home' })).toBeVisible({
+    /* On home, the wordmark is not a link (avoids false affordance). */
+    await expect(page.getByLabel('WRDLNKDN — home')).toBeVisible({
       timeout: 15_000,
     });
+    await expect(page.getByRole('link', { name: 'Go to home' })).toHaveCount(0);
     await expect(page.getByTestId('signed-out-landing')).toBeVisible();
 
     /* Footer stays hidden until Home sets data-footer-visible after intro handoff */
@@ -107,5 +109,12 @@ test.describe('Home hero', () => {
     const footer = page.getByTestId('site-footer');
     await footer.scrollIntoViewIfNeeded();
     await expect(footer).toBeVisible();
+  });
+
+  test('off-home routes keep the wordmark as a home link', async ({ page }) => {
+    await page.goto('/about', { waitUntil: 'domcontentloaded' });
+    await expect(page.getByRole('navigation')).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByRole('link', { name: 'Go to home' })).toBeVisible();
+    await expect(page.getByLabel('WRDLNKDN — home')).toHaveCount(0);
   });
 });

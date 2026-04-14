@@ -39,6 +39,10 @@ import {
   normalizeChatAttachmentMime,
 } from '../../../lib/chat/attachmentValidation';
 import { getChatAttachmentProcessingPlan } from '../../../lib/chat/attachmentProcessing';
+import {
+  fetchProviderGifAsBlob,
+  ProviderGifFetchError,
+} from '../../../lib/chat/gifDownload';
 import { GifPickerDialog } from '../dialogs/GifPickerDialog';
 import { MediaStatusBanner } from '../../media/MediaStatusBanner';
 import {
@@ -98,6 +102,12 @@ type MessageInputProps = {
   /** When set, composer is in reply mode (Discord-style thread reply). */
   replyTo?: MessageReplyDraft | null;
   onCancelReply?: () => void;
+  /**
+   * Hides the narrow-viewport "More options" (⋯) control, which only toggles the
+   * same expand state as the chevron beside the input. Use in floating surfaces
+   * (e.g. Directory chat popover) where it reads as a broken menu.
+   */
+  hideNarrowMoreOptions?: boolean;
 };
 
 export const MessageInput = ({
@@ -112,6 +122,7 @@ export const MessageInput = ({
   roomId,
   replyTo = null,
   onCancelReply,
+  hideNarrowMoreOptions = false,
 }: MessageInputProps) => {
   const theme = useTheme();
   const isNarrowViewport = useMediaQuery(theme.breakpoints.down('sm'));
@@ -198,9 +209,7 @@ export const MessageInput = ({
     setProcessingMessage(null);
     setUploadState(null);
     try {
-      const res = await fetch(gifUrl);
-      if (!res.ok) throw new Error('gif fetch failed');
-      const blob = await res.blob();
+      const blob = await fetchProviderGifAsBlob(gifUrl);
       const safeTitle = (title ?? 'gif')
         .replace(/[^a-zA-Z0-9_-]+/g, '-')
         .slice(0, 40);
@@ -226,8 +235,12 @@ export const MessageInput = ({
         return;
       }
       setPendingAttachment({ file, mime, plan });
-    } catch {
+    } catch (e) {
       setProcessingMessage(null);
+      if (e instanceof ProviderGifFetchError) {
+        setError(e.message);
+        return;
+      }
       setError("We couldn't add that GIF. Please try another one.");
     }
   };
@@ -374,15 +387,15 @@ export const MessageInput = ({
       sx={{
         display: 'flex',
         flexDirection: 'column',
-        gap: 0.5,
+        gap: 0.45,
         borderTop: (t) =>
-          `1px solid ${alpha(t.palette.divider, t.palette.mode === 'light' ? 0.12 : 0.14)}`,
-        p: { xs: 1, sm: 1.15 },
+          `1px solid ${alpha(t.palette.divider, t.palette.mode === 'light' ? 0.16 : 0.2)}`,
+        p: { xs: 0.85, sm: 1 },
         pb: `max(8px, calc(0.5rem + env(safe-area-inset-bottom, 0px)))`,
         bgcolor: (t) =>
           t.palette.mode === 'light'
-            ? alpha(t.palette.background.paper, 0.96)
-            : alpha('#1a1f28', 0.92),
+            ? alpha(t.palette.background.paper, 0.94)
+            : alpha('#131922', 0.94),
         minWidth: 0,
         width: '100%',
         overflowX: 'hidden',
@@ -485,17 +498,17 @@ export const MessageInput = ({
       <Box
         sx={{
           display: 'flex',
-          alignItems: { xs: 'stretch', sm: 'flex-end' },
-          gap: 0.5,
+          alignItems: 'flex-end',
+          gap: 0.45,
           minWidth: 0,
           width: '100%',
-          flexDirection: { xs: 'column', sm: 'row' },
+          flexDirection: 'row',
         }}
       >
         <TextField
           inputRef={messageInputRef}
           multiline
-          maxRows={expanded ? 8 : 3}
+          maxRows={expanded ? 7 : 4}
           value={text}
           onChange={(e) => {
             const newValue = e.target.value;
@@ -582,7 +595,7 @@ export const MessageInput = ({
                   : alpha('#0d1118', 0.65),
               color: 'text.primary',
               borderRadius: 2,
-              minHeight: { xs: 48, sm: 44 },
+              minHeight: { xs: 44, sm: 40 },
               alignItems: expanded ? 'flex-start' : 'center',
               transition: 'box-shadow 0.2s ease, border-color 0.2s ease',
               '& fieldset': {
@@ -609,7 +622,11 @@ export const MessageInput = ({
               },
             },
             '& .MuiInputBase-inputMultiline': {
-              py: 0.85,
+              py: 0.65,
+              lineHeight: 1.38,
+              whiteSpace: 'pre-wrap',
+              wordBreak: 'break-word',
+              overflowWrap: 'anywhere',
             },
             /* 16px on narrow viewports avoids iOS Safari zoom-on-focus */
             '& .MuiInputBase-input': { fontSize: { xs: '1rem' } },
@@ -633,8 +650,10 @@ export const MessageInput = ({
                     t.palette.mode === 'light' ? 0.55 : 0.7,
                   ),
                 flexShrink: 0,
-                alignSelf: { xs: 'flex-end', sm: 'auto' },
-                p: 0.5,
+                alignSelf: 'center',
+                p: 0.42,
+                opacity: 0.82,
+                '&:hover': { opacity: 1 },
               }}
             >
               <KeyboardArrowUpIcon fontSize="small" />
@@ -646,30 +665,30 @@ export const MessageInput = ({
         data-testid="chat-message-toolbar"
         sx={{
           display: 'flex',
-          alignItems: { xs: 'stretch', sm: 'center' },
+          alignItems: 'center',
           justifyContent: 'space-between',
-          gap: 0.65,
+          gap: 0.75,
           minWidth: 0,
           width: '100%',
-          flexWrap: { xs: 'wrap', sm: 'nowrap' },
-          pt: 0.25,
+          flexWrap: 'wrap',
+          pt: 0.2,
         }}
       >
         <Box
           sx={{
             display: 'flex',
             alignItems: 'center',
-            gap: 0.15,
+            gap: 1,
             minWidth: 0,
             flexWrap: 'wrap',
             width: { xs: '100%', sm: 'auto' },
             borderRadius: 2,
-            px: { xs: 0, sm: 0.35 },
-            py: { xs: 0, sm: 0.15 },
+            px: { xs: 0, sm: 0.25 },
+            py: { xs: 0, sm: 0.1 },
             bgcolor: (t) =>
               alpha(
                 t.palette.primary.main,
-                t.palette.mode === 'light' ? 0.04 : 0.08,
+                t.palette.mode === 'light' ? 0.035 : 0.07,
               ),
           }}
         >
@@ -692,9 +711,12 @@ export const MessageInput = ({
                   color: (t) =>
                     alpha(
                       t.palette.text.primary,
-                      t.palette.mode === 'light' ? 0.62 : 0.75,
+                      t.palette.mode === 'light' ? 0.48 : 0.62,
                     ),
-                  p: 0.75,
+                  p: 0.62,
+                  '&:hover, &:focus-visible': {
+                    color: 'text.primary',
+                  },
                 }}
               >
                 <ImageIcon fontSize="small" />
@@ -712,9 +734,12 @@ export const MessageInput = ({
                   color: (t) =>
                     alpha(
                       t.palette.text.primary,
-                      t.palette.mode === 'light' ? 0.62 : 0.75,
+                      t.palette.mode === 'light' ? 0.48 : 0.62,
                     ),
-                  p: 0.75,
+                  p: 0.62,
+                  '&:hover, &:focus-visible': {
+                    color: 'text.primary',
+                  },
                 }}
               >
                 <AttachFileIcon fontSize="small" />
@@ -734,9 +759,12 @@ export const MessageInput = ({
                   color: (t) =>
                     alpha(
                       t.palette.text.primary,
-                      t.palette.mode === 'light' ? 0.62 : 0.75,
+                      t.palette.mode === 'light' ? 0.48 : 0.62,
                     ),
-                  p: 0.75,
+                  p: 0.62,
+                  '&:hover, &:focus-visible': {
+                    color: 'text.primary',
+                  },
                 }}
               >
                 <GifBoxIcon fontSize="small" />
@@ -754,9 +782,12 @@ export const MessageInput = ({
                   color: (t) =>
                     alpha(
                       t.palette.text.primary,
-                      t.palette.mode === 'light' ? 0.62 : 0.75,
+                      t.palette.mode === 'light' ? 0.48 : 0.62,
                     ),
-                  p: 0.75,
+                  p: 0.62,
+                  '&:hover, &:focus-visible': {
+                    color: 'text.primary',
+                  },
                 }}
               >
                 <EmojiEmotionsOutlinedIcon fontSize="small" />
@@ -776,7 +807,7 @@ export const MessageInput = ({
             justifyContent: { xs: 'space-between', sm: 'flex-end' },
           }}
         >
-          {isNarrowViewport ? (
+          {isNarrowViewport && !hideNarrowMoreOptions ? (
             <Tooltip
               title={expanded ? 'Collapse composer options' : 'More options'}
             >

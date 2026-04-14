@@ -10,6 +10,7 @@ import {
   DialogTitle,
   IconButton,
   Link,
+  Stack,
   Tooltip,
   Typography,
 } from '@mui/material';
@@ -464,27 +465,50 @@ export const AdvertisePage = () => {
             You have unsaved changes. Are you sure you want to exit this form?
           </DialogContentText>
         </DialogContent>
-        <DialogActions sx={{ flexWrap: 'wrap', gap: 1, px: 2, pb: 2 }}>
+        <DialogActions
+          sx={{
+            flexDirection: 'column',
+            alignItems: 'stretch',
+            gap: 1.5,
+            px: 2,
+            pb: 2,
+            pt: 0,
+          }}
+        >
+          <Stack
+            direction="row"
+            spacing={1.5}
+            useFlexGap
+            sx={{ width: '100%' }}
+          >
+            <Button
+              onClick={() => setConfirmCloseOpen(false)}
+              color="inherit"
+              variant="outlined"
+              sx={{ flex: 1, minWidth: 0 }}
+            >
+              Continue editing
+            </Button>
+            <Button
+              onClick={handleConfirmSaveAndSend}
+              variant="contained"
+              sx={{ flex: 1, minWidth: 0 }}
+              disabled={
+                submitting ||
+                !isValidAdvertiserDestinationUrl(destinationUrl.trim()) ||
+                !iconFile
+              }
+            >
+              Save and send
+            </Button>
+          </Stack>
           <Button
-            onClick={() => setConfirmCloseOpen(false)}
-            color="inherit"
+            fullWidth
+            onClick={closeModal}
+            color="error"
             variant="outlined"
           >
-            Continue editing
-          </Button>
-          <Button
-            onClick={handleConfirmSaveAndSend}
-            variant="contained"
-            disabled={
-              submitting ||
-              !isValidAdvertiserDestinationUrl(destinationUrl.trim()) ||
-              !iconFile
-            }
-          >
-            Save and send
-          </Button>
-          <Button onClick={closeModal} color="error" variant="outlined">
-            Discard changes and exit
+            Discard and exit
           </Button>
         </DialogActions>
       </Dialog>

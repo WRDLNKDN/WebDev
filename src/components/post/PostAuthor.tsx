@@ -52,6 +52,7 @@ export const PostAuthor = ({
   tightHeader = false,
 }: PostAuthorProps) => {
   const timeStr = formatTime(createdAt);
+  const isChatInlineAuthor = inIcon;
   const trimmedDescription =
     typeof description === 'string' && description.trim()
       ? description.trim()
@@ -79,6 +80,14 @@ export const PostAuthor = ({
         src={avatarUrl ?? undefined}
         alt={displayName || '?'}
         size={avatarSize}
+        sx={
+          isChatInlineAuthor
+            ? {
+                width: 40,
+                height: 40,
+              }
+            : undefined
+        }
         component={handle ? RouterLink : 'div'}
         to={handle ? `/profile/${handle}` : undefined}
       />
@@ -99,7 +108,9 @@ export const PostAuthor = ({
               sx={{
                 color: 'text.primary',
                 textDecoration: 'none',
-                fontSize: { xs: '1.02rem', sm: '1.08rem' },
+                fontSize: isChatInlineAuthor
+                  ? { xs: '0.94rem', sm: '0.97rem' }
+                  : { xs: '1.02rem', sm: '1.08rem' },
                 lineHeight: 1.15,
                 '&:hover': { textDecoration: 'underline' },
               }}
@@ -111,7 +122,9 @@ export const PostAuthor = ({
               variant="subtitle1"
               fontWeight={700}
               sx={{
-                fontSize: { xs: '1.02rem', sm: '1.08rem' },
+                fontSize: isChatInlineAuthor
+                  ? { xs: '0.94rem', sm: '0.97rem' }
+                  : { xs: '1.02rem', sm: '1.08rem' },
                 lineHeight: 1.15,
               }}
             >
@@ -121,7 +134,11 @@ export const PostAuthor = ({
           <Typography
             variant="body2"
             color="text.secondary"
-            sx={{ fontSize: '0.82rem', lineHeight: 1.15 }}
+            sx={{
+              fontSize: isChatInlineAuthor ? '0.74rem' : '0.82rem',
+              lineHeight: 1.15,
+              opacity: isChatInlineAuthor ? 0.68 : 0.9,
+            }}
           >
             • {timeStr}
           </Typography>

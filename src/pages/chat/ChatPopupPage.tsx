@@ -10,6 +10,7 @@ import {
 import { ChatThreadMessageList } from '../../components/chat/message/ChatThreadMessageList';
 import { BlockConfirmDialog } from '../../components/chat/dialogs/BlockConfirmDialog';
 import { ChatGroupForwardReportDialogs } from '../../components/chat/dialogs/ChatGroupForwardReportDialogs';
+import { MESSAGE_INPUT_FLOATING_SURFACE } from '../../lib/chat/messageInputFloatingSurface';
 import {
   ChatThreadErrorBanner,
   ChatThreadLoadingArea,
@@ -248,6 +249,7 @@ export const ChatPopupPage = () => {
 
         {!error && (
           <MessageInput
+            {...MESSAGE_INPUT_FLOATING_SURFACE}
             onSend={sendMessage}
             onTyping={startTyping}
             onStopTyping={stopTyping}

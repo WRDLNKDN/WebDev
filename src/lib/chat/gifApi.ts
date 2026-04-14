@@ -1,14 +1,25 @@
 export type ChatGifResult = {
   id: string;
   title: string;
+  /**
+   * Static or lightweight thumbnail for the picker grid (prefers GIPHY `_still`
+   * renditions to cut motion + decode cost).
+   */
   previewUrl: string;
+  /**
+   * URL embedded in posts / downloaded for chat upload. Prefers GIPHY `downsized*`
+   * over `original` to reduce bandwidth; chat still runs GIF→MP4 when uploaded.
+   */
   gifUrl: string;
 };
 export type GifContentFilter = 'off' | 'low' | 'medium' | 'high';
 
 /**
- * Fixed GIPHY content tier for WRDLNKDN. The product does not expose per-session
- * “rating” controls; moderation and safety are handled in the media pipeline.
+ * Unified provider GIF policy:
+ * - Single platform content tier (no member-facing rating UI).
+ * - Picker uses still/small previews; picks use bandwidth-friendly playback URLs.
+ * - Chat uploads: client fetch → existing `/api/chat/attachments/process-gif` (MP4 + poster).
+ * - Feed/comments: store HTTPS GIF URL; inline render via `AssetInlinePreview` / legacy GIF asset.
  */
 export const PLATFORM_GIPHY_GIF_CONTENT_FILTER: GifContentFilter = 'medium';
 
@@ -29,9 +40,16 @@ type GiphyImageRendition = {
 type GiphyImages = {
   fixed_height?: GiphyImageRendition;
   fixed_height_small?: GiphyImageRendition;
+  fixed_height_still?: GiphyImageRendition;
+  fixed_height_small_still?: GiphyImageRendition;
   fixed_width?: GiphyImageRendition;
+  fixed_width_still?: GiphyImageRendition;
   original?: GiphyImageRendition;
+  original_still?: GiphyImageRendition;
   downsized?: GiphyImageRendition;
+  downsized_still?: GiphyImageRendition;
+  downsized_medium?: GiphyImageRendition;
+  downsized_large?: GiphyImageRendition;
 };
 
 type GiphyGif = {
@@ -58,28 +76,63 @@ function getGiphyApiKey(): string {
   return key;
 }
 
+/** Grid thumbnail: still frames first to limit animated clutter in the picker. */
+export function pickGiphyPreviewUrl(
+  images: GiphyImages | undefined,
+): string | null {
+  if (!images) return null;
+  const still =
+    images.fixed_height_small_still?.url ??
+    images.fixed_width_still?.url ??
+    images.downsized_still?.url ??
+    images.fixed_height_still?.url ??
+    images.original_still?.url;
+  if (still) return still;
+  return (
+    images.fixed_height_small?.url ??
+    images.fixed_height?.url ??
+    images.downsized?.url ??
+    images.downsized_medium?.url ??
+    images.downsized_large?.url ??
+    images.fixed_width?.url ??
+    images.original?.url ??
+    null
+  );
+}
+
+/** Playback URL for pick / embed: prefer downsized renditions over full original. */
+export function pickGiphyPlaybackUrl(
+  images: GiphyImages | undefined,
+): string | null {
+  if (!images) return null;
+  return (
+    images.downsized_large?.url ??
+    images.downsized_medium?.url ??
+    images.downsized?.url ??
+    images.fixed_height?.url ??
+    images.fixed_width?.url ??
+    images.original?.url ??
+    null
+  );
+}
+
+export function giphyGifToChatResult(g: GiphyGif): ChatGifResult | null {
+  const id = g.id;
+  const images = g.images;
+  const previewUrl = pickGiphyPreviewUrl(images);
+  const gifUrl = pickGiphyPlaybackUrl(images);
+  if (!id || !previewUrl || !gifUrl) return null;
+  return {
+    id,
+    title: g.title ?? 'GIF',
+    previewUrl,
+    gifUrl,
+  };
+}
+
 function mapGiphyResults(raw: GiphyResponse): ChatGifResult[] {
   return (raw.data ?? [])
-    .map((g): ChatGifResult | null => {
-      const id = g.id;
-      const images = g.images;
-      const originalUrl =
-        images?.original?.url ??
-        images?.fixed_height?.url ??
-        images?.fixed_width?.url;
-      const previewUrl =
-        images?.fixed_height_small?.url ??
-        images?.fixed_height?.url ??
-        images?.downsized?.url ??
-        originalUrl;
-      if (!id || !originalUrl || !previewUrl) return null;
-      return {
-        id,
-        title: g.title ?? 'GIF',
-        previewUrl,
-        gifUrl: originalUrl,
-      };
-    })
+    .map((g) => giphyGifToChatResult(g))
     .filter((x): x is ChatGifResult => x != null);
 }
 
@@ -90,7 +143,7 @@ async function fetchGiphy(
   params.set('api_key', getGiphyApiKey());
   params.set('limit', params.get('limit') || '24');
   if (!params.has('rating')) {
-    params.set('rating', 'pg');
+    params.set('rating', GIPHY_RATING_MAP[PLATFORM_GIPHY_GIF_CONTENT_FILTER]);
   }
 
   const url = `${GIPHY_API_BASE}/${path}?${params.toString()}`;

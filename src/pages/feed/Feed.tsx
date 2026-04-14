@@ -467,6 +467,8 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
     [session?.user?.id],
   );
   const composerRef = useRef<HTMLInputElement>(null);
+  /** Stable id for idempotent POST /api/feeds until success or composer closes. */
+  const pendingFeedPostClientIdRef = useRef<string | null>(null);
   const [posting, setPosting] = useState(false);
   const [imageUploading, setImageUploading] = useState(false);
   const [imageUploadState, setImageUploadState] =
@@ -897,6 +899,10 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
     const text = composerValue.trim();
     const hasContent = Boolean(text) || composerImages.length > 0;
     if (!hasContent || posting || !session?.access_token) return;
+    if (!pendingFeedPostClientIdRef.current) {
+      pendingFeedPostClientIdRef.current = crypto.randomUUID();
+    }
+    const clientPostId = pendingFeedPostClientIdRef.current;
     try {
       setPosting(true);
       await createFeedPost({
@@ -904,7 +910,9 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
         images: composerImages.length > 0 ? composerImages : undefined,
         scheduledAt: composerScheduledAt || undefined,
         accessToken: session.access_token,
+        clientPostId,
       });
+      pendingFeedPostClientIdRef.current = null;
       setComposerValue('');
       setComposerImages([]);
       setComposerScheduledAt(null);
@@ -2256,6 +2264,7 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
           setComposerScheduledAt(null);
           setImageUploadState(null);
           setGifPickerOpen(false);
+          pendingFeedPostClientIdRef.current = null;
         }}
         maxWidth="sm"
         fullWidth
@@ -2324,6 +2333,7 @@ export const Feed = ({ savedMode = false }: FeedProps) => {
             onClick={() => {
               setComposerOpen(false);
               setImageUploadState(null);
+              pendingFeedPostClientIdRef.current = null;
             }}
             aria-label="Close"
             size="small"

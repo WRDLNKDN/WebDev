@@ -72,7 +72,13 @@ export const MessageContent = ({ content }: MessageContentProps) => {
     return (
       <Typography
         variant="body2"
-        sx={{ whiteSpace: 'pre-wrap', display: 'block' }}
+        sx={{
+          whiteSpace: 'pre-wrap',
+          wordBreak: 'break-word',
+          overflowWrap: 'anywhere',
+          lineHeight: 1.38,
+          display: 'block',
+        }}
       >
         {content || ''}
       </Typography>
@@ -83,7 +89,13 @@ export const MessageContent = ({ content }: MessageContentProps) => {
     <Typography
       variant="body2"
       component="span"
-      sx={{ whiteSpace: 'pre-wrap', display: 'block' }}
+      sx={{
+        whiteSpace: 'pre-wrap',
+        wordBreak: 'break-word',
+        overflowWrap: 'anywhere',
+        lineHeight: 1.38,
+        display: 'block',
+      }}
     >
       {parts.map((part, index) => {
         let partKey = `${part.type}:${part.text}:${index}`;

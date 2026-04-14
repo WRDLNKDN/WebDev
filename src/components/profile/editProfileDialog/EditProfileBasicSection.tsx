@@ -6,12 +6,17 @@ import {
   IconButton,
   MenuItem,
   Select,
+  Stack,
   TextField,
   Tooltip,
   Typography,
   useTheme,
 } from '@mui/material';
-import { FORM_SECTION_HEADING_SX } from '../../../lib/ui/formSurface';
+import {
+  EDIT_PROFILE_FIELD_GROUP_SPACING,
+  EDIT_PROFILE_LABEL_TO_INPUT_MB,
+  FORM_SECTION_HEADING_SX,
+} from '../../../lib/ui/formSurface';
 import { AVATAR_GRADIENT, INPUT_BG, getInputStyles } from './constants';
 import type { EditProfileFormData } from './types';
 
@@ -43,11 +48,15 @@ export const EditProfileBasicSection = ({
   const theme = useTheme();
   const inputStyles = getInputStyles(theme);
   return (
-    <>
+    <Stack
+      spacing={EDIT_PROFILE_FIELD_GROUP_SPACING}
+      useFlexGap
+      sx={{ width: '100%' }}
+    >
       <Box>
         <Typography
           variant="caption"
-          sx={{ ...FORM_SECTION_HEADING_SX, display: 'block', mb: 0.75 }}
+          sx={{ ...FORM_SECTION_HEADING_SX, display: 'block' }}
         >
           Identity
         </Typography>
@@ -104,7 +113,7 @@ export const EditProfileBasicSection = ({
           sx={{
             ...FORM_SECTION_HEADING_SX,
             display: 'block',
-            mb: 0.5,
+            mb: EDIT_PROFILE_LABEL_TO_INPUT_MB,
           }}
         >
           User Name
@@ -129,7 +138,11 @@ export const EditProfileBasicSection = ({
       <Box>
         <Typography
           variant="caption"
-          sx={{ ...FORM_SECTION_HEADING_SX, display: 'block', mb: 0.5 }}
+          sx={{
+            ...FORM_SECTION_HEADING_SX,
+            display: 'block',
+            mb: EDIT_PROFILE_LABEL_TO_INPUT_MB,
+          }}
         >
           Pronouns
         </Typography>
@@ -174,6 +187,6 @@ export const EditProfileBasicSection = ({
           </Select>
         </FormControl>
       </Box>
-    </>
+    </Stack>
   );
 };

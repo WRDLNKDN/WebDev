@@ -314,14 +314,16 @@ export const MessageList = ({
         overflow: 'auto',
         overflowX: 'hidden',
         scrollBehavior: 'smooth',
+        overscrollBehavior: 'contain',
+        scrollbarGutter: 'stable',
         display: 'flex',
         flexDirection: 'column',
-        gap: compact ? 0.55 : 0.9,
-        px: compact ? 1.15 : { xs: 1.35, sm: 2 },
-        py: compact ? 0.85 : 1.35,
+        gap: compact ? 0.45 : 0.75,
+        px: compact ? 1 : { xs: 1.15, sm: 1.5 },
+        py: compact ? 0.75 : 1.1,
         bgcolor: isLightChrome
-          ? alpha(theme.palette.background.default, 0.98)
-          : alpha('#141820', 0.94),
+          ? alpha(theme.palette.background.default, 0.97)
+          : alpha('#0f141d', 0.9),
         position: 'relative',
         minWidth: 0,
         width: '100%',
@@ -451,12 +453,12 @@ export const MessageList = ({
         let messageBubbleBgcolor: string;
         if (isOwn) {
           messageBubbleBgcolor = isLightChrome
-            ? alpha(theme.palette.primary.main, 0.14)
-            : alpha(theme.palette.primary.main, 0.22);
+            ? alpha(theme.palette.primary.main, 0.12)
+            : alpha(theme.palette.primary.main, 0.2);
         } else {
           messageBubbleBgcolor = isLightChrome
-            ? alpha(theme.palette.common.black, 0.04)
-            : alpha('#ffffff', 0.06);
+            ? alpha(theme.palette.common.black, 0.03)
+            : alpha('#ffffff', 0.045);
         }
 
         let messageInsetShadowAlpha: number;
@@ -474,20 +476,22 @@ export const MessageList = ({
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  py: 1,
+                  py: 0.75,
                 }}
               >
                 <Typography
                   variant="caption"
                   sx={{
-                    px: 1.35,
-                    py: 0.45,
+                    px: 1.1,
+                    py: 0.3,
                     borderRadius: 999,
                     color: 'text.secondary',
                     fontWeight: 500,
+                    fontSize: '0.68rem',
+                    letterSpacing: '0.01em',
                     bgcolor: alpha(
                       theme.palette.common.black,
-                      isLightChrome ? 0.04 : 0.2,
+                      isLightChrome ? 0.035 : 0.16,
                     ),
                   }}
                 >
@@ -507,10 +511,10 @@ export const MessageList = ({
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: isOwn ? 'flex-end' : 'flex-start',
-                maxWidth: { xs: '100%', sm: '86%' },
+                maxWidth: { xs: '78%', sm: '74%' },
                 minWidth: 0,
                 position: 'relative',
-                mt: isContinuation ? (compact ? -0.35 : -0.5) : 0,
+                mt: isContinuation ? (compact ? -0.2 : -0.3) : 0,
                 ml: isOwn ? 'auto' : 0,
                 transition: 'box-shadow 0.18s ease',
                 '@media (hover: hover)': {
@@ -543,7 +547,7 @@ export const MessageList = ({
                     : null
                 }
                 sx={{
-                  borderRadius: 2.25,
+                  borderRadius: 2,
                   border: 'none',
                   bgcolor: messageBubbleBgcolor,
                   boxShadow: `0 0 0 1px ${alpha(
@@ -555,15 +559,15 @@ export const MessageList = ({
                   maxWidth: '100%',
                   '@media (hover: hover)': {
                     '&:hover': {
-                      boxShadow: `0 0 0 1px ${alpha(theme.palette.primary.main, isLightChrome ? 0.28 : 0.4)} inset, 0 6px 20px ${alpha(theme.palette.common.black, isLightChrome ? 0.06 : 0.15)}`,
+                      boxShadow: `0 0 0 1px ${alpha(theme.palette.primary.main, isLightChrome ? 0.24 : 0.34)} inset, 0 4px 14px ${alpha(theme.palette.common.black, isLightChrome ? 0.05 : 0.11)}`,
                     },
                   },
                 }}
                 contentSx={{
-                  pt: isContinuation ? 0.35 : 0.85,
-                  pb: 0.65,
-                  px: 1,
-                  '&:last-child': { pb: 0.75 },
+                  pt: isContinuation ? 0.3 : 0.7,
+                  pb: 0.55,
+                  px: 0.9,
+                  '&:last-child': { pb: 0.65 },
                 }}
               >
                 {msg.reply_preview && editingId !== msg.id ? (
@@ -782,10 +786,13 @@ export const MessageList = ({
                           }
                           sx={{
                             p: 0.35,
-                            color: alpha(theme.palette.text.primary, 0.42),
+                            color: alpha(theme.palette.text.primary, 0.34),
                             '&:hover': {
                               color: theme.palette.text.primary,
-                              bgcolor: alpha(theme.palette.primary.main, 0.08),
+                              bgcolor: alpha(theme.palette.primary.main, 0.07),
+                            },
+                            '&:focus-visible': {
+                              bgcolor: alpha(theme.palette.primary.main, 0.12),
                             },
                           }}
                         >

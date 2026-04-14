@@ -19,7 +19,11 @@ import {
   getInputStyles,
   PURPLE_ACCENT,
 } from './constants';
-import { FORM_SECTION_HEADING_SX } from '../../../lib/ui/formSurface';
+import {
+  EDIT_PROFILE_FIELD_GROUP_SPACING,
+  EDIT_PROFILE_LABEL_TO_INPUT_MB,
+  FORM_SECTION_HEADING_SX,
+} from '../../../lib/ui/formSurface';
 import type { EditProfileFormData } from './types';
 
 type Props = {
@@ -40,7 +44,7 @@ const FieldHeading = ({ children }: { children: string }) => (
     sx={{
       ...FORM_SECTION_HEADING_SX,
       display: 'block',
-      mb: 0.5,
+      mb: EDIT_PROFILE_LABEL_TO_INPUT_MB,
     }}
   >
     {children}
@@ -63,111 +67,119 @@ export const EditProfileDetailsSection = ({
   const isLight = theme.palette.mode === 'light';
   return (
     <>
-      <Box>
-        <Typography
-          variant="caption"
-          sx={{ ...FORM_SECTION_HEADING_SX, display: 'block', mb: 0.75 }}
-        >
-          Directory And Profile Details
-        </Typography>
-      </Box>
-
-      <Box>
-        <FieldHeading>LOCATION</FieldHeading>
-        <TextField
-          fullWidth
-          placeholder="City, State"
-          value={formData.location}
-          onChange={(e) => onChange('location', e.target.value)}
-          disabled={busy}
-          variant="filled"
-          sx={inputStyles}
-        />
-      </Box>
-
-      <Box>
-        <FieldHeading>WHO SEES ME IN DIRECTORY</FieldHeading>
-        <FormControl
-          fullWidth
-          variant="filled"
-          disabled={busy}
-          sx={inputStyles}
-        >
-          <Select
-            value={formData.profile_visibility}
-            onChange={(event) =>
-              onVisibilityChange(
-                event.target.value as 'members_only' | 'connections_only',
-              )
-            }
-            sx={{
-              '& .MuiSelect-select': { padding: INPUT_PADDING },
-              '& .MuiSelect-icon': {
-                color: isLight
-                  ? theme.palette.text.secondary
-                  : 'rgba(255,255,255,0.6)',
-              },
-            }}
-            MenuProps={{
-              PaperProps: {
-                sx: {
-                  bgcolor: isLight ? theme.palette.background.paper : INPUT_BG,
-                  color: theme.palette.text.primary,
-                  border: `1px solid ${isLight ? theme.palette.divider : BORDER_COLOR}`,
-                },
-              },
-            }}
+      <Stack
+        spacing={EDIT_PROFILE_FIELD_GROUP_SPACING}
+        useFlexGap
+        sx={{ width: '100%' }}
+      >
+        <Box>
+          <Typography
+            variant="caption"
+            sx={{ ...FORM_SECTION_HEADING_SX, display: 'block' }}
           >
-            <MenuItem value="members_only">All signed-in members</MenuItem>
-            <MenuItem value="connections_only">Only my connections</MenuItem>
-          </Select>
-        </FormControl>
-      </Box>
+            Directory And Profile Details
+          </Typography>
+        </Box>
 
-      <Box>
-        <FieldHeading>SKILLS</FieldHeading>
-        <TextField
-          fullWidth
-          placeholder="Skills (comma-separated)"
-          value={formData.skills}
-          onChange={(e) => onChange('skills', e.target.value)}
-          disabled={busy}
-          variant="filled"
-          sx={inputStyles}
-        />
-      </Box>
+        <Box>
+          <FieldHeading>LOCATION</FieldHeading>
+          <TextField
+            fullWidth
+            placeholder="City, State"
+            value={formData.location}
+            onChange={(e) => onChange('location', e.target.value)}
+            disabled={busy}
+            variant="filled"
+            sx={inputStyles}
+          />
+        </Box>
 
-      <Box>
-        <FieldHeading>BIO</FieldHeading>
-        <TextField
-          fullWidth
-          multiline
-          minRows={3}
-          maxRows={6}
-          placeholder="Bio"
-          value={formData.bio}
-          onChange={(e) => onChange('bio', e.target.value)}
-          disabled={busy}
-          variant="filled"
-          inputRef={bioInputRef}
-          sx={{
-            ...inputStyles,
-            '& .MuiFilledInput-root': {
-              minHeight: 'auto',
-              alignItems: 'flex-start',
-              paddingTop: '8px',
-            },
-            '& .MuiFilledInput-input': { padding: INPUT_PADDING },
-          }}
-        />
-      </Box>
+        <Box>
+          <FieldHeading>WHO SEES ME IN DIRECTORY</FieldHeading>
+          <FormControl
+            fullWidth
+            variant="filled"
+            disabled={busy}
+            sx={inputStyles}
+          >
+            <Select
+              value={formData.profile_visibility}
+              onChange={(event) =>
+                onVisibilityChange(
+                  event.target.value as 'members_only' | 'connections_only',
+                )
+              }
+              sx={{
+                '& .MuiSelect-select': { padding: INPUT_PADDING },
+                '& .MuiSelect-icon': {
+                  color: isLight
+                    ? theme.palette.text.secondary
+                    : 'rgba(255,255,255,0.6)',
+                },
+              }}
+              MenuProps={{
+                PaperProps: {
+                  sx: {
+                    bgcolor: isLight
+                      ? theme.palette.background.paper
+                      : INPUT_BG,
+                    color: theme.palette.text.primary,
+                    border: `1px solid ${isLight ? theme.palette.divider : BORDER_COLOR}`,
+                  },
+                },
+              }}
+            >
+              <MenuItem value="members_only">All signed-in members</MenuItem>
+              <MenuItem value="connections_only">Only my connections</MenuItem>
+            </Select>
+          </FormControl>
+        </Box>
+
+        <Box>
+          <FieldHeading>SKILLS</FieldHeading>
+          <TextField
+            fullWidth
+            placeholder="Skills (comma-separated)"
+            value={formData.skills}
+            onChange={(e) => onChange('skills', e.target.value)}
+            disabled={busy}
+            variant="filled"
+            sx={inputStyles}
+          />
+        </Box>
+
+        <Box>
+          <FieldHeading>BIO</FieldHeading>
+          <TextField
+            fullWidth
+            multiline
+            minRows={3}
+            maxRows={6}
+            placeholder="Bio"
+            value={formData.bio}
+            onChange={(e) => onChange('bio', e.target.value)}
+            disabled={busy}
+            variant="filled"
+            inputRef={bioInputRef}
+            sx={{
+              ...inputStyles,
+              '& .MuiFilledInput-root': {
+                minHeight: 'auto',
+                alignItems: 'flex-start',
+                paddingTop: '8px',
+              },
+              '& .MuiFilledInput-input': { padding: INPUT_PADDING },
+            }}
+          />
+        </Box>
+      </Stack>
 
       <Box
         sx={{
           position: 'sticky',
           bottom: 0,
           zIndex: 2,
-          mt: 1,
+          mt: EDIT_PROFILE_FIELD_GROUP_SPACING,
           mx: -3,
           px: 3,
           pt: 2,

@@ -57,6 +57,7 @@ import { NavbarMobileAuthControls } from './navbar/NavbarMobileAuthControls';
 import { NavbarMobileDrawer } from './navbar/NavbarMobileDrawer';
 import { useNavbarAuth } from './navbar/useNavbarAuth';
 import { isForcePublicPath, isHomePath } from './navbar/navConfig';
+import { navbarLogoWrapSx } from './navbar/navbarLogoStyles';
 import { supabase } from '../../lib/auth/supabaseClient';
 
 /** Search dropdown result shape. */
@@ -297,25 +298,18 @@ export const Navbar = () => {
             }}
           >
             <Box
-              component={RouterLink}
-              to="/"
-              aria-label="Go to home"
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                textDecoration: 'none',
-                height: { xs: 36, sm: 40 },
-                flexShrink: isMobile ? 1 : 0,
-                minWidth: 0,
-                borderRadius: 1,
-                py: 0.5,
-                px: 0.5,
-                bgcolor: 'rgba(0,0,0,0.35)',
-                transition: 'opacity 0.2s, background-color 0.2s',
-                overflow: 'hidden',
-                '&:hover': { opacity: 0.9, bgcolor: 'rgba(0,0,0,0.5)' },
-              }}
+              {...(homeRoute
+                ? {
+                    component: 'div' as const,
+                    'aria-current': 'page' as const,
+                    'aria-label': 'WRDLNKDN — home',
+                  }
+                : {
+                    component: RouterLink,
+                    to: '/',
+                    'aria-label': 'Go to home',
+                  })}
+              sx={navbarLogoWrapSx(homeRoute, isMobile)}
             >
               <Box
                 component="img"

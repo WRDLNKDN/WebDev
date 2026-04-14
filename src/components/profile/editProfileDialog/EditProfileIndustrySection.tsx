@@ -29,7 +29,10 @@ import {
   INPUT_HEIGHT,
   PURPLE_ACCENT,
 } from './constants';
-import { FORM_SECTION_HEADING_SX } from '../../../lib/ui/formSurface';
+import {
+  EDIT_PROFILE_FIELD_GROUP_SPACING,
+  FORM_SECTION_HEADING_SX,
+} from '../../../lib/ui/formSurface';
 import {
   appendSubIndustrySelection,
   findMatchingSubIndustryOption,
@@ -165,19 +168,19 @@ export const EditProfileIndustrySection = ({
   };
 
   return (
-    <Box sx={{ mt: 2 }}>
+    <Box>
       <Typography
         variant="caption"
         sx={{
           ...FORM_SECTION_HEADING_SX,
           display: 'block',
-          mb: 0.75,
+          mb: EDIT_PROFILE_FIELD_GROUP_SPACING,
           lineHeight: 1.2,
         }}
       >
         Industry Coverage
       </Typography>
-      <Stack spacing={2.25}>
+      <Stack spacing={EDIT_PROFILE_FIELD_GROUP_SPACING}>
         {formData.industries.map((group, idx) => (
           <Box
             key={idx}

@@ -1,17 +1,19 @@
 import { useMediaQuery, useTheme } from '@mui/material';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useAppToast } from '../../context/AppToastContext';
 import { useMessenger } from '../../context/MessengerContext';
 import { useChatRooms } from '../../hooks/useChat';
 import { findCanonicalDmRoom } from '../../lib/chat/findCanonicalDmRoom';
 import { supabase } from '../../lib/auth/supabaseClient';
+import { resolveChatRedirectReturnPath } from '../../lib/routing/chatRedirectReturnPath';
 import { toMessage } from '../../lib/utils/errors';
 
 /**
  * Redirects /chat and /chat/:roomId:
  * - On mobile: to full chat page (/chat-full, /chat-full/:roomId).
- * - On desktop: to Feed and opens the messenger overlay.
+ * - On desktop: opens the messenger overlay, then navigates to `?returnTo=` (validated)
+ *   or `/feed` by default.
  * Supports ?with=userId to open or create a DM with that user.
  */
 export const ChatRedirect = () => {
@@ -25,9 +27,14 @@ export const ChatRedirect = () => {
   const { rooms, createDm, loading } = useChatRooms();
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const withUserId = searchParams.get('with');
+  const returnToParam = searchParams.get('returnTo');
+  const returnPath = useMemo(
+    () => resolveChatRedirectReturnPath(returnToParam),
+    [returnToParam],
+  );
   /** Bumps on each effect run so Strict Mode / stale async work does not apply after a newer run. */
   const redirectRunGenRef = useRef(0);
-  const redirectTargetKey = `${mobile ? 'mobile' : 'desktop'}|${roomId ?? ''}|${withUserId ?? ''}`;
+  const redirectTargetKey = `${mobile ? 'mobile' : 'desktop'}|${roomId ?? ''}|${withUserId ?? ''}|${returnPath}`;
 
   // Safety valve: never leave the user stranded on /chat if room loading stalls.
   useEffect(() => {
@@ -35,11 +42,11 @@ export const ChatRedirect = () => {
 
     const timer = window.setTimeout(() => {
       if (mobile) navigate('/chat-full', { replace: true });
-      else navigate('/feed', { replace: true });
+      else navigate(returnPath, { replace: true });
     }, 2500);
 
     return () => window.clearTimeout(timer);
-  }, [loading, mobile, navigate]);
+  }, [loading, mobile, navigate, returnPath]);
 
   useEffect(() => {
     let cancelled = false;
@@ -110,7 +117,7 @@ export const ChatRedirect = () => {
       if (roomId && messenger) {
         messenger.openWithRoom(roomId);
         messenger.openOverlay();
-        if (stillValid()) navigate('/feed', { replace: true });
+        if (stillValid()) navigate(returnPath, { replace: true });
         return;
       }
 
@@ -137,7 +144,7 @@ export const ChatRedirect = () => {
           }
         }
 
-        if (stillValid()) navigate('/feed', { replace: true });
+        if (stillValid()) navigate(returnPath, { replace: true });
         return;
       }
 
@@ -145,7 +152,7 @@ export const ChatRedirect = () => {
         messenger.openOverlay();
       }
 
-      if (stillValid()) navigate('/feed', { replace: true });
+      if (stillValid()) navigate(returnPath, { replace: true });
     };
 
     void run();
@@ -162,6 +169,7 @@ export const ChatRedirect = () => {
     navigate,
     redirectTargetKey,
     roomId,
+    returnPath,
     rooms,
     showToast,
     withUserId,

@@ -50,7 +50,7 @@ jobs:
 
       - name: ❌ Auto-close PR if lockfile is dirty
         if: steps.drift.outputs.lockfile_status == 'dirty'
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           github-token: ${{ github.token }}
           script: |

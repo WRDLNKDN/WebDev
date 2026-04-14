@@ -299,7 +299,7 @@ export const ChatPage = () => {
   const dockTopPx = 64 + bannerOffsetPx;
   const showThread = Boolean(roomId);
   const dockWidth = showThread
-    ? 'clamp(860px, 66vw, 1120px)'
+    ? 'clamp(780px, 58vw, 960px)'
     : 'clamp(420px, 34vw, 480px)';
 
   const listColumnDividerAlpha = theme.palette.mode === 'light' ? 0.1 : 0.08;
@@ -314,11 +314,11 @@ export const ChatPage = () => {
   let threadColumnBackground: string;
   if (isMobileLayout) {
     threadColumnBackground =
-      'linear-gradient(180deg, rgba(6,10,20,0.14) 0%, rgba(6,10,20,0.03) 100%)';
+      'linear-gradient(180deg, rgba(7,11,19,0.62) 0%, rgba(7,11,19,0.36) 100%)';
   } else if (theme.palette.mode === 'light') {
-    threadColumnBackground = alpha(theme.palette.background.default, 0.98);
+    threadColumnBackground = alpha(theme.palette.background.default, 0.99);
   } else {
-    threadColumnBackground = `linear-gradient(180deg, ${alpha('#121722', 0.99)} 0%, ${alpha(theme.palette.background.default, 0.96)} 55%)`;
+    threadColumnBackground = `linear-gradient(180deg, ${alpha('#0f131b', 0.99)} 0%, ${alpha(theme.palette.background.default, 0.97)} 55%)`;
   }
 
   const listColumn = (
@@ -490,8 +490,8 @@ export const ChatPage = () => {
                 pointerEvents: 'none',
                 background:
                   theme.palette.mode === 'light'
-                    ? `radial-gradient(120% 80% at 50% 0%, ${alpha(theme.palette.primary.main, 0.04)} 0%, transparent 55%)`
-                    : `radial-gradient(100% 60% at 50% 0%, ${alpha(theme.palette.primary.main, 0.07)} 0%, transparent 50%)`,
+                    ? `radial-gradient(120% 80% at 50% 0%, ${alpha(theme.palette.primary.main, 0.02)} 0%, transparent 58%)`
+                    : `radial-gradient(100% 60% at 50% 0%, ${alpha(theme.palette.primary.main, 0.04)} 0%, transparent 54%)`,
                 zIndex: 0,
               }
             : undefined,
@@ -654,7 +654,10 @@ export const ChatPage = () => {
                 minHeight: 0,
                 display: 'flex',
                 flexDirection: 'column',
-                bgcolor: 'background.default',
+                bgcolor: alpha(
+                  theme.palette.background.default,
+                  theme.palette.mode === 'light' ? 0.96 : 0.94,
+                ),
               }}
             >
               {splitWorkspace}
@@ -680,6 +683,20 @@ export const ChatPage = () => {
         flexDirection: 'column',
         backgroundImage: 'url("/assets/background-mobile.png")',
         backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        position: 'relative',
+        '&::before': {
+          content: '""',
+          position: 'absolute',
+          inset: 0,
+          pointerEvents: 'none',
+          bgcolor: alpha(
+            theme.palette.common.black,
+            theme.palette.mode === 'light' ? 0.16 : 0.38,
+          ),
+          zIndex: 0,
+        },
+        '& > *': { position: 'relative', zIndex: 1 },
       }}
     >
       <Box
@@ -689,9 +706,11 @@ export const ChatPage = () => {
           minHeight: 0,
           height: '100%',
           minWidth: 0,
-          maxWidth: '100%',
           ...getGlassCard(theme),
           m: { xs: 0.75, sm: 1.25 },
+          mx: 'auto',
+          width: '100%',
+          maxWidth: { xs: 460, md: '100%' },
           overflow: 'hidden',
           borderRadius: { xs: 2.5, md: 3 },
           '&::after': {
@@ -702,7 +721,7 @@ export const ChatPage = () => {
             pointerEvents: 'none',
             bgcolor: alpha(
               theme.palette.common.black,
-              theme.palette.mode === 'light' ? 0.04 : 0.14,
+              theme.palette.mode === 'light' ? 0.08 : 0.2,
             ),
             zIndex: 0,
           },

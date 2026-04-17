@@ -79,7 +79,7 @@
     "@emotion/styled": "11.14.1",
     "@mui/icons-material": "7.3.10",
     "@mui/material": "7.3.10",
-    "@supabase/supabase-js": "2.103.1",
+    "@supabase/supabase-js": "2.103.3",
     "cors": "2.8.6",
     "emoji-picker-react": "4.18.0",
     "express": "5.2.1",

@@ -3,6 +3,7 @@ import {
   FOOTER_DONATE_URL,
   FOOTER_SECTIONS,
   FOOTER_SOCIAL_LINKS,
+  SHOW_FOOTER_DONATE,
 } from '../../components/layout/footerConfig';
 import { buildPayQrCodeImageUrl, PAY_PATH } from '../../lib/marketing/payLink';
 
@@ -29,6 +30,10 @@ describe('footerConfig', () => {
 
   it('keeps the donate call-to-action on /pay (edge redirect in production)', () => {
     expect(FOOTER_DONATE_URL).toBe(PAY_PATH);
+  });
+
+  it('shows the donate call-to-action only in development builds', () => {
+    expect(SHOW_FOOTER_DONATE).toBe(true);
   });
 
   it('builds donate QR to encode an absolute /pay URL', () => {

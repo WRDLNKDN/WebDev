@@ -1,4 +1,5 @@
 import { PAY_PATH } from '../../lib/marketing/payLink';
+import { isDevelopment } from '../../lib/utils/env';
 
 export type FooterLink = {
   label: string;
@@ -18,6 +19,7 @@ export type FooterSocialLink = {
 
 /** Donate / pay CTA: same-origin path; production redirects to GoDaddy Pay Link (see `vercel.json`). */
 export const FOOTER_DONATE_URL = PAY_PATH;
+export const SHOW_FOOTER_DONATE = isDevelopment;
 
 export const FOOTER_SOCIAL_LINKS: FooterSocialLink[] = [
   {

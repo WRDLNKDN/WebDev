@@ -29,6 +29,7 @@ import {
   FOOTER_DONATE_URL,
   FOOTER_SECTIONS,
   FOOTER_SOCIAL_LINKS,
+  SHOW_FOOTER_DONATE,
   type FooterLink,
 } from './footerConfig';
 
@@ -534,147 +535,151 @@ export const Footer = ({ showChatLink = false }: FooterProps) => {
                 }}
                 sx={{ width: '100%', pt: { xs: 0.15, md: 0.05 } }}
               >
-                <Box
-                  component="button"
-                  type="button"
-                  data-testid="footer-donate-link"
-                  aria-label="Donate to WRDLNKDN"
-                  onClick={() => {
-                    trackEvent('footer_donate_link_click', {
-                      source: 'footer',
-                      target: FOOTER_DONATE_URL,
-                    });
-                    setDonateDialogOpen(true);
-                  }}
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    width: 'fit-content',
-                    maxWidth: '100%',
-                    position: 'relative',
-                    overflow: 'hidden',
-                    fontWeight: 800,
-                    letterSpacing: 0.35,
-                    color: 'white',
-                    textDecoration: 'none',
-                    textTransform: 'uppercase',
-                    fontSize: { xs: '0.74rem', md: '0.8rem' },
-                    lineHeight: 1,
-                    minHeight: 34,
-                    whiteSpace: 'nowrap',
-                    px: 0.95,
-                    py: 0.45,
-                    borderRadius: 1,
-                    border: '1px solid rgba(255,255,255,0.22)',
-                    background:
-                      'linear-gradient(135deg, #0d5f59 0%, #118f87 42%, #1ecfb9 100%)',
-                    boxSizing: 'border-box',
-                    alignSelf: { xs: 'flex-start', sm: 'flex-end' },
-                    cursor: 'pointer',
-                    boxShadow:
-                      '0 8px 18px rgba(20,184,166,0.24), inset 0 1px 0 rgba(156,187,217,0.32)',
-                    transition: reduceMotion
-                      ? 'none'
-                      : 'box-shadow 140ms ease, background 140ms ease, border-color 140ms ease',
-                    '&::before': {
-                      content: '""',
-                      position: 'absolute',
-                      inset: 0,
-                      background:
-                        'linear-gradient(180deg, rgba(156,187,217,0.32), rgba(255,255,255,0))',
-                      pointerEvents: 'none',
-                    },
-                    '&:hover': {
-                      textDecoration: 'none',
-                      background:
-                        'linear-gradient(135deg, #0b5550 0%, #0f7a74 42%, #17b9a5 100%)',
-                      borderColor: 'rgba(255,255,255,0.38)',
-                      boxShadow:
-                        '0 10px 22px rgba(20,184,166,0.3), inset 0 1px 0 rgba(141,188,229,0.38)',
-                    },
-                    '&:focus-visible': {
-                      outline: '2px solid',
-                      outlineColor: alpha(theme.palette.common.white, 0.9),
-                      outlineOffset: 2,
-                      borderRadius: 1,
-                    },
-                  }}
-                >
-                  Donate Now
-                </Box>
-                <Dialog
-                  open={donateDialogOpen}
-                  onClose={() => setDonateDialogOpen(false)}
-                  aria-labelledby="donate-dialog-title"
-                  aria-describedby="donate-dialog-description"
-                  maxWidth="xs"
-                  fullWidth
-                  slotProps={{
-                    paper: {
-                      sx: {
-                        borderRadius: 2,
-                        bgcolor: footerRaisedSurface,
-                        color: footerTextPrimary,
-                        border: '1px solid',
-                        borderColor: dividerColor,
-                      },
-                    },
-                  }}
-                >
-                  <DialogTitle
-                    id="donate-dialog-title"
-                    sx={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      pr: 1,
-                    }}
-                  >
-                    Donate to WRDLNKDN
-                    <Tooltip title="Close">
-                      <span>
-                        <IconButton
-                          aria-label="Close"
-                          onClick={() => setDonateDialogOpen(false)}
-                          sx={{ color: 'rgba(255,255,255,0.75)' }}
-                        >
-                          <CloseIcon fontSize="small" />
-                        </IconButton>
-                      </span>
-                    </Tooltip>
-                  </DialogTitle>
-                  <DialogContent id="donate-dialog-description">
-                    <Stack spacing={2} alignItems="center" sx={{ py: 1 }}>
-                      <Box
-                        component="img"
-                        src={donateQrSrc}
-                        alt="Donate QR code"
-                        width={200}
-                        height={200}
+                {SHOW_FOOTER_DONATE ? (
+                  <>
+                    <Box
+                      component="button"
+                      type="button"
+                      data-testid="footer-donate-link"
+                      aria-label="Donate to WRDLNKDN"
+                      onClick={() => {
+                        trackEvent('footer_donate_link_click', {
+                          source: 'footer',
+                          target: FOOTER_DONATE_URL,
+                        });
+                        setDonateDialogOpen(true);
+                      }}
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        width: 'fit-content',
+                        maxWidth: '100%',
+                        position: 'relative',
+                        overflow: 'hidden',
+                        fontWeight: 800,
+                        letterSpacing: 0.35,
+                        color: 'white',
+                        textDecoration: 'none',
+                        textTransform: 'uppercase',
+                        fontSize: { xs: '0.74rem', md: '0.8rem' },
+                        lineHeight: 1,
+                        minHeight: 34,
+                        whiteSpace: 'nowrap',
+                        px: 0.95,
+                        py: 0.45,
+                        borderRadius: 1,
+                        border: '1px solid rgba(255,255,255,0.22)',
+                        background:
+                          'linear-gradient(135deg, #0d5f59 0%, #118f87 42%, #1ecfb9 100%)',
+                        boxSizing: 'border-box',
+                        alignSelf: { xs: 'flex-start', sm: 'flex-end' },
+                        cursor: 'pointer',
+                        boxShadow:
+                          '0 8px 18px rgba(20,184,166,0.24), inset 0 1px 0 rgba(156,187,217,0.32)',
+                        transition: reduceMotion
+                          ? 'none'
+                          : 'box-shadow 140ms ease, background 140ms ease, border-color 140ms ease',
+                        '&::before': {
+                          content: '""',
+                          position: 'absolute',
+                          inset: 0,
+                          background:
+                            'linear-gradient(180deg, rgba(156,187,217,0.32), rgba(255,255,255,0))',
+                          pointerEvents: 'none',
+                        },
+                        '&:hover': {
+                          textDecoration: 'none',
+                          background:
+                            'linear-gradient(135deg, #0b5550 0%, #0f7a74 42%, #17b9a5 100%)',
+                          borderColor: 'rgba(255,255,255,0.38)',
+                          boxShadow:
+                            '0 10px 22px rgba(20,184,166,0.3), inset 0 1px 0 rgba(141,188,229,0.38)',
+                        },
+                        '&:focus-visible': {
+                          outline: '2px solid',
+                          outlineColor: alpha(theme.palette.common.white, 0.9),
+                          outlineOffset: 2,
+                          borderRadius: 1,
+                        },
+                      }}
+                    >
+                      Donate Now
+                    </Box>
+                    <Dialog
+                      open={donateDialogOpen}
+                      onClose={() => setDonateDialogOpen(false)}
+                      aria-labelledby="donate-dialog-title"
+                      aria-describedby="donate-dialog-description"
+                      maxWidth="xs"
+                      fullWidth
+                      slotProps={{
+                        paper: {
+                          sx: {
+                            borderRadius: 2,
+                            bgcolor: footerRaisedSurface,
+                            color: footerTextPrimary,
+                            border: '1px solid',
+                            borderColor: dividerColor,
+                          },
+                        },
+                      }}
+                    >
+                      <DialogTitle
+                        id="donate-dialog-title"
                         sx={{
-                          width: 200,
-                          height: 200,
-                          objectFit: 'contain',
-                          display: 'block',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          pr: 1,
                         }}
-                      />
-                      <Link
-                        href={FOOTER_DONATE_URL}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        sx={{
-                          fontWeight: 600,
-                          color: 'primary.main',
-                          '&:hover': { textDecoration: 'underline' },
-                        }}
-                        onClick={() => setDonateDialogOpen(false)}
                       >
-                        {donateLinkLabel}
-                      </Link>
-                    </Stack>
-                  </DialogContent>
-                </Dialog>
+                        Donate to WRDLNKDN
+                        <Tooltip title="Close">
+                          <span>
+                            <IconButton
+                              aria-label="Close"
+                              onClick={() => setDonateDialogOpen(false)}
+                              sx={{ color: 'rgba(255,255,255,0.75)' }}
+                            >
+                              <CloseIcon fontSize="small" />
+                            </IconButton>
+                          </span>
+                        </Tooltip>
+                      </DialogTitle>
+                      <DialogContent id="donate-dialog-description">
+                        <Stack spacing={2} alignItems="center" sx={{ py: 1 }}>
+                          <Box
+                            component="img"
+                            src={donateQrSrc}
+                            alt="Donate QR code"
+                            width={200}
+                            height={200}
+                            sx={{
+                              width: 200,
+                              height: 200,
+                              objectFit: 'contain',
+                              display: 'block',
+                            }}
+                          />
+                          <Link
+                            href={FOOTER_DONATE_URL}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            sx={{
+                              fontWeight: 600,
+                              color: 'primary.main',
+                              '&:hover': { textDecoration: 'underline' },
+                            }}
+                            onClick={() => setDonateDialogOpen(false)}
+                          >
+                            {donateLinkLabel}
+                          </Link>
+                        </Stack>
+                      </DialogContent>
+                    </Dialog>
+                  </>
+                ) : null}
                 <Stack
                   direction="row"
                   spacing={0.2}

@@ -94,7 +94,7 @@
     "react-router-dom": "7.14.1",
     "secure-json-parse": "4.1.0",
     "sharp": "0.34.5",
-    "uuid": "13.0.0",
+    "uuid": "14.0.0",
     "word-extractor": "1.0.4"
   },
   "devDependencies": {
